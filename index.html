@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced TTRPG Spaceship Architect V 0.2.10</title>
+    <title>Advanced TTRPG Spaceship Architect V 0.2.13</title>
     <style>
         body { background-color: #050508; color: #00ffcc; font-family: 'Courier New', Courier, monospace; display: flex; margin: 0; height: 100vh; overflow: hidden; user-select: none; }
         #workspace { flex: 3; display: flex; flex-direction: column; background-color: #050508; position: relative; }
@@ -13,16 +13,14 @@
         
         #global-telemetry { background: rgba(0, 34, 17, 0.7); color: #00ffcc; border-bottom: 1px solid #005544; padding: 8px 20px; font-size: 13px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; z-index: 90; letter-spacing: 1px; backdrop-filter: blur(4px); }
         .telemetry-warning { color: #ff3333 !important; text-shadow: 0 0 5px rgba(255,50,50,0.8); }
-
         #sim-warning { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.8); color: #ffcc00; font-weight: bold; padding: 12px 35px; border: 2px solid #ffcc00; display: none; pointer-events: none; z-index: 1000; font-size: 18px; letter-spacing: 3px; text-transform: uppercase; border-radius: 4px; text-shadow: 0 0 8px #ffcc00, 0 0 15px #ffaa00; box-shadow: 0 0 15px rgba(255, 204, 0, 0.4), inset 0 0 15px rgba(255, 204, 0, 0.2); }
 
         #viewport { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
         #grid-container { position: absolute; width: 1200px; height: 800px; background-color: #0a0a0f; border: 2px solid #333; box-shadow: 0 0 40px rgba(0, 255, 204, 0.05); transform-origin: 0 0; }
         #grid { display: grid; grid-template-columns: repeat(48, 25px); grid-template-rows: repeat(32, 25px); width: 100%; height: 100%; position: absolute; z-index: 1; }
         .cell { box-sizing: border-box; border: 1px solid #1a1a1a; }
-        
         .layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        #doors-layer { z-index: 2; } #ext-layer { z-index: 3; } #labels-layer { z-index: 4; } #interaction-layer { z-index: 10; pointer-events: none; }
+        #doors-layer { z-index: 2; } #ext-layer { z-index: 3; } #vents-layer { z-index: 3; } #labels-layer { z-index: 4; } #interaction-layer { z-index: 10; pointer-events: none; }
 
         .room-label { position: absolute; transform: translate(-50%, -50%); color: #fff; font-weight: bold; font-size: 13px; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000; text-align: center; pointer-events: none; display: flex; align-items: center; justify-content: center; overflow: hidden; word-break: break-word; line-height: 1.1; white-space: pre-wrap; text-overflow: ellipsis; }
 
@@ -30,13 +28,18 @@
         .door.standard { background-color: #00ffcc; border: 2px solid #00aa88; }
         .door.security { background-color: #ff3333; border: 2px solid #aa0000; }
         .door.airlock { background-color: #ff9900; border: 2px solid #aa5500; }
+        .door.vent { background-color: #555; border: 2px dashed #aaa; }
         .door.ghost { opacity: 0.5; box-shadow: 0 0 10px #fff; pointer-events: none; border-color: #fff; background: #fff;}
         .door.standard.open { background-color: rgba(0, 255, 204, 0.2) !important; border-style: dashed; }
         .door.security.open { background-color: rgba(255, 51, 51, 0.2) !important; border-style: dashed; }
         .door.airlock.open { background-color: rgba(255, 153, 0, 0.2) !important; border-style: dashed; }
+        .door.vent.open { background-color: rgba(100, 100, 100, 0.2) !important; border-style: dotted; }
+        
         .door.standard.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(0, 255, 204, 0.3) !important; border-style: dotted !important; }
         .door.security.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(255, 51, 51, 0.3) !important; border-style: dotted !important; }
         .door.airlock.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(255, 153, 0, 0.3) !important; border-style: dotted !important; }
+        .door.vent.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(100, 100, 100, 0.3) !important; border-style: dotted !important; }
+        
         .door.locked::after { content: ''; position: absolute; background: #ffcc00; border-radius: 2px; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 3px #000; }
         .door.dir-h.locked::after { width: 6px; height: 4px; } .door.dir-v.locked::after { width: 4px; height: 6px; }
         .door.selected { box-shadow: 0 0 8px 3px #ffaa00; border-color: #ffaa00 !important; z-index: 10; }
@@ -46,7 +49,8 @@
         .ext-item.radiator { background: rgba(0, 204, 255, 0.2); border: 2px solid #00ccff; } .ext-item.radiator::after { content: '≡'; font-size: 18px; font-weight: bold; color: #00ccff;}
         .ext-item.solar { background: rgba(0, 50, 150, 0.4); border: 2px solid #4466ff; } .ext-item.solar::after { content: '☼'; color: #7799ff; font-size: 16px; font-weight: bold;}
         .ext-item.whipple { background: rgba(150, 150, 150, 0.2); border: 2px solid #fff; border-style: dashed;} .ext-item.whipple::after { content: '⛊'; color: #fff; font-size: 12px; }
-        .ext-item.inactive { opacity: 0.4; filter: grayscale(50%); }
+        .ext-item.vent { background: rgba(100, 100, 100, 0.4); border: 1px solid #777; border-radius: 4px; } .ext-item.vent::after { content: '⌗'; color: #ccc; font-size: 14px; }
+        .ext-item.inactive { opacity: 0.3; filter: grayscale(80%); }
         .ext-item.broken { background: repeating-linear-gradient(45deg, rgba(255,0,0,0.5), rgba(0,0,0,0.5) 8px) !important; border-style: dashed !important; opacity: 0.7;}
         .ext-item.selected { box-shadow: 0 0 8px 3px #ffaa00; border-color: #ffaa00 !important; z-index: 10; }
         .ext-item.ghost { opacity: 0.5; pointer-events: none; filter: brightness(1.5); }
@@ -116,13 +120,13 @@
         
         .connections-list { background: #000; border: 1px solid #333; padding: 10px; max-height: 120px; overflow-y: auto; font-size: 12px; margin-top: 5px; border-radius: 4px;}
         .conn-item { padding: 5px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; } .conn-item:last-child { border-bottom: none; }
-        .status-safe { color: #00ffcc; } .status-danger { color: #ff3333; }
+        .status-safe { color: #00ffcc; } .status-danger { color: #ff3333; } .status-vent { color: #aaa; }
     </style>
 </head>
 <body>
     <div id="workspace">
         <div class="header-bar">
-            <h2>Naval Architectural Blueprint <span class="beta-badge">V 0.2.10</span></h2>
+            <h2>Naval Architectural Blueprint <span class="beta-badge">V 0.2.13</span></h2>
             <span id="mode-indicator" style="color: #888; font-size: 14px;">Mode: STRUCTURE</span>
         </div>
         <div id="global-telemetry">
@@ -135,6 +139,7 @@
                 <div id="grid"></div>
                 <div id="labels-layer" class="layer"></div>
                 <div id="doors-layer" class="layer"></div>
+                <div id="vents-layer" class="layer"></div>
                 <div id="ext-layer" class="layer"></div>
                 <div id="interaction-layer" class="layer"><div id="draft-box" class="selection-box"></div></div>
             </div>
@@ -154,13 +159,19 @@
         <div class="controls-box">
             <div id="inst-info" class="instructions panel-section"><strong>Vessel Documentation.</strong> Manage blueprint metadata and file architecture.</div>
             <div id="inst-structure" class="instructions panel-section active"><strong>L-Click/Drag:</strong> Draw/Expand | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px; color: #ffaa00;">Severed rooms automatically split into sub-sectors.</span></div>
-            <div id="inst-connectors" class="instructions panel-section"><strong>Hover:</strong> Snap | <strong>L-Click:</strong> Place Door | <strong>R-Click:</strong> Delete</div>
+            <div id="inst-connectors" class="instructions panel-section">
+                <div class="btn-grid" style="margin-bottom: 8px;">
+                    <button id="btn-sub-door" class="toggle-btn active" onclick="setConnectorSubMode('door')">Wall Door</button>
+                    <button id="btn-sub-vent" class="toggle-btn" onclick="setConnectorSubMode('vent')">Floor Vent</button>
+                </div>
+                <strong>Hover:</strong> Snap | <strong>L-Click:</strong> Place | <strong>R-Click:</strong> Delete<br><span style="font-size: 11px;">Vents jump hazards globally by channel ID.</span>
+            </div>
             <div id="inst-exterior" class="instructions panel-section"><strong>Hover:</strong> Snap | <strong>L-Click:</strong> Place Array | <strong>R-Click:</strong> Delete<br><span style="font-size: 11px;">Arrays must touch the hull or chain to identical arrays.</span></div>
             <div id="inst-select" class="instructions panel-section">
                 <strong>L-Click:</strong> Select Entity | <strong>Drag:</strong> Marquee Multiple
                 <div class="btn-grid" style="margin-top: 10px;">
                     <button id="btn-filter-rooms" class="toggle-btn active" onclick="toggleFilter('rooms')">Modules: ON</button>
-                    <button id="btn-filter-doors" class="toggle-btn active" onclick="toggleFilter('doors')">Doors: ON</button>
+                    <button id="btn-filter-doors" class="toggle-btn active" onclick="toggleFilter('doors')">Doors/Vents: ON</button>
                     <button id="btn-filter-ext" class="toggle-btn active" onclick="toggleFilter('exterior')" style="grid-column: span 2;">Exterior: ON</button>
                 </div>
             </div>
@@ -181,12 +192,18 @@
         </div>
 
         <div id="panel-connectors" class="panel-section">
-            <label>Doorway Material / Type:</label>
-            <select id="door-build-type">
-                <option value="standard">Standard Hatch (Green)</option>
-                <option value="security">Security / Armored (Red)</option>
-                <option value="airlock">Pressure Airlock (Orange)</option>
-            </select>
+            <div id="door-build-settings">
+                <label>Doorway Material / Type:</label>
+                <select id="door-build-type">
+                    <option value="standard">Standard Hatch (Green)</option>
+                    <option value="security">Security / Armored (Red)</option>
+                    <option value="airlock">Pressure Airlock (Orange)</option>
+                </select>
+            </div>
+            <div id="vent-build-settings" style="display: none;">
+                <label>Vent Channel (Network ID):</label>
+                <input type="number" id="vent-build-channel" value="1">
+            </div>
         </div>
 
         <div id="panel-exterior" class="panel-section">
@@ -226,12 +243,26 @@
                     <h4 style="margin:0 0 10px 0; color:#ffaa00;">Internal Sub-Systems</h4>
                     <div id="comp-list"></div>
                     <select id="comp-select" style="margin-top: 10px;">
-                        <option value="battery">Battery Bank (0.5s) [+50 MW Cap]</option>
-                        <option value="diesel">Diesel Turbine (1.0s) [+20 MW Gen, Heat]</option>
-                        <option value="scrubber">CO2 Scrubber (0.5s) [Draws 2MW, Clears CO2]</option>
-                        <option value="smr">Fission SMR (4.0s) [+100 MW Gen, Heat, Rad Risk]</option>
-                        <option value="mainframe">Mainframe Core (2.0s) [Draws 15MW, Heat]</option>
-                        <option value="processor">Sec. Processor (0.5s) [Draws 4MW, Heat]</option>
+                        <optgroup label="Storage & Logistics">
+                            <option value="storage_s">Small Storage (0.5s)</option>
+                            <option value="storage_m">Med Storage (1.0s)</option>
+                            <option value="storage_l">Large Storage (2.0s)</option>
+                        </optgroup>
+                        <optgroup label="Power & Propulsion">
+                            <option value="battery">Battery Bank (0.5s) [+50 MW Cap]</option>
+                            <option value="diesel">Diesel Turbine (1.0s) [+20 MW Gen, Heat]</option>
+                            <option value="smr">Fission SMR (4.0s) [+100 MW Gen, Heat, Rad Risk]</option>
+                        </optgroup>
+                        <optgroup label="Life Support & Bio">
+                            <option value="scrubber">CO2 Scrubber (0.5s) [Draws 2MW, Clears CO2]</option>
+                            <option value="hydroponics">Hydroponics Vat (2.0s) [Draws 4MW, Clears CO2]</option>
+                            <option value="autodoc">Med Auto-Doc (1.0s) [Draws 6MW]</option>
+                            <option value="cryo">Perfluorocarbon Liquid Pod (1.0s) [Draws 5MW, -2°C Heat]</option>
+                        </optgroup>
+                        <optgroup label="Computing">
+                            <option value="mainframe">Mainframe Core (2.0s) [Draws 15MW, Heat]</option>
+                            <option value="processor">Sec. Processor (0.5s) [Draws 4MW, Heat]</option>
+                        </optgroup>
                     </select>
                     <button class="action-btn" style="padding: 5px; font-size: 11px;" onclick="installComponent()">Install Hardware</button>
                 </div>
@@ -240,19 +271,39 @@
             </div>
 
             <div id="door-editor" style="display: none;">
-                <h3 style="color: #ffaa00;">Connector Node</h3>
-                <label>Type designation:</label>
-                <select id="door-edit-type" onchange="updateEntityData()">
-                    <option value="standard">Standard Hatch</option> <option value="security">Security / Armored</option> <option value="airlock">Pressure Airlock</option>
+                <h3 style="color: #ffaa00;" id="connector-title">Connector Node</h3>
+                <label id="connector-type-label">Type designation:</label>
+                <select id="door-edit-type" onchange="updateEntityData()" disabled>
+                    <option value="standard">Standard Hatch</option> <option value="security">Security / Armored</option> 
+                    <option value="airlock">Pressure Airlock</option> <option value="vent">Ventilation Shaft</option>
                 </select>
-                <button id="btn-door-blocks" class="toggle-btn" style="width: 100%; margin-bottom: 10px;" onclick="toggleEntityState('blocksHazards')">Rated to Block Hazards: ON</button>
+                
+                <div class="stat-row" style="margin-bottom: 10px;">
+                    <span class="stat-label">Damage:</span>
+                    <input type="range" id="door-dmg" min="0" max="100" value="0" oninput="updateEntityData()">
+                    <span id="door-dmg-val" class="stat-val" style="color:#ff3333;">0%</span>
+                </div>
+
+                <div class="sub-panel" id="door-prop-vent" style="display:none;">
+                    <label style="color:#ccc; font-size:12px;">Vent Channel (Network ID):</label>
+                    <input type="number" id="door-vent-channel" oninput="updateEntityData()">
+                </div>
+
+                <div id="door-prop-wall">
+                    <button id="btn-door-blocks" class="toggle-btn disabled-mode" style="width: 100%; margin-bottom: 10px; cursor:default;">Rated to Block Hazards: ON</button>
+                    <div class="btn-grid">
+                        <button id="btn-door-open" class="toggle-btn" onclick="toggleEntityState('isOpen')">State: Open</button>
+                        <button id="btn-door-locked" class="toggle-btn warn" onclick="toggleEntityState('isLocked')">Sys: Locked</button>
+                    </div>
+                </div>
+
                 <div class="btn-grid">
-                    <button id="btn-door-open" class="toggle-btn" onclick="toggleEntityState('isOpen')">State: Open</button>
-                    <button id="btn-door-locked" class="toggle-btn warn" onclick="toggleEntityState('isLocked')">Sys: Locked</button>
+                    <button id="btn-vent-active" class="toggle-btn active" style="display:none;" onclick="toggleEntityState('isActive')">Power: Active</button>
                     <button id="btn-door-broken" class="toggle-btn alert" style="grid-column: span 2;" onclick="toggleEntityState('isBroken')">Integrity: Broken</button>
                 </div>
+                
                 <textarea id="door-notes" placeholder="Mechanism notes..." oninput="updateEntityData()"></textarea>
-                <button class="delete-btn" onclick="deleteSelectedEntity()">Remove Door</button>
+                <button class="delete-btn" onclick="deleteSelectedEntity()">Remove Connector</button>
             </div>
 
             <div id="ext-editor" style="display: none;">
@@ -292,7 +343,7 @@
                 <div class="stat-row"><button id="eye-temp" class="eye-btn" onclick="toggleEye('temp')">❌</button> <span class="stat-label" style="padding-left:10px;">Temp:</span> <input type="range" id="sys-temp" min="-50" max="150" value="21" oninput="updateIntegrityData('temp')"> <span id="sys-temp-val" class="stat-val">21°C</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('temp')">Def</button></div>
                 <div class="stat-row">
                     <button id="eye-gas" class="eye-btn" onclick="toggleEye('gas')">❌</button> <span class="stat-label" style="padding-left:10px;">Atmo:</span>
-                    <select id="sys-type" onchange="updateIntegrityData('gas')" style="flex:1; margin:0 10px 0 10px;"> <option value="O2">O2 / Standard</option> <option value="CO2">CO2 / Stale</option> <option value="Toxins">Hazardous Toxins</option> <option value="Vacuum">Hard Vacuum</option> </select>
+                    <select id="sys-type" onchange="updateIntegrityData('gas')" style="flex:1; margin:0 10px 0 10px;"> <option value="O2">O2 / Standard</option> <option value="CO2">CO2 / Stale</option> <option value="Toxins">Hazardous Toxins</option> <option value="Vacuum">Vacuum</option> </select>
                     <button class="toggle-btn" style="padding:6px 6px; font-size:11px;" onclick="resetStat('gas')">Def</button>
                 </div>
                 <h4 style="margin: 15px 0 5px 0; color: #00ffcc;">Crossways Network</h4>
@@ -317,26 +368,32 @@
     <script>
         const COLS = 48, ROWS = 32, CELL_SIZE = 25;
         const COMP_DICT = {
+            storage_s: { name: "Storage (Small)", size: 0.5, pwrCap: 0, pwrGen: 0, pwrDraw: 0 },
+            storage_m: { name: "Storage (Med)", size: 1.0, pwrCap: 0, pwrGen: 0, pwrDraw: 0 },
+            storage_l: { name: "Storage (Large)", size: 2.0, pwrCap: 0, pwrGen: 0, pwrDraw: 0 },
             battery: { name: "Lithium Bank", size: 0.5, pwrCap: 50, pwrGen: 0, pwrDraw: 0 },
             diesel: { name: "Diesel Turbine", size: 1.0, pwrCap: 0, pwrGen: 20, pwrDraw: 0, heat: 5 },
             smr: { name: "Fission SMR", size: 4.0, pwrCap: 0, pwrGen: 100, pwrDraw: 0, heat: 15 },
             scrubber: { name: "CO2 Scrubber", size: 0.5, pwrCap: 0, pwrGen: 0, pwrDraw: 2 },
+            hydroponics: { name: "Hydroponics Vat", size: 2.0, pwrCap: 0, pwrGen: 0, pwrDraw: 4 },
             mainframe: { name: "Mainframe Core", size: 2.0, pwrCap: 0, pwrGen: 0, pwrDraw: 15, heat: 8 },
-            processor: { name: "Sec. Processor", size: 0.5, pwrCap: 0, pwrGen: 0, pwrDraw: 4, heat: 2 }
+            processor: { name: "Sec. Processor", size: 0.5, pwrCap: 0, pwrGen: 0, pwrDraw: 4, heat: 2 },
+            autodoc: { name: "Auto-Doc", size: 1.0, pwrCap: 0, pwrGen: 0, pwrDraw: 6 },
+            cryo: { name: "Liquid Perfluorocarbon Pod", size: 1.0, pwrCap: 0, pwrGen: 0, pwrDraw: 5, heat: -2 }
         };
 
         let state = {
             ship: { name: "Broadsword-Class Corvette", desc: "Long-range patrol and system transit vessel. Built for horizontal burn architecture." },
-            mode: 'structure', rooms: {}, doors: {}, exterior: {}, gridData: Array(ROWS).fill().map(() => Array(COLS).fill(null)), idCounters: { room: 0, door: 0, ext: 0, comp: 0 }
+            mode: 'structure', connectorSubMode: 'door', rooms: {}, doors: {}, vents: {}, exterior: {}, gridData: Array(ROWS).fill().map(() => Array(COLS).fill(null)), idCounters: { room: 0, door: 0, ext: 0, comp: 0, vent: 0 }
         };
 
-        let selection = { roomIds: new Set(), doorIds: new Set(), extIds: new Set() };
+        let selection = { roomIds: new Set(), doorIds: new Set(), extIds: new Set(), ventIds: new Set() };
         let filters = { rooms: true, doors: true, exterior: true };
         let isDragging = false;
-        let dragContext = { startX: 0, startY: 0, currentX: 0, currentY: 0, action: null, backupGrid: null, backupDoors: null, backupExt: null };
+        let dragContext = { startX: 0, startY: 0, currentX: 0, currentY: 0, action: null, backupGrid: null, backupDoors: null, backupVents: null, backupExt: null };
         let ghostItem = null; 
         let visibleStats = { dmg: true, pres: false, temp: false, gas: false };
-        let simActive = false; let backupRooms = null, backupDoorsSim = null, backupExtSim = null;
+        let simActive = false; let backupRooms = null, backupDoorsSim = null, backupVentsSim = null, backupExtSim = null;
         let globalTelemetry = { shipPowerGen: 0, shipPowerCap: 0, shipPowerDraw: 0, totalArea: 0 };
 
         const themes = {
@@ -349,37 +406,30 @@
             crew: { r: 50, g: 255, b: 50, a: 0.15, border: '#33ff33', sel: 'rgba(50, 255, 50, 0.4)' }
         };
 
-        const DOM = { viewport: document.getElementById('viewport'), container: document.getElementById('grid-container'), grid: document.getElementById('grid'), labelsLayer: document.getElementById('labels-layer'), doorsLayer: document.getElementById('doors-layer'), extLayer: document.getElementById('ext-layer'), draftBox: document.getElementById('draft-box'), cells: [] };
+        const DOM = { viewport: document.getElementById('viewport'), container: document.getElementById('grid-container'), grid: document.getElementById('grid'), labelsLayer: document.getElementById('labels-layer'), doorsLayer: document.getElementById('doors-layer'), ventsLayer: document.getElementById('vents-layer'), extLayer: document.getElementById('ext-layer'), draftBox: document.getElementById('draft-box'), cells: [] };
         let camera = { zoom: 1, panX: 0, panY: 0, isPanning: false, lastX: 0, lastY: 0 };
 
         function initApp() {
-            for (let y = 0; y < ROWS; y++) {
-                DOM.cells[y] = [];
-                for (let x = 0; x < COLS; x++) {
-                    const cell = document.createElement('div'); cell.className = 'cell'; DOM.grid.appendChild(cell); DOM.cells[y][x] = cell;
-                }
-            }
-            const vpRect = DOM.viewport.getBoundingClientRect();
-            camera.panX = (vpRect.width - (COLS * CELL_SIZE)) / 2; camera.panY = (vpRect.height - (ROWS * CELL_SIZE)) / 2;
+            for (let y = 0; y < ROWS; y++) { DOM.cells[y] = []; for (let x = 0; x < COLS; x++) { const cell = document.createElement('div'); cell.className = 'cell'; DOM.grid.appendChild(cell); DOM.cells[y][x] = cell; } }
+            const vpRect = DOM.viewport.getBoundingClientRect(); camera.panX = (vpRect.width - (COLS * CELL_SIZE)) / 2; camera.panY = (vpRect.height - (ROWS * CELL_SIZE)) / 2;
             updateCamera(); loadDefaultShip(); setupEventListeners(); renderLoop();
         }
 
-        // --- COMPRESSED FACTORIES ---
         function applyToGrid(minX, maxX, minY, maxY, val) { for (let y=minY; y<=maxY; y++) { for(let x=minX; x<=maxX; x++) state.gridData[y][x]=val; } }
         function addRoom(idStr, name, type, temp, pres, pwr, comps=[]) { state.rooms[idStr] = {id:idStr, name, type, notes:"", dmg:0, airType:'O2', temp, pres, pwrPerCell:pwr, area:0, components:comps}; }
         function addExt(idStr, x, y, type, notes="") { let hp = type==='whipple'?100:undefined; let bp = type==='solar'?15:undefined; let mt = type==='engine'?8000:undefined; let bc = type==='radiator'?20:undefined; let tt = type==='radiator'?21:undefined; state.exterior[idStr] = {id:idStr, x,y, type, isActive:true, isBroken:false, dmg:0, notes, hp, maxHp:hp, basePower:bp, maxThrust:mt, baseCooling:bc, targetTemp:tt}; }
-        function addDoor(idStr, x, y, dir, type, locked, notes="", blocks=null) { if(blocks===null) blocks = (type!=='standard'); state.doors[idStr] = {id:idStr, x,y, dir, type, isOpen: type==='standard', isLocked:locked, isBroken:false, notes, blocksHazards:blocks}; }
+        function addDoor(idStr, x, y, dir, type, locked, notes="", blocks=null) { if(blocks===null) blocks = (type!=='standard'); state.doors[idStr] = {id:idStr, x,y, dir, type, isOpen:false, isLocked:locked, isBroken:false, dmg:0, notes, blocksHazards:blocks}; }
+        function addVent(idStr, x, y, channel) { state.vents[idStr] = {id:idStr, x,y, type:'vent', isActive:true, isBroken:false, dmg:0, channel:channel, notes:""}; }
 
         function loadDefaultShip() {
             state.ship = { name: "Broadsword-Class Corvette", desc: "Long-range patrol and system transit vessel. Built for horizontal burn architecture." };
-            state.rooms={}; state.doors={}; state.exterior={};
-            state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+            state.rooms={}; state.doors={}; state.vents={}; state.exterior={}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null));
             
             addRoom("r_cmd", "Command Deck", "command", 21, 1.0, 1, [{id:"c_m1", type:"mainframe", isActive:true, isBroken:false}]);
             addRoom("r_spine", "Main Truss", "default", 15, 0.8, 0, []);
             addRoom("r_hab", "Centrifuge Hab", "crew", 21, 1.0, 1, [{id:"c_0", type:"scrubber", isActive:true, isBroken:false}]);
-            addRoom("r_lab", "Medbay / Science", "medical", 21, 1.0, 2, [{id:"c_p1", type:"processor", isActive:true, isBroken:false}]);
-            addRoom("r_cargo", "Cargo Bay", "cargo", 10, 0.5, 0, [{id:"c_1", type:"battery", isActive:true, isBroken:false}, {id:"c_2", type:"battery", isActive:true, isBroken:false}]);
+            addRoom("r_lab", "Medbay / Science", "medical", 21, 1.0, 2, [{id:"c_p1", type:"processor", isActive:true, isBroken:false}, {id:"c_p2", type:"autodoc", isActive:true, isBroken:false}]);
+            addRoom("r_cargo", "Cargo Bay", "cargo", 10, 0.5, 0, [{id:"c_1", type:"battery", isActive:true, isBroken:false}, {id:"c_2", type:"storage_l", isActive:true, isBroken:false}]);
             addRoom("r_tac", "Armory", "tactical", 21, 1.0, 1, []);
             addRoom("r_eng", "Fission Drive Core", "engineering", 65, 1.0, 3, [{id:"c_3", type:"smr", isActive:true, isBroken:false}]);
             state.idCounters.room = 20; state.idCounters.comp = 10;
@@ -394,6 +444,9 @@
             addDoor("d_7", 34, 15, "v", "airlock", true, "Reactor Check"); addDoor("d_8", 34, 16, "v", "airlock", true, "Reactor Check");
             state.idCounters.door = 20;
 
+            addVent("v_1", 6, 15, 1); addVent("v_2", 15, 12, 1); addVent("v_3", 15, 19, 1); addVent("v_4", 25, 19, 1);
+            state.idCounters.vent = 10;
+
             for(let i=13; i<=18; i++) addExt(`e_eng${i}`, 42, i, "engine", "Nozzle");
             for(let i=14; i<=17; i++) addExt(`e_whip${i}`, 3, i, "whipple", "Bow Armor");
             for(let i=13; i<=16; i++) addExt(`e_sol${i}`, i, 10, "solar", i===13?"Root":"");
@@ -407,21 +460,14 @@
             document.body.appendChild(a); a.click(); a.remove();
         }
         function importShip(event) {
-            const file = event.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = e => {
-                try {
-                    const imp = JSON.parse(e.target.result);
-                    if(imp.rooms && imp.gridData) { state = imp; clearSelection(); renderLoop(); } else alert("Invalid JSON.");
-                } catch (err) { alert("Error parsing JSON file."); }
-            };
+            const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = e => { try { const imp = JSON.parse(e.target.result); if(imp.rooms && imp.gridData) { state = imp; clearSelection(); renderLoop(); } else alert("Invalid JSON."); } catch (err) { alert("Error parsing JSON file."); } };
             reader.readAsText(file); event.target.value = ''; 
         }
         function updateShipInfo() { state.ship.name = document.getElementById('ship-name').value; state.ship.desc = document.getElementById('ship-desc').value; }
 
         function getHazardColorBlend(base, target, pct) {
-            if (pct <= 0) return `rgba(${base.r}, ${base.g}, ${base.b}, ${base.a})`;
-            let r, g, b, a;
+            if (pct <= 0) return `rgba(${base.r}, ${base.g}, ${base.b}, ${base.a})`; let r, g, b, a;
             if (pct <= 25) { let mix = (pct/25)*0.4; r=base.r*(1-mix)+target.r*mix; g=base.g*(1-mix)+target.g*mix; b=base.b*(1-mix)+target.b*mix; a=base.a; }
             else if (pct <= 50) { let t=(pct-25)/25; let mix=0.4+(t*0.6); r=base.r*(1-mix)+target.r*mix; g=base.g*(1-mix)+target.g*mix; b=base.b*(1-mix)+target.b*mix; a=base.a+(t*(0.25-base.a)); }
             else { let t=(pct-50)/50; r=target.r; g=target.g; b=target.b; a=0.25+(t*0.45); }
@@ -447,8 +493,7 @@
             for(let a of adjs) {
                 let adjExt = Object.values(state.exterior).find(e => e.x === a.x && e.y === a.y && e.type === ext.type);
                 if(adjExt) { let root = findExtRootRoom(adjExt.id, visited); if(root && root.chainLength < shortestDist) { bestRoot = { roomId: root.roomId, chainLength: root.chainLength + 1 }; shortestDist = root.chainLength; } }
-            }
-            return bestRoot;
+            } return bestRoot;
         }
 
         function calculateSystems() {
@@ -476,19 +521,18 @@
             if (drawRound > genRound) readOut.classList.add('telemetry-warning'); else readOut.classList.remove('telemetry-warning');
         }
 
-        // Cleanup: remove rooms that no longer exist on grid
         function cleanUpRooms() {
             let activeIds = new Set();
             for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (state.gridData[y][x]) activeIds.add(state.gridData[y][x]);
             Object.keys(state.rooms).forEach(id => { if (!activeIds.has(id)) { delete state.rooms[id]; selection.roomIds.delete(id); } });
         }
 
+        function normalizeRooms() { Object.values(state.rooms).forEach(r => { if (r.pres <= 0) { r.airType = 'Vacuum'; r.pres = 0; } }); }
+
         function splitDisconnectedRooms() {
-            cleanUpRooms();
-            let newlyCreatedRooms = [];
+            cleanUpRooms(); let newlyCreatedRooms = [];
             Object.keys(state.rooms).forEach(roomId => {
-                let cells = [];
-                for (let y=0; y<ROWS; y++) for(let x=0; x<COLS; x++) if(state.gridData[y][x] === roomId) cells.push({x, y});
+                let cells = []; for (let y=0; y<ROWS; y++) for(let x=0; x<COLS; x++) if(state.gridData[y][x] === roomId) cells.push({x, y});
                 if (cells.length === 0) return;
                 let visited = new Set(); let islands = [];
                 cells.forEach(c => {
@@ -501,8 +545,7 @@
                                 let nKey = `${n.x},${n.y}`;
                                 if (n.x>=0 && n.x<COLS && n.y>=0 && n.y<ROWS && state.gridData[n.y][n.x] === roomId && !visited.has(nKey)) { visited.add(nKey); queue.push(n); }
                             });
-                        }
-                        islands.push(island);
+                        } islands.push(island);
                     }
                 });
                 if (islands.length > 1) {
@@ -513,13 +556,45 @@
                         islands[i].forEach(c => state.gridData[c.y][c.x] = newId);
                     }
                 }
+            }); cleanUpRooms();
+        }
+
+        function getDoorTransfer(d) {
+            if (d.isBroken || d.isOpen) return { air: true, temp: true };
+            if (d.type === 'security') return { air: false, temp: true }; 
+            if (d.type === 'standard') return { air: false, temp: false }; 
+            if (d.type === 'airlock') return { air: false, temp: false }; 
+            if (d.type === 'vent') return { air: true, temp: true }; 
+            return { air: false, temp: false };
+        }
+
+        function getRoomConnections(roomId) {
+            let connections = []; let myVents = [];
+            Object.values(state.doors).forEach(d => {
+                let r1 = null, r2 = null; let touches = false;
+                if (d.dir === 'h') { if (d.y > 0) r1 = state.gridData[d.y - 1][d.x]; if (d.y < ROWS) r2 = state.gridData[d.y][d.x]; } 
+                else { if (d.x > 0) r1 = state.gridData[d.y][d.x - 1]; if (d.x < COLS) r2 = state.gridData[d.y][d.x]; }
+                if (r1 === roomId && r2 && r2 !== roomId) { connections.push({ targetRoom: r2, door: d }); touches = true; }
+                if (r2 === roomId && r1 && r1 !== roomId) { connections.push({ targetRoom: r1, door: d }); touches = true; }
             });
-            cleanUpRooms();
+            
+            Object.values(state.vents).forEach(v => {
+                if (v.isActive && !v.isBroken && state.gridData[v.y][v.x] === roomId) myVents.push(v);
+            });
+
+            myVents.forEach(v1 => {
+                Object.values(state.vents).forEach(v2 => {
+                    if (v2.id !== v1.id && v2.channel === v1.channel && v2.isActive && !v2.isBroken) {
+                        let r2 = state.gridData[v2.y][v2.x];
+                        if (r2 && r2 !== roomId) connections.push({ targetRoom: r2, door: v2, isVent: true });
+                    }
+                });
+            }); return connections;
         }
 
         function renderLoop() {
-            calculateSystems();
-            DOM.labelsLayer.innerHTML = ''; DOM.doorsLayer.innerHTML = ''; DOM.extLayer.innerHTML = '';
+            calculateSystems(); normalizeRooms();
+            DOM.labelsLayer.innerHTML = ''; DOM.doorsLayer.innerHTML = ''; DOM.ventsLayer.innerHTML = ''; DOM.extLayer.innerHTML = '';
             
             const roomCenters = {};
             for (let y = 0; y < ROWS; y++) {
@@ -546,20 +621,11 @@
 
             Object.keys(roomCenters).forEach(id => {
                 const data = roomCenters[id]; 
-                
-                // Centroid Geometry Math for better anchoring in irregular shapes
-                let cx = data.sumX / data.count; 
-                let cy = data.sumY / data.count;
+                let cx = data.sumX / data.count; let cy = data.sumY / data.count;
                 let cxFloor = Math.floor(cx); let cyFloor = Math.floor(cy);
-                
-                // If the mathematical center is floating in space, snap it to the physically closest internal cell using Euclidean math
                 if (!data.cells.has(`${cxFloor},${cyFloor}`)) {
                     let closest = null; let minDist = Infinity;
-                    data.cells.forEach(c => { 
-                        let [px, py] = c.split(',').map(Number); 
-                        let dist = Math.sqrt(Math.pow(px - cx, 2) + Math.pow(py - cy, 2)); 
-                        if (dist < minDist) { minDist = dist; closest = {x: px, y: py}; } 
-                    });
+                    data.cells.forEach(c => { let [px, py] = c.split(',').map(Number); let dist = Math.sqrt(Math.pow(px - cx, 2) + Math.pow(py - cy, 2)); if (dist < minDist) { minDist = dist; closest = {x: px, y: py}; } });
                     if (closest) { cx = closest.x; cy = closest.y; }
                 }
 
@@ -602,22 +668,31 @@
                 DOM.doorsLayer.appendChild(el);
             });
 
+            Object.values(state.vents).forEach(v => {
+                const el = document.createElement('div'); let cName = `ext-item vent`;
+                if (!v.isActive) cName += ' inactive'; if (v.isBroken) cName += ' broken'; if (selection.ventIds.has(v.id)) cName += ' selected';
+                el.className = cName; el.dataset.id = v.id; el.style.left = `${v.x * CELL_SIZE}px`; el.style.top = `${v.y * CELL_SIZE}px`;
+                DOM.ventsLayer.appendChild(el);
+            });
+
             if (state.mode === 'connectors' && ghostItem && !isDragging) {
-                const el = document.createElement('div'); el.className = `door dir-${ghostItem.dir} ghost`;
-                if (ghostItem.dir === 'h') { el.style.width = `${CELL_SIZE}px`; el.style.height = '10px'; el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE - 5}px`; } 
-                else { el.style.width = '10px'; el.style.height = `${CELL_SIZE}px`; el.style.left = `${ghostItem.x * CELL_SIZE - 5}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; }
-                DOM.doorsLayer.appendChild(el);
+                if (state.connectorSubMode === 'door') {
+                    const el = document.createElement('div'); el.className = `door dir-${ghostItem.dir} ghost`;
+                    if (ghostItem.dir === 'h') { el.style.width = `${CELL_SIZE}px`; el.style.height = '10px'; el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE - 5}px`; } 
+                    else { el.style.width = '10px'; el.style.height = `${CELL_SIZE}px`; el.style.left = `${ghostItem.x * CELL_SIZE - 5}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; }
+                    DOM.doorsLayer.appendChild(el);
+                } else if (state.connectorSubMode === 'vent') {
+                    const el = document.createElement('div'); el.className = `ext-item vent ghost`;
+                    el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; DOM.ventsLayer.appendChild(el);
+                }
             }
 
             updateEditorUI();
         }
 
         function setupEventListeners() {
-            DOM.viewport.addEventListener('wheel', handleZoom, { passive: false });
-            DOM.viewport.addEventListener('contextmenu', e => e.preventDefault());
-            DOM.viewport.addEventListener('mousedown', handleMouseDown);
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
+            DOM.viewport.addEventListener('wheel', handleZoom, { passive: false }); DOM.viewport.addEventListener('contextmenu', e => e.preventDefault());
+            DOM.viewport.addEventListener('mousedown', handleMouseDown); window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp);
         }
 
         function handleZoom(e) {
@@ -636,15 +711,18 @@
 
         function handleMouseDown(e) {
             if (e.button === 1 || e.altKey) { e.preventDefault(); camera.isPanning = true; camera.lastX = e.clientX; camera.lastY = e.clientY; DOM.viewport.style.cursor = 'grabbing'; return; }
+            
+            let targetEl = e.target.closest('.door, .vent, .ext-item') || e.target;
+            
             if (e.button === 2) {
-                let targetEl = e.target;
-                if (state.mode === 'connectors' && targetEl.classList.contains('door')) { delete state.doors[targetEl.dataset.id]; renderLoop(); return; }
+                if (state.mode === 'connectors') {
+                    if (targetEl.classList.contains('door')) { delete state.doors[targetEl.dataset.id]; renderLoop(); return; }
+                    if (targetEl.classList.contains('vent')) { delete state.vents[targetEl.dataset.id]; renderLoop(); return; }
+                }
                 if (state.mode === 'exterior' && targetEl.classList.contains('ext-item')) { delete state.exterior[targetEl.dataset.id]; renderLoop(); return; }
             }
             
-            const coords = getGridCoords(e);
-            dragContext.startX = coords.x; dragContext.startY = coords.y; dragContext.currentX = coords.x; dragContext.currentY = coords.y;
-            isDragging = true;
+            const coords = getGridCoords(e); dragContext.startX = coords.x; dragContext.startY = coords.y; dragContext.currentX = coords.x; dragContext.currentY = coords.y; isDragging = true;
 
             if (state.mode === 'structure') {
                 dragContext.action = e.button === 2 ? 'erase' : 'add';
@@ -655,36 +733,36 @@
                 DOM.draftBox.className = `selection-box ${dragContext.action}`; DOM.draftBox.style.display = 'block'; updateDraftBox(coords.x, coords.y);
             } 
             else if (state.mode === 'select') {
-                let targetEl = e.target; let clickedRoom = state.gridData[coords.y][coords.x];
+                let clickedRoom = state.gridData[coords.y][coords.x];
                 let clickedDoor = targetEl.classList.contains('door') ? targetEl.dataset.id : null;
-                let clickedExt = targetEl.classList.contains('ext-item') ? targetEl.dataset.id : null;
-                let isClickingSelected = (clickedDoor && selection.doorIds.has(clickedDoor)) || (clickedExt && selection.extIds.has(clickedExt)) || (clickedRoom && selection.roomIds.has(clickedRoom));
+                let clickedVent = targetEl.classList.contains('vent') ? targetEl.dataset.id : null;
+                let clickedExt = (targetEl.classList.contains('ext-item') && !clickedVent) ? targetEl.dataset.id : null;
+
+                let isClickingSelected = (clickedDoor && selection.doorIds.has(clickedDoor)) || (clickedExt && selection.extIds.has(clickedExt)) || (clickedVent && selection.ventIds.has(clickedVent)) || (clickedRoom && selection.roomIds.has(clickedRoom));
 
                 if (isClickingSelected) {
                     dragContext.action = 'move'; dragContext.backupGrid = state.gridData.map(row => [...row]);
-                    dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior));
+                    dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupVents = JSON.parse(JSON.stringify(state.vents)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior));
                 } else {
                     clearSelection();
                     if (filters.doors && clickedDoor) { selection.doorIds.add(clickedDoor); dragContext.action = null; }
+                    else if (filters.doors && clickedVent) { selection.ventIds.add(clickedVent); dragContext.action = null; }
                     else if (filters.exterior && clickedExt) { selection.extIds.add(clickedExt); dragContext.action = null; }
-                    else if (filters.rooms && clickedRoom) {
-                        dragContext.action = 'move'; selection.roomIds.add(clickedRoom); dragContext.backupGrid = state.gridData.map(row => [...row]);
-                        dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior));
-                    } else { dragContext.action = 'marquee'; DOM.draftBox.className = `selection-box marquee`; DOM.draftBox.style.display = 'block'; updateDraftBox(coords.x, coords.y); }
+                    else if (filters.rooms && clickedRoom) { dragContext.action = 'move'; selection.roomIds.add(clickedRoom); dragContext.backupGrid = state.gridData.map(row => [...row]); dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupVents = JSON.parse(JSON.stringify(state.vents)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior)); } 
+                    else { dragContext.action = 'marquee'; DOM.draftBox.className = `selection-box marquee`; DOM.draftBox.style.display = 'block'; updateDraftBox(coords.x, coords.y); }
                 }
             }
             else if (state.mode === 'integrity') { isDragging = false; const clickedId = state.gridData[coords.y][coords.x]; clearSelection(); if (clickedId) { selection.roomIds.add(clickedId); } }
             else if (state.mode === 'connectors' || state.mode === 'exterior') {
                 isDragging = false; 
                 if (ghostItem && e.button !== 2) {
-                    if (state.mode === 'connectors') { addDoor(`door_${state.idCounters.door++}`, ghostItem.x, ghostItem.y, ghostItem.dir, document.getElementById('door-build-type').value, false); } 
-                    else if (state.mode === 'exterior') {
-                        let existing = Object.values(state.exterior).find(ex => ex.x === ghostItem.x && ex.y === ghostItem.y);
-                        if (!existing) addExt(`ext_${state.idCounters.ext++}`, ghostItem.x, ghostItem.y, document.getElementById('ext-build-type').value);
-                    }
+                    if (state.mode === 'connectors') { 
+                        if (state.connectorSubMode === 'door') addDoor(`door_${state.idCounters.door++}`, ghostItem.x, ghostItem.y, ghostItem.dir, document.getElementById('door-build-type').value, false); 
+                        else if (state.connectorSubMode === 'vent') addVent(`vent_${state.idCounters.vent++}`, ghostItem.x, ghostItem.y, parseInt(document.getElementById('vent-build-channel').value)||1); 
+                    } 
+                    else if (state.mode === 'exterior') { let existing = Object.values(state.exterior).find(ex => ex.x === ghostItem.x && ex.y === ghostItem.y); if (!existing) addExt(`ext_${state.idCounters.ext++}`, ghostItem.x, ghostItem.y, document.getElementById('ext-build-type').value); }
                 }
-            }
-            renderLoop();
+            } renderLoop();
         }
 
         function handleMouseMove(e) {
@@ -693,38 +771,33 @@
 
             if (!isDragging) {
                 if (state.mode === 'connectors') {
-                    const cellLocalX = coords.rawX % CELL_SIZE, cellLocalY = coords.rawY % CELL_SIZE;
-                    const dL = cellLocalX, dR = CELL_SIZE - cellLocalX, dT = cellLocalY, dB = CELL_SIZE - cellLocalY;
-                    const minDist = Math.min(dL, dR, dT, dB); let gX = coords.x, gY = coords.y, gDir = 'v';
-                    if (minDist === dL) gDir = 'v'; else if (minDist === dR) { gDir = 'v'; gX++; } else if (minDist === dT) gDir = 'h'; else { gDir = 'h'; gY++; }
-                    let exists = Object.values(state.doors).find(d => d.x === gX && d.y === gY && d.dir === gDir);
-                    if (gX >= 0 && gX <= COLS && gY >= 0 && gY <= ROWS && !exists) ghostItem = { x: gX, y: gY, dir: gDir }; else ghostItem = null;
+                    if (state.connectorSubMode === 'door') {
+                        const cellLocalX = coords.rawX % CELL_SIZE, cellLocalY = coords.rawY % CELL_SIZE; const dL = cellLocalX, dR = CELL_SIZE - cellLocalX, dT = cellLocalY, dB = CELL_SIZE - cellLocalY; const minDist = Math.min(dL, dR, dT, dB); let gX = coords.x, gY = coords.y, gDir = 'v';
+                        if (minDist === dL) gDir = 'v'; else if (minDist === dR) { gDir = 'v'; gX++; } else if (minDist === dT) gDir = 'h'; else { gDir = 'h'; gY++; }
+                        let exists = Object.values(state.doors).find(d => d.x === gX && d.y === gY && d.dir === gDir);
+                        if (gX >= 0 && gX <= COLS && gY >= 0 && gY <= ROWS && !exists) ghostItem = { x: gX, y: gY, dir: gDir }; else ghostItem = null;
+                    } else if (state.connectorSubMode === 'vent') {
+                        let exists = Object.values(state.vents).find(v => v.x === coords.x && v.y === coords.y);
+                        if (!exists) ghostItem = { x: coords.x, y: coords.y, type: 'vent' }; else ghostItem = null;
+                    }
                     renderLoop();
-                } else if (state.mode === 'exterior') {
-                    ghostItem = { x: coords.x, y: coords.y, type: document.getElementById('ext-build-type').value }; renderLoop();
-                }
+                } else if (state.mode === 'exterior') { ghostItem = { x: coords.x, y: coords.y, type: document.getElementById('ext-build-type').value }; renderLoop(); }
             }
 
             if (!isDragging) return;
             if (['add', 'erase', 'marquee'].includes(dragContext.action)) { updateDraftBox(dragContext.currentX, dragContext.currentY); } 
             else if (dragContext.action === 'move') {
                 const dx = dragContext.currentX - dragContext.startX, dy = dragContext.currentY - dragContext.startY; let canMove = true;
-                for (let y = 0; y < ROWS; y++) {
-                    for (let x = 0; x < COLS; x++) {
-                        if (selection.roomIds.has(dragContext.backupGrid[y][x])) {
-                            let nx = x + dx, ny = y + dy;
-                            if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { canMove = false; break; }
-                            let destId = dragContext.backupGrid[ny][nx]; if (destId && !selection.roomIds.has(destId)) { canMove = false; break; } 
-                        }
-                    }
-                }
+                for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (selection.roomIds.has(dragContext.backupGrid[y][x])) { let nx = x + dx, ny = y + dy; if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { canMove = false; break; } let destId = dragContext.backupGrid[ny][nx]; if (destId && !selection.roomIds.has(destId)) { canMove = false; break; } }
                 selection.doorIds.forEach(id => { let d = dragContext.backupDoors[id]; let nx = d.x + dx, ny = d.y + dy; if(nx < 0 || nx > COLS || ny < 0 || ny > ROWS) canMove = false; });
+                selection.ventIds.forEach(id => { let v = dragContext.backupVents[id]; let nx = v.x + dx, ny = v.y + dy; if(nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) canMove = false; });
                 selection.extIds.forEach(id => { let ex = dragContext.backupExt[id]; let nx = ex.x + dx, ny = ex.y + dy; if(nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) canMove = false; });
 
                 if (canMove) {
                     for (let y=0; y<ROWS; y++) for (let x=0; x<COLS; x++) { if (selection.roomIds.has(dragContext.backupGrid[y][x])) state.gridData[y][x] = null; else state.gridData[y][x] = dragContext.backupGrid[y][x]; }
                     for (let y=0; y<ROWS; y++) for (let x=0; x<COLS; x++) { if (selection.roomIds.has(dragContext.backupGrid[y][x])) state.gridData[y+dy][x+dx] = dragContext.backupGrid[y][x]; }
                     state.doors = JSON.parse(JSON.stringify(dragContext.backupDoors)); selection.doorIds.forEach(id => { state.doors[id].x += dx; state.doors[id].y += dy; });
+                    state.vents = JSON.parse(JSON.stringify(dragContext.backupVents)); selection.ventIds.forEach(id => { state.vents[id].x += dx; state.vents[id].y += dy; });
                     state.exterior = JSON.parse(JSON.stringify(dragContext.backupExt)); selection.extIds.forEach(id => { state.exterior[id].x += dx; state.exterior[id].y += dy; });
                     renderLoop();
                 }
@@ -733,36 +806,30 @@
 
         function handleMouseUp(e) {
             if (camera.isPanning) { camera.isPanning = false; DOM.viewport.style.cursor = (state.mode === 'select' || state.mode === 'integrity') ? 'default' : 'crosshair'; return; }
-            if (!isDragging) return;
-            isDragging = false; DOM.draftBox.style.display = 'none';
+            if (!isDragging) return; isDragging = false; DOM.draftBox.style.display = 'none';
             const minX = Math.min(dragContext.startX, dragContext.currentX), maxX = Math.max(dragContext.startX, dragContext.currentX);
             const minY = Math.min(dragContext.startY, dragContext.currentY), maxY = Math.max(dragContext.startY, dragContext.currentY);
 
             if (dragContext.action === 'add') {
                 let activeId = Array.from(selection.roomIds)[0];
                 if (!activeId) { activeId = `room_${state.idCounters.room++}`; addRoom(activeId, 'New Sector', 'default', 21, 1.0, 1); }
-                
                 const clickedId = state.gridData[dragContext.startY][dragContext.startX];
-                if (minX === maxX && minY === maxY && clickedId && clickedId !== activeId) {
-                    clearSelection(); selection.roomIds.add(clickedId);
-                } else {
-                    applyToGrid(minX, maxX, minY, maxY, activeId);
-                    clearSelection(); selection.roomIds.add(activeId);
-                    splitDisconnectedRooms();
-                }
+                if (minX === maxX && minY === maxY && clickedId && clickedId !== activeId) { clearSelection(); selection.roomIds.add(clickedId); } 
+                else { applyToGrid(minX, maxX, minY, maxY, activeId); clearSelection(); selection.roomIds.add(activeId); splitDisconnectedRooms(); }
             } 
             else if (dragContext.action === 'erase') { applyToGrid(minX, maxX, minY, maxY, null); splitDisconnectedRooms(); cleanUpRooms(); }
             else if (dragContext.action === 'marquee') {
                 clearSelection();
                 if (filters.rooms) { for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) if (state.gridData[y][x]) selection.roomIds.add(state.gridData[y][x]); }
-                if (filters.doors) Object.values(state.doors).forEach(d => { if(d.x >= minX && d.x <= maxX && d.y >= minY && d.y <= maxY) selection.doorIds.add(d.id); });
+                if (filters.doors) {
+                    Object.values(state.doors).forEach(d => { if(d.x >= minX && d.x <= maxX && d.y >= minY && d.y <= maxY) selection.doorIds.add(d.id); });
+                    Object.values(state.vents).forEach(v => { if(v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) selection.ventIds.add(v.id); });
+                }
                 if (filters.exterior) Object.values(state.exterior).forEach(ex => { if(ex.x >= minX && ex.x <= maxX && ex.y >= minY && ex.y <= maxY) selection.extIds.add(ex.id); });
             }
-            dragContext.action = null; dragContext.backupGrid = null; dragContext.backupDoors = null; dragContext.backupExt = null;
-            renderLoop();
+            dragContext.action = null; dragContext.backupGrid = null; dragContext.backupDoors = null; dragContext.backupVents = null; dragContext.backupExt = null; renderLoop();
         }
 
-        // --- UTILS & SIMULATION ---
         function setMode(newMode) {
             if (simActive && (newMode === 'structure' || newMode === 'connectors' || newMode === 'exterior')) return;
             state.mode = newMode;
@@ -779,25 +846,20 @@
             
             DOM.viewport.style.cursor = (newMode === 'select' || newMode === 'integrity') ? 'default' : 'crosshair'; ghostItem = null; renderLoop();
         }
-
-        function toggleFilter(type) { filters[type] = !filters[type]; const btn = document.getElementById(`btn-filter-${type === 'exterior' ? 'ext' : type}`); btn.classList.toggle('active', filters[type]); btn.innerText = `${type.charAt(0).toUpperCase() + type.slice(1)}: ${filters[type] ? 'ON' : 'OFF'}`; clearSelection(); renderLoop(); }
-        function clearSelection() { selection.roomIds.clear(); selection.doorIds.clear(); selection.extIds.clear(); }
-        function updateDraftBox(cx, cy) { const minX = Math.min(dragContext.startX, cx), minY = Math.min(dragContext.startY, cy); const w = Math.abs(cx - dragContext.startX) + 1, h = Math.abs(cy - dragContext.startY) + 1; DOM.draftBox.style.left = (minX * CELL_SIZE) + 'px'; DOM.draftBox.style.top = (minY * CELL_SIZE) + 'px'; DOM.draftBox.style.width = (w * CELL_SIZE) + 'px'; DOM.draftBox.style.height = (h * CELL_SIZE) + 'px'; }
         
-        function wipeBlueprint() { if(confirm("WARNING: This will completely delete the current ship layout. Proceed?")) { state.rooms = {}; state.doors = {}; state.exterior = {}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null)); clearSelection(); renderLoop(); } }
-
-        function getRoomConnections(roomId) {
-            let connections = [];
-            Object.values(state.doors).forEach(d => {
-                let r1 = null, r2 = null;
-                if (d.dir === 'h') { if (d.y > 0) r1 = state.gridData[d.y - 1][d.x]; if (d.y < ROWS) r2 = state.gridData[d.y][d.x]; } 
-                else { if (d.x > 0) r1 = state.gridData[d.y][d.x - 1]; if (d.x < COLS) r2 = state.gridData[d.y][d.x]; }
-                if (r1 === roomId && r2 && r2 !== roomId) connections.push({ targetRoom: r2, door: d });
-                if (r2 === roomId && r1 && r1 !== roomId) connections.push({ targetRoom: r1, door: d });
-            }); return connections;
+        function setConnectorSubMode(subMode) {
+            state.connectorSubMode = subMode;
+            document.getElementById('btn-sub-door').classList.remove('active'); document.getElementById('btn-sub-vent').classList.remove('active');
+            document.getElementById('btn-sub-' + subMode).classList.add('active');
+            document.getElementById('door-build-settings').style.display = subMode === 'door' ? 'block' : 'none';
+            document.getElementById('vent-build-settings').style.display = subMode === 'vent' ? 'block' : 'none';
+            ghostItem = null; renderLoop();
         }
 
-        function doesDoorBlock(d) { return !(d.isOpen || d.isBroken) && d.blocksHazards; }
+        function toggleFilter(type) { filters[type] = !filters[type]; const btn = document.getElementById(`btn-filter-${type === 'exterior' ? 'ext' : type}`); btn.classList.toggle('active', filters[type]); btn.innerText = `${type.charAt(0).toUpperCase() + type.slice(1)}: ${filters[type] ? 'ON' : 'OFF'}`; clearSelection(); renderLoop(); }
+        function clearSelection() { selection.roomIds.clear(); selection.doorIds.clear(); selection.extIds.clear(); selection.ventIds.clear(); }
+        function updateDraftBox(cx, cy) { const minX = Math.min(dragContext.startX, cx), minY = Math.min(dragContext.startY, cy); const w = Math.abs(cx - dragContext.startX) + 1, h = Math.abs(cy - dragContext.startY) + 1; DOM.draftBox.style.left = (minX * CELL_SIZE) + 'px'; DOM.draftBox.style.top = (minY * CELL_SIZE) + 'px'; DOM.draftBox.style.width = (w * CELL_SIZE) + 'px'; DOM.draftBox.style.height = (h * CELL_SIZE) + 'px'; }
+        function wipeBlueprint() { if(confirm("WARNING: This will completely delete the current ship layout. Proceed?")) { state.rooms = {}; state.doors = {}; state.vents = {}; state.exterior = {}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null)); clearSelection(); renderLoop(); } }
 
         function propagateHazards() {
             if (selection.roomIds.size !== 1) return;
@@ -806,7 +868,8 @@
             while(queue.length > 0) {
                 let currentId = queue.shift(); let conns = getRoomConnections(currentId);
                 conns.forEach(c => {
-                    if (!visited.has(c.targetRoom) && !doesDoorBlock(c.door)) {
+                    let t = c.isVent ? {air:true, temp:true} : getDoorTransfer(c.door);
+                    if (!visited.has(c.targetRoom) && t.air) {
                         let target = state.rooms[c.targetRoom]; target.airType = sourceEnv.airType; target.pres = sourceEnv.pres; target.temp = sourceEnv.temp;
                         visited.add(c.targetRoom); queue.push(c.targetRoom);
                     }
@@ -820,10 +883,13 @@
                 const sourceEnv = snapshot[sourceId];
                 if (sourceEnv.airType !== 'O2' || sourceEnv.temp > 40 || sourceEnv.temp < 10 || sourceEnv.pres < 1) {
                     getRoomConnections(sourceId).forEach(c => {
-                        if (!doesDoorBlock(c.door)) {
-                            let target = state.rooms[c.targetRoom];
+                        let t = c.isVent ? {air:true, temp:true} : getDoorTransfer(c.door);
+                        let target = state.rooms[c.targetRoom];
+                        if (t.air && (sourceEnv.airType !== 'O2' || sourceEnv.pres < 1)) {
                             target.airType = sourceEnv.airType === 'Vacuum' ? 'Vacuum' : (sourceEnv.airType === 'Toxins' ? 'Toxins' : target.airType);
                             target.pres = Math.min(target.pres, sourceEnv.pres);
+                        }
+                        if (t.temp && (sourceEnv.temp > 40 || sourceEnv.temp < 10)) {
                             if (sourceEnv.temp > 40) target.temp = Math.max(target.temp, sourceEnv.temp);
                             if (sourceEnv.temp < 10) target.temp = Math.min(target.temp, sourceEnv.temp);
                         }
@@ -835,9 +901,9 @@
                 if(!r.components) return;
                 r.components.forEach(c => {
                     if(!c.isActive || c.isBroken) return; let def = COMP_DICT[c.type];
-                    if (c.type === 'diesel' || c.type === 'mainframe' || c.type === 'processor') r.temp += def.heat;
-                    if (c.type === 'smr') { r.temp += def.heat; if (r.dmg > 50) r.airType = 'Toxins'; }
-                    if (c.type === 'scrubber') { if (r.airType === 'CO2') r.airType = 'O2'; }
+                    if (def.heat) r.temp += def.heat;
+                    if (c.type === 'smr' && r.dmg > 50) r.airType = 'Toxins'; 
+                    if (c.type === 'scrubber' || c.type === 'hydroponics') { if (r.airType === 'CO2') r.airType = 'O2'; }
                 });
             });
 
@@ -849,16 +915,14 @@
 
             Object.keys(radiatorsByRoom).forEach(roomId => {
                 let rads = radiatorsByRoom[roomId];
-                let effList = rads.map(r => r.baseCooling * (1 - (r.dmg || 0)/100));
-                let totalCooling = effList.reduce((sum, val) => sum + val, 0);
-                let avgTargetTemp = rads.reduce((sum, r) => sum + (r.targetTemp || 21), 0) / rads.length;
-
+                let effList = rads.map(r => r.baseCooling * (1 - (r.dmg || 0)/100)); let totalCooling = effList.reduce((sum, val) => sum + val, 0); let avgTargetTemp = rads.reduce((sum, r) => sum + (r.targetTemp || 21), 0) / rads.length;
                 let queue = [{ rId: roomId, coolPwr: totalCooling }]; let visited = new Set([roomId]);
                 while(queue.length > 0) {
                     let curr = queue.shift(); let room = state.rooms[curr.rId];
                     if (room.temp > avgTargetTemp) room.temp = Math.max(avgTargetTemp, room.temp - curr.coolPwr);
                     getRoomConnections(curr.rId).forEach(c => {
-                        if(!visited.has(c.targetRoom) && !doesDoorBlock(c.door)) {
+                        let t = c.isVent ? {air:true, temp:true} : getDoorTransfer(c.door);
+                        if(!visited.has(c.targetRoom) && t.temp) {
                             visited.add(c.targetRoom); let nextCoolPwr = curr.coolPwr * 0.75; 
                             if(nextCoolPwr > 1) queue.push({ rId: c.targetRoom, coolPwr: nextCoolPwr });
                         }
@@ -870,7 +934,7 @@
         function runSimulation() {
             const roomKeys = Object.keys(state.rooms); if (roomKeys.length === 0) return alert("You must build hull modules before running a simulation.");
             if (!simActive) {
-                backupRooms = JSON.parse(JSON.stringify(state.rooms)); backupDoorsSim = JSON.parse(JSON.stringify(state.doors)); backupExtSim = JSON.parse(JSON.stringify(state.exterior));
+                backupRooms = JSON.parse(JSON.stringify(state.rooms)); backupDoorsSim = JSON.parse(JSON.stringify(state.doors)); backupVentsSim = JSON.parse(JSON.stringify(state.vents)); backupExtSim = JSON.parse(JSON.stringify(state.exterior));
                 simActive = true; document.getElementById('sim-warning').style.display = 'block'; document.getElementById('btn-structure').classList.add('disabled-mode'); document.getElementById('btn-connectors').classList.add('disabled-mode'); document.getElementById('btn-exterior').classList.add('disabled-mode'); document.getElementById('sim-actions').style.display = 'flex'; setMode('integrity');
             }
             
@@ -881,10 +945,7 @@
                 let hasShield = false;
                 if(type === 'micrometeor' || type === 'debris') {
                     for(let ext of Object.values(state.exterior)) {
-                        if(ext.type === 'whipple' && !ext.isBroken) {
-                            let root = findExtRootRoom(ext.id);
-                            if(root && root.roomId === target) { hasShield = true; ext.hp -= 50; if(ext.hp <= 0) ext.isBroken = true; break; }
-                        }
+                        if(ext.type === 'whipple' && !ext.isBroken) { let root = findExtRootRoom(ext.id); if(root && root.roomId === target) { hasShield = true; ext.hp -= 50; if(ext.hp <= 0) {ext.isBroken = true; ext.isActive = false;} break; } }
                     }
                 }
                 if (hasShield) { console.log(`Whipple shield absorbed impact on ${state.rooms[target].name}`); return; }
@@ -895,7 +956,7 @@
                 } 
                 else if (type === 'debris') {
                     state.rooms[target].dmg = 100; state.rooms[target].airType = 'Vacuum'; state.rooms[target].pres = 0;
-                    getRoomConnections(target).forEach(c => { c.door.isBroken = true; state.rooms[c.targetRoom].dmg = Math.min(100, parseInt(state.rooms[c.targetRoom].dmg) + 40); });
+                    getRoomConnections(target).forEach(c => { if(c.door) c.door.isBroken = true; state.rooms[c.targetRoom].dmg = Math.min(100, parseInt(state.rooms[c.targetRoom].dmg) + 40); });
                 }
                 else if (type === 'coolant') { state.rooms[target].temp = -50; state.rooms[target].airType = 'Toxins'; }
                 else if (type === 'scrubber') { state.rooms[target].airType = 'CO2'; }
@@ -906,9 +967,9 @@
             }); renderLoop();
         }
 
-        function resetSimulation() { state.rooms = JSON.parse(JSON.stringify(backupRooms)); state.doors = JSON.parse(JSON.stringify(backupDoorsSim)); state.exterior = JSON.parse(JSON.stringify(backupExtSim)); endSimulation(); }
+        function resetSimulation() { state.rooms = JSON.parse(JSON.stringify(backupRooms)); state.doors = JSON.parse(JSON.stringify(backupDoorsSim)); state.vents = JSON.parse(JSON.stringify(backupVentsSim)); state.exterior = JSON.parse(JSON.stringify(backupExtSim)); endSimulation(); }
         function applySimulation() { endSimulation(); }
-        function endSimulation() { simActive = false; backupRooms = null; backupDoorsSim = null; backupExtSim = null; document.getElementById('sim-warning').style.display = 'none'; document.getElementById('btn-structure').classList.remove('disabled-mode'); document.getElementById('btn-connectors').classList.remove('disabled-mode'); document.getElementById('btn-exterior').classList.remove('disabled-mode'); document.getElementById('sim-actions').style.display = 'none'; renderLoop(); }
+        function endSimulation() { simActive = false; backupRooms = null; backupDoorsSim = null; backupVentsSim = null; backupExtSim = null; document.getElementById('sim-warning').style.display = 'none'; document.getElementById('btn-structure').classList.remove('disabled-mode'); document.getElementById('btn-connectors').classList.remove('disabled-mode'); document.getElementById('btn-exterior').classList.remove('disabled-mode'); document.getElementById('sim-actions').style.display = 'none'; renderLoop(); }
 
         // --- EDITOR UI & COMPONENTS LOGIC ---
         function toggleEye(stat) { Object.keys(visibleStats).forEach(k => visibleStats[k] = false); visibleStats[stat] = true; renderLoop(); }
@@ -933,71 +994,72 @@
 
         function updateEditorUI() {
             if (state.mode === 'info') {
-                document.getElementById('info-telemetry').innerHTML = `
-                    <strong>Total Hull Area:</strong> ${globalTelemetry.totalArea} Cells<br>
-                    <strong>Power Demand:</strong> ${Math.round(globalTelemetry.shipPowerDraw)} MW<br>
-                    <strong>Power Generation:</strong> ${Math.round(globalTelemetry.shipPowerGen)} MW<br>
-                    <strong>Network Capacity:</strong> ${Math.round(globalTelemetry.shipPowerCap)} MW<br>
-                    <strong>Active Hull Modules:</strong> ${Object.keys(state.rooms).length}<br>
-                    <strong>Active Exterior Arrays:</strong> ${Object.keys(state.exterior).length}<br>
-                    <strong>Connector Nodes:</strong> ${Object.keys(state.doors).length}`; return;
+                document.getElementById('info-telemetry').innerHTML = `<strong>Total Hull Area:</strong> ${globalTelemetry.totalArea} Cells<br><strong>Power Demand:</strong> ${Math.round(globalTelemetry.shipPowerDraw)} MW<br><strong>Power Generation:</strong> ${Math.round(globalTelemetry.shipPowerGen)} MW<br><strong>Network Capacity:</strong> ${Math.round(globalTelemetry.shipPowerCap)} MW<br><strong>Active Hull Modules:</strong> ${Object.keys(state.rooms).length}<br><strong>Active Exterior Arrays:</strong> ${Object.keys(state.exterior).length}<br><strong>Connector Nodes:</strong> ${Object.keys(state.doors).length + Object.keys(state.vents).length}`; return;
             }
             if (state.mode === 'integrity') {
                 const placeholder = document.getElementById('integrity-placeholder'); const editor = document.getElementById('integrity-editor');
                 Object.keys(visibleStats).forEach(s => { const btn = document.getElementById(`eye-${s}`); if (btn) { btn.classList.toggle('active', visibleStats[s]); btn.innerText = visibleStats[s] ? "👁" : "❌"; } });
                 if (selection.roomIds.size === 1) {
                     const id = Array.from(selection.roomIds)[0]; const r = state.rooms[id];
-                    document.getElementById('integ-title').innerText = r.name;
-                    document.getElementById('sys-dmg').value = r.dmg; document.getElementById('sys-dmg-val').innerText = r.dmg + "%";
-                    document.getElementById('sys-pres').value = Math.round(r.pres * 100); document.getElementById('sys-pres-val').innerText = r.pres.toFixed(1) + "b";
-                    document.getElementById('sys-temp').value = r.temp; document.getElementById('sys-temp-val').innerText = r.temp + "°C";
-                    document.getElementById('sys-type').value = r.airType;
+                    document.getElementById('integ-title').innerText = r.name; document.getElementById('sys-dmg').value = r.dmg; document.getElementById('sys-dmg-val').innerText = r.dmg + "%"; document.getElementById('sys-pres').value = Math.round(r.pres * 100); document.getElementById('sys-pres-val').innerText = r.pres.toFixed(1) + "b"; document.getElementById('sys-temp').value = r.temp; document.getElementById('sys-temp-val').innerText = r.temp + "°C"; document.getElementById('sys-type').value = r.airType;
                     const list = document.getElementById('crossways-list'); list.innerHTML = ''; const conns = getRoomConnections(id);
                     if (conns.length === 0) list.innerHTML = '<div class="conn-item" style="color:#555;">No connections.</div>';
-                    else conns.forEach(c => { let block = doesDoorBlock(c.door); let statusHtml = block ? `<span class="status-safe">BLOCKED</span>` : `<span class="status-danger">EXPOSED</span>`; list.innerHTML += `<div class="conn-item"><span>To: <strong>${state.rooms[c.targetRoom].name}</strong></span><span>${statusHtml}</span></div>`; });
+                    else conns.forEach(c => { 
+                        let t = c.isVent ? {air:true, temp:true} : getDoorTransfer(c.door); let statusHtml = (!t.air && !t.temp) ? `<span class="status-safe">BLOCKED</span>` : (c.isVent ? `<span class="status-vent">VENTILATION</span>` : `<span class="status-danger">EXPOSED</span>`);
+                        list.innerHTML += `<div class="conn-item"><span>To: <strong>${state.rooms[c.targetRoom].name}</strong></span><span>${statusHtml}</span></div>`; 
+                    });
                     placeholder.style.display = 'none'; editor.style.display = 'block';
                 } else { placeholder.style.display = 'block'; editor.style.display = 'none'; }
                 return;
             }
 
             const panels = { placeholder: document.getElementById('placeholder-text'), multi: document.getElementById('multi-select-panel'), room: document.getElementById('room-editor'), door: document.getElementById('door-editor'), ext: document.getElementById('ext-editor') };
-            Object.values(panels).forEach(p => p.style.display = 'none');
-            const totalSelected = selection.roomIds.size + selection.doorIds.size + selection.extIds.size;
+            Object.values(panels).forEach(p => p.style.display = 'none'); const totalSelected = selection.roomIds.size + selection.doorIds.size + selection.extIds.size + selection.ventIds.size;
 
-            if (totalSelected === 0) panels.placeholder.style.display = 'block';
-            else if (totalSelected > 1) panels.multi.style.display = 'block';
+            if (totalSelected === 0) panels.placeholder.style.display = 'block'; else if (totalSelected > 1) panels.multi.style.display = 'block';
             else {
-                if (selection.doorIds.size === 1) {
-                    const d = state.doors[Array.from(selection.doorIds)[0]];
+                if (selection.doorIds.size === 1 || selection.ventIds.size === 1) {
+                    const isVent = selection.ventIds.size === 1;
+                    const d = isVent ? state.vents[Array.from(selection.ventIds)[0]] : state.doors[Array.from(selection.doorIds)[0]];
                     if (d) {
-                        document.getElementById('door-edit-type').value = d.type; document.getElementById('door-notes').value = d.notes;
-                        const blocksBtn = document.getElementById('btn-door-blocks'); blocksBtn.classList.toggle('active', d.blocksHazards); blocksBtn.innerText = `Rated to Block Hazards: ${d.blocksHazards ? 'ON' : 'OFF'}`;
-                        const openBtn = document.getElementById('btn-door-open'); openBtn.innerText = d.isOpen ? "State: OPEN" : "State: Closed"; openBtn.className = d.isLocked ? "toggle-btn alert active" : (d.isOpen ? "toggle-btn active" : "toggle-btn");
-                        document.getElementById('btn-door-locked').classList.toggle('active', d.isLocked); document.getElementById('btn-door-broken').classList.toggle('active', d.isBroken);
+                        document.getElementById('connector-title').innerText = isVent ? "Ventilation Node" : "Connector Node";
+                        document.getElementById('door-edit-type').value = d.type; document.getElementById('door-notes').value = d.notes; document.getElementById('door-dmg').value = d.dmg || 0; document.getElementById('door-dmg-val').innerText = (d.dmg || 0) + "%";
+                        
+                        document.getElementById('door-prop-wall').style.display = isVent ? 'none' : 'block';
+                        document.getElementById('door-prop-vent').style.display = isVent ? 'block' : 'none';
+                        document.getElementById('btn-vent-active').style.display = isVent ? 'block' : 'none';
+                        document.getElementById('connector-type-label').style.display = isVent ? 'none' : 'block';
+                        document.getElementById('door-edit-type').style.display = isVent ? 'none' : 'block';
+
+                        if (!isVent) {
+                            const blocksBtn = document.getElementById('btn-door-blocks'); blocksBtn.classList.toggle('active', d.blocksHazards); blocksBtn.innerText = `Rated to Block Hazards: ${d.blocksHazards ? 'ON' : 'OFF'}`;
+                            const openBtn = document.getElementById('btn-door-open'); openBtn.innerText = d.isOpen ? "State: OPEN" : "State: Closed"; openBtn.className = d.isLocked ? "toggle-btn alert active" : (d.isOpen ? "toggle-btn active" : "toggle-btn");
+                            document.getElementById('btn-door-locked').classList.toggle('active', d.isLocked); 
+                        } else {
+                            document.getElementById('door-vent-channel').value = d.channel || 1;
+                            document.getElementById('btn-vent-active').classList.toggle('active', d.isActive); document.getElementById('btn-vent-active').innerText = `Power: ${d.isActive ? 'Active' : 'Offline'}`;
+                        }
+                        
+                        document.getElementById('btn-door-broken').classList.toggle('active', d.isBroken);
                         panels.door.style.display = 'block';
                     }
                 }
                 else if (selection.extIds.size === 1) {
                     const e = state.exterior[Array.from(selection.extIds)[0]];
                     if (e) {
-                        document.getElementById('ext-edit-type').value = e.type; document.getElementById('ext-notes').value = e.notes;
-                        document.getElementById('ext-dmg').value = e.dmg || 0; document.getElementById('ext-dmg-val').innerText = (e.dmg || 0) + "%";
+                        document.getElementById('ext-edit-type').value = e.type; document.getElementById('ext-notes').value = e.notes; document.getElementById('ext-dmg').value = e.dmg || 0; document.getElementById('ext-dmg-val').innerText = (e.dmg || 0) + "%";
                         document.getElementById('btn-ext-active').classList.toggle('active', e.isActive); document.getElementById('btn-ext-active').innerText = `Power: ${e.isActive ? 'Active' : 'Offline'}`; document.getElementById('btn-ext-broken').classList.toggle('active', e.isBroken);
                         const root = findExtRootRoom(e.id); const statText = document.getElementById('ext-status-text');
                         if (root) { statText.innerText = `Connected to: ${state.rooms[root.roomId].name} (Chain: ${root.chainLength})`; statText.style.color = '#00ffcc'; } else { statText.innerText = `Unconnected Array (Offline)`; statText.style.color = '#ff3333'; }
                         ['solar', 'radiator', 'engine', 'whipple'].forEach(t => document.getElementById(`ext-prop-${t}`).style.display = 'none');
-                        if (e.type === 'solar') { document.getElementById('ext-prop-solar').style.display = 'block'; document.getElementById('ext-solar-pwr').value = e.basePower; } 
-                        else if (e.type === 'radiator') { document.getElementById('ext-prop-radiator').style.display = 'block'; document.getElementById('ext-rad-temp').value = e.targetTemp; document.getElementById('ext-rad-cool').value = e.baseCooling; } 
-                        else if (e.type === 'engine') { document.getElementById('ext-prop-engine').style.display = 'block'; document.getElementById('ext-eng-thrust').value = e.maxThrust; } 
-                        else if (e.type === 'whipple') { document.getElementById('ext-prop-whipple').style.display = 'block'; document.getElementById('ext-whipple-hp').value = e.hp || 0; }
+                        if (e.type === 'solar') { document.getElementById('ext-prop-solar').style.display = 'block'; document.getElementById('ext-solar-pwr').value = e.basePower; } else if (e.type === 'radiator') { document.getElementById('ext-prop-radiator').style.display = 'block'; document.getElementById('ext-rad-temp').value = e.targetTemp; document.getElementById('ext-rad-cool').value = e.baseCooling; } else if (e.type === 'engine') { document.getElementById('ext-prop-engine').style.display = 'block'; document.getElementById('ext-eng-thrust').value = e.maxThrust; } else if (e.type === 'whipple') { document.getElementById('ext-prop-whipple').style.display = 'block'; document.getElementById('ext-whipple-hp').value = e.hp || 0; }
                         panels.ext.style.display = 'block';
                     }
                 }
                 else if (selection.roomIds.size === 1) {
                     const r = state.rooms[Array.from(selection.roomIds)[0]];
                     if (r) {
-                        document.getElementById('room-name').value = r.name; document.getElementById('room-type').value = r.type; document.getElementById('room-notes').value = r.notes; document.getElementById('room-pwr').value = r.pwrPerCell;
-                        document.getElementById('room-area-stat').innerText = `Area: ${r.area} cells | Space Used: ${r.spaceUsed.toFixed(1)}`;
+                        document.getElementById('room-name').value = r.name; document.getElementById('room-type').value = r.type; document.getElementById('room-notes').value = r.notes; document.getElementById('room-pwr').value = r.pwrPerCell; document.getElementById('room-area-stat').innerText = `Area: ${r.area} cells | Space Used: ${r.spaceUsed.toFixed(1)}`;
                         const list = document.getElementById('comp-list'); list.innerHTML = '';
                         if (r.components && r.components.length > 0) {
                             r.components.forEach(c => {
@@ -1012,36 +1074,37 @@
         }
 
         function updateEntityData() {
-            if (selection.roomIds.size === 1 && selection.doorIds.size === 0 && selection.extIds.size === 0) {
+            if (selection.roomIds.size === 1 && selection.doorIds.size === 0 && selection.extIds.size === 0 && selection.ventIds.size === 0) {
                 const r = state.rooms[Array.from(selection.roomIds)[0]]; r.name = document.getElementById('room-name').value; r.type = document.getElementById('room-type').value; r.notes = document.getElementById('room-notes').value; r.pwrPerCell = parseFloat(document.getElementById('room-pwr').value) || 0;
-            } else if (selection.doorIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0) {
-                const d = state.doors[Array.from(selection.doorIds)[0]]; d.type = document.getElementById('door-edit-type').value; d.notes = document.getElementById('door-notes').value;
-            } else if (selection.extIds.size === 1 && selection.roomIds.size === 0 && selection.doorIds.size === 0) {
-                const e = state.exterior[Array.from(selection.extIds)[0]]; e.notes = document.getElementById('ext-notes').value; e.dmg = parseInt(document.getElementById('ext-dmg').value) || 0;
+            } else if (selection.doorIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0 && selection.ventIds.size === 0) {
+                const d = state.doors[Array.from(selection.doorIds)[0]]; d.type = document.getElementById('door-edit-type').value; d.notes = document.getElementById('door-notes').value; d.dmg = parseInt(document.getElementById('door-dmg').value) || 0; if (d.dmg >= 100) { d.isBroken = true; d.isActive = false;} else { d.isBroken = false; }
+            } else if (selection.ventIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0 && selection.doorIds.size === 0) {
+                const v = state.vents[Array.from(selection.ventIds)[0]]; v.channel = parseInt(document.getElementById('door-vent-channel').value) || 1; v.notes = document.getElementById('door-notes').value; v.dmg = parseInt(document.getElementById('door-dmg').value) || 0; if (v.dmg >= 100) {v.isBroken = true; v.isActive = false;} else { v.isBroken = false; }
+            } else if (selection.extIds.size === 1 && selection.roomIds.size === 0 && selection.doorIds.size === 0 && selection.ventIds.size === 0) {
+                const e = state.exterior[Array.from(selection.extIds)[0]]; e.notes = document.getElementById('ext-notes').value; e.dmg = parseInt(document.getElementById('ext-dmg').value) || 0; if (e.dmg >= 100) {e.isBroken = true; e.isActive = false;} else { e.isBroken = false; }
                 if (e.type === 'solar') { e.basePower = parseFloat(document.getElementById('ext-solar-pwr').value) || 0; }
                 if (e.type === 'radiator') { e.targetTemp = parseFloat(document.getElementById('ext-rad-temp').value) || 21; e.baseCooling = parseFloat(document.getElementById('ext-rad-cool').value) || 0; }
                 if (e.type === 'engine') { e.maxThrust = parseFloat(document.getElementById('ext-eng-thrust').value) || 0; }
                 if (e.type === 'whipple') { e.hp = parseInt(document.getElementById('ext-whipple-hp').value) || 0; }
-            }
-            renderLoop();
+            } renderLoop();
         }
 
         function toggleEntityState(prop) {
-            if (selection.doorIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0) {
+            if (selection.doorIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0 && selection.ventIds.size === 0) {
                 const d = state.doors[Array.from(selection.doorIds)[0]];
                 if (prop === 'isOpen' && d.isLocked) { const btn = document.getElementById('btn-door-open'); btn.classList.add('flash-error'); setTimeout(() => btn.classList.remove('flash-error'), 1500); return; }
-                d[prop] = !d[prop];
-            } else if (selection.extIds.size === 1 && selection.roomIds.size === 0 && selection.doorIds.size === 0) {
-                const e = state.exterior[Array.from(selection.extIds)[0]]; e[prop] = !e[prop];
+                d[prop] = !d[prop]; if (prop === 'isBroken' && !d.isBroken && d.dmg >= 100) d.dmg = 0;
+            } else if (selection.ventIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0 && selection.doorIds.size === 0) {
+                const v = state.vents[Array.from(selection.ventIds)[0]]; v[prop] = !v[prop]; if (prop === 'isBroken' && !v.isBroken && v.dmg >= 100) v.dmg = 0;
+            } else if (selection.extIds.size === 1 && selection.roomIds.size === 0 && selection.doorIds.size === 0 && selection.ventIds.size === 0) {
+                const e = state.exterior[Array.from(selection.extIds)[0]]; e[prop] = !e[prop]; if (prop === 'isBroken' && !e.isBroken && e.dmg >= 100) e.dmg = 0;
             } renderLoop();
         }
 
         function deleteSelectedEntity() {
-            if (selection.roomIds.size > 0) {
-                for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (selection.roomIds.has(state.gridData[y][x])) state.gridData[y][x] = null;
-                selection.roomIds.forEach(id => delete state.rooms[id]);
-            }
+            if (selection.roomIds.size > 0) { for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (selection.roomIds.has(state.gridData[y][x])) state.gridData[y][x] = null; selection.roomIds.forEach(id => delete state.rooms[id]); }
             if (selection.doorIds.size > 0) selection.doorIds.forEach(id => delete state.doors[id]);
+            if (selection.ventIds.size > 0) selection.ventIds.forEach(id => delete state.vents[id]);
             if (selection.extIds.size > 0) selection.extIds.forEach(id => delete state.exterior[id]);
             clearSelection(); cleanUpRooms(); renderLoop();
         }
