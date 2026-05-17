@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced TTRPG Spaceship Architect V 0.2.10</title>
+    <style>
+        body { background-color: #050508; color: #00ffcc; font-family: 'Courier New', Courier, monospace; display: flex; margin: 0; height: 100vh; overflow: hidden; user-select: none; }
+        #workspace { flex: 3; display: flex; flex-direction: column; background-color: #050508; position: relative; }
+        .header-bar { padding: 15px 20px; background-color: #0a0a0c; border-bottom: 2px solid #00ffcc; z-index: 100; display: flex; justify-content: space-between; align-items: center;}
+        .header-bar h2 { margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+        .beta-badge { border: 1px solid #00ffcc; color: #00ffcc; padding: 2px 6px; font-size: 10px; border-radius: 3px; box-shadow: 0 0 5px rgba(0,255,204,0.5); text-transform: uppercase; margin-left: 10px; background: rgba(0, 255, 204, 0.1); vertical-align: middle; }
+        
+        #global-telemetry { background: rgba(0, 34, 17, 0.7); color: #00ffcc; border-bottom: 1px solid #005544; padding: 8px 20px; font-size: 13px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; z-index: 90; letter-spacing: 1px; backdrop-filter: blur(4px); }
+        .telemetry-warning { color: #ff3333 !important; text-shadow: 0 0 5px rgba(255,50,50,0.8); }
+
+        #sim-warning { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.8); color: #ffcc00; font-weight: bold; padding: 12px 35px; border: 2px solid #ffcc00; display: none; pointer-events: none; z-index: 1000; font-size: 18px; letter-spacing: 3px; text-transform: uppercase; border-radius: 4px; text-shadow: 0 0 8px #ffcc00, 0 0 15px #ffaa00; box-shadow: 0 0 15px rgba(255, 204, 0, 0.4), inset 0 0 15px rgba(255, 204, 0, 0.2); }
+
+        #viewport { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
+        #grid-container { position: absolute; width: 1200px; height: 800px; background-color: #0a0a0f; border: 2px solid #333; box-shadow: 0 0 40px rgba(0, 255, 204, 0.05); transform-origin: 0 0; }
+        #grid { display: grid; grid-template-columns: repeat(48, 25px); grid-template-rows: repeat(32, 25px); width: 100%; height: 100%; position: absolute; z-index: 1; }
+        .cell { box-sizing: border-box; border: 1px solid #1a1a1a; }
+        
+        .layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #doors-layer { z-index: 2; } #ext-layer { z-index: 3; } #labels-layer { z-index: 4; } #interaction-layer { z-index: 10; pointer-events: none; }
+
+        .room-label { position: absolute; transform: translate(-50%, -50%); color: #fff; font-weight: bold; font-size: 13px; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000; text-align: center; pointer-events: none; display: flex; align-items: center; justify-content: center; overflow: hidden; word-break: break-word; line-height: 1.1; white-space: pre-wrap; text-overflow: ellipsis; }
+
+        .door { position: absolute; box-sizing: border-box; transition: all 0.2s; cursor: pointer; pointer-events: auto; }
+        .door.standard { background-color: #00ffcc; border: 2px solid #00aa88; }
+        .door.security { background-color: #ff3333; border: 2px solid #aa0000; }
+        .door.airlock { background-color: #ff9900; border: 2px solid #aa5500; }
+        .door.ghost { opacity: 0.5; box-shadow: 0 0 10px #fff; pointer-events: none; border-color: #fff; background: #fff;}
+        .door.standard.open { background-color: rgba(0, 255, 204, 0.2) !important; border-style: dashed; }
+        .door.security.open { background-color: rgba(255, 51, 51, 0.2) !important; border-style: dashed; }
+        .door.airlock.open { background-color: rgba(255, 153, 0, 0.2) !important; border-style: dashed; }
+        .door.standard.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(0, 255, 204, 0.3) !important; border-style: dotted !important; }
+        .door.security.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(255, 51, 51, 0.3) !important; border-style: dotted !important; }
+        .door.airlock.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(255, 153, 0, 0.3) !important; border-style: dotted !important; }
+        .door.locked::after { content: ''; position: absolute; background: #ffcc00; border-radius: 2px; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 3px #000; }
+        .door.dir-h.locked::after { width: 6px; height: 4px; } .door.dir-v.locked::after { width: 4px; height: 6px; }
+        .door.selected { box-shadow: 0 0 8px 3px #ffaa00; border-color: #ffaa00 !important; z-index: 10; }
+
+        .ext-item { position: absolute; width: 25px; height: 25px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: center; align-items: center; pointer-events: auto; transition: all 0.2s;}
+        .ext-item.engine { background: rgba(255, 85, 0, 0.2); border: 2px solid #ff5500; } .ext-item.engine::after { content: '♨'; color: #ff5500; font-size: 14px; }
+        .ext-item.radiator { background: rgba(0, 204, 255, 0.2); border: 2px solid #00ccff; } .ext-item.radiator::after { content: '≡'; font-size: 18px; font-weight: bold; color: #00ccff;}
+        .ext-item.solar { background: rgba(0, 50, 150, 0.4); border: 2px solid #4466ff; } .ext-item.solar::after { content: '☼'; color: #7799ff; font-size: 16px; font-weight: bold;}
+        .ext-item.whipple { background: rgba(150, 150, 150, 0.2); border: 2px solid #fff; border-style: dashed;} .ext-item.whipple::after { content: '⛊'; color: #fff; font-size: 12px; }
+        .ext-item.inactive { opacity: 0.4; filter: grayscale(50%); }
+        .ext-item.broken { background: repeating-linear-gradient(45deg, rgba(255,0,0,0.5), rgba(0,0,0,0.5) 8px) !important; border-style: dashed !important; opacity: 0.7;}
+        .ext-item.selected { box-shadow: 0 0 8px 3px #ffaa00; border-color: #ffaa00 !important; z-index: 10; }
+        .ext-item.ghost { opacity: 0.5; pointer-events: none; filter: brightness(1.5); }
+
+        .selection-box { position: absolute; display: none; pointer-events: none; z-index: 10; }
+        .selection-box.add { background-color: rgba(0, 255, 204, 0.3); border: 2px dashed #00ffcc; }
+        .selection-box.erase { background-color: rgba(255, 50, 50, 0.3); border: 2px dashed #ff3333; }
+        .selection-box.marquee { background-color: rgba(255, 170, 0, 0.2); border: 1px solid #ffaa00; }
+
+        #side-panel { flex: 1; min-width: 380px; max-width: 450px; background-color: #0a0a0c; border-left: 2px solid #00ffcc; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; z-index: 100; }
+        .mode-container { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap;}
+        .mode-btn { flex: 1 1 25%; background: #111; color: #888; border: 1px solid #333; border-bottom: 3px solid #1a1a1a; padding: 8px 4px; cursor: pointer; font-family: inherit; font-weight: bold; font-size: 11px; transition: transform 0.1s, border-bottom 0.1s; border-radius: 4px; text-align: center; }
+        .mode-btn:active { transform: translateY(2px); border-bottom: 1px solid #1a1a1a; }
+        .mode-btn.active { background: #00ffcc; color: #000; border-color: #00ffcc; border-bottom: 3px solid #00aa88; }
+        .mode-btn.active:active { border-bottom: 1px solid #00aa88; }
+        .mode-btn.alert.active { background: #ffaa00; color: #000; border-color: #ffaa00; border-bottom: 3px solid #cc8800; }
+        .mode-btn.info.active { background: #66ccff; color: #000; border-color: #66ccff; border-bottom: 3px solid #0088cc; }
+        .mode-btn.disabled-mode { opacity: 0.2; cursor: not-allowed; border-bottom: 1px solid #111;}
+
+        .controls-box { background-color: #111; border: 1px solid #333; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        .instructions { font-size: 13px; color: #aaa; line-height: 1.6; }
+        .instructions strong { color: #fff; }
+        
+        textarea, input[type="text"], input[type="number"], select { width: 100%; background: #000; color: #00ffcc; border: 1px solid #00ffcc; padding: 8px; font-family: inherit; margin-bottom: 10px; box-sizing: border-box; border-radius: 3px; }
+        textarea { height: 80px; resize: vertical; }
+        
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .toggle-btn { background: #111; color: #aaa; border: 1px solid #333; border-bottom: 3px solid #1a1a1a; padding: 8px; cursor: pointer; font-family: inherit; font-weight: bold; text-align: center; transition: all 0.1s; border-radius: 4px;}
+        .toggle-btn:active { transform: translateY(2px); border-bottom: 1px solid #1a1a1a; }
+        .toggle-btn.active { background: #333; color: #00ffcc; border-color: #00ffcc; border-bottom: 3px solid #008866;}
+        .toggle-btn.active:active { border-bottom: 1px solid #008866; }
+        .toggle-btn.alert.active { background: #550000; color: #ff3333; border-color: #ff3333; border-bottom: 3px solid #aa0000;}
+        .toggle-btn.warn.active { background: #554400; color: #ffcc00; border-color: #ffcc00; border-bottom: 3px solid #aa8800;}
+
+        @keyframes errorFlash { 0%, 100% { background: #111; color: #aaa; border-color: #333; } 20%, 60% { background: #880000; color: #ff0000; border-color: #ff0000; } }
+        .flash-error { animation: errorFlash 1.5s ease; }
+
+        .eye-btn { width: 45px; padding: 5px; background: #111; color: #ff3333; border: 1px solid #333; border-bottom: 3px solid #1a1a1a; font-family: inherit; cursor: pointer; font-weight: bold; border-radius:4px;}
+        .eye-btn:active { transform: translateY(2px); border-bottom: 1px solid #1a1a1a; }
+        .eye-btn.active { color: #00ffcc; border-color: #00ffcc; background: #1a3330; border-bottom: 3px solid #008866;}
+
+        .action-btn { background: #ffaa00; color: #000; border: none; border-bottom: 3px solid #cc8800; border-radius: 4px; padding: 10px; font-weight: bold; cursor: pointer; width: 100%; font-family: inherit; margin-top: 10px; transition: transform 0.1s, border-bottom 0.1s; }
+        .action-btn:hover { background: #ffcc00; } .action-btn:active { transform: translateY(2px); border-bottom: 1px solid #cc8800; }
+        
+        .hazard-btn { background: #cc4444; color: #fff; border-bottom: 3px solid #882222; border-radius: 4px;}
+        .hazard-btn:hover { background: #dd5555; } .hazard-btn:active { transform: translateY(2px); border-bottom: 1px solid #882222; }
+
+        .delete-btn { background: transparent; color: #ff3333; border: 1px solid #ff3333; border-bottom: 3px solid #aa0000; border-radius: 4px; padding: 10px; cursor: pointer; font-weight: bold; font-family: inherit; margin-top: 10px; width: 100%; transition: transform 0.1s, border-bottom 0.1s;}
+        .delete-btn:hover { background: #ff3333; color: #000; } .delete-btn:active { transform: translateY(2px); border-bottom: 1px solid #ff3333; }
+        
+        .panel-section { display: none; } .panel-section.active { display: block; }
+        .sub-panel { background: #0a0a0f; border: 1px solid #222; padding: 10px; margin-bottom: 10px; border-radius: 4px;}
+
+        .comp-item { background: #111; border: 1px solid #333; padding: 8px; margin-bottom: 5px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; border-radius: 3px;}
+        .comp-item.broken { border-color: #ff3333; background: #2a0a0a; } .comp-item.inactive { opacity: 0.5; }
+        .comp-controls button { background: #222; color: #fff; border: 1px solid #444; border-bottom: 2px solid #111; border-radius: 3px; padding: 3px 6px; cursor: pointer; font-size: 10px; margin-left: 3px; transition: transform 0.1s;}
+        .comp-controls button:active { transform: translateY(1px); border-bottom: 1px solid #111; }
+        .comp-controls button:hover { background: #444; } .comp-controls button.red { color: #ff3333; border-color: #ff3333; background: transparent; }
+
+        .stat-row { display: flex; align-items: center; margin-bottom: 12px; font-size: 13px; }
+        .stat-label { width: 85px; color: #aaa; }
+        .stat-row input[type="range"] { flex: 1; margin: 0 10px; cursor: pointer; width: 100%; min-width: 0; -webkit-appearance: none; background: transparent; }
+        .stat-row input[type="range"]::-webkit-slider-runnable-track { height: 6px; background: #222; border-radius: 3px; border: 1px solid #00ffcc; }
+        .stat-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%; background: #ffaa00; margin-top: -5px; box-shadow: 0 0 5px #000; }
+        .stat-row input[type="range"]:focus { outline: none; }
+        .stat-val { width: 45px; text-align: right; font-weight: bold; display: inline-block; }
+        
+        .connections-list { background: #000; border: 1px solid #333; padding: 10px; max-height: 120px; overflow-y: auto; font-size: 12px; margin-top: 5px; border-radius: 4px;}
+        .conn-item { padding: 5px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; } .conn-item:last-child { border-bottom: none; }
+        .status-safe { color: #00ffcc; } .status-danger { color: #ff3333; }
+    </style>
+</head>
+<body>
+    <div id="workspace">
+        <div class="header-bar">
+            <h2>Naval Architectural Blueprint <span class="beta-badge">V 0.2.10</span></h2>
+            <span id="mode-indicator" style="color: #888; font-size: 14px;">Mode: STRUCTURE</span>
+        </div>
+        <div id="global-telemetry">
+            <div>NETWORK: ONLINE <span class="beta-badge">BETA</span></div>
+            <span id="power-readout">PWR: USED 0 / GEN 0 MW | CAP 0 MW</span>
+        </div>
+        <div id="sim-warning">⚠ Hazard Simulation Active ⚠</div>
+        <div id="viewport">
+            <div id="grid-container">
+                <div id="grid"></div>
+                <div id="labels-layer" class="layer"></div>
+                <div id="doors-layer" class="layer"></div>
+                <div id="ext-layer" class="layer"></div>
+                <div id="interaction-layer" class="layer"><div id="draft-box" class="selection-box"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="side-panel">
+        <div class="mode-container">
+            <button class="mode-btn info" onclick="setMode('info')" id="btn-info">Ship Info</button>
+            <button class="mode-btn active" onclick="setMode('structure')" id="btn-structure">Structure</button>
+            <button class="mode-btn" onclick="setMode('connectors')" id="btn-connectors">Connectors</button>
+            <button class="mode-btn" onclick="setMode('exterior')" id="btn-exterior">Exterior</button>
+            <button class="mode-btn" onclick="setMode('select')" id="btn-select">Select</button>
+            <button class="mode-btn alert" onclick="setMode('integrity')" id="btn-integrity">Sys & Integrity</button>
+        </div>
+
+        <div class="controls-box">
+            <div id="inst-info" class="instructions panel-section"><strong>Vessel Documentation.</strong> Manage blueprint metadata and file architecture.</div>
+            <div id="inst-structure" class="instructions panel-section active"><strong>L-Click/Drag:</strong> Draw/Expand | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px; color: #ffaa00;">Severed rooms automatically split into sub-sectors.</span></div>
+            <div id="inst-connectors" class="instructions panel-section"><strong>Hover:</strong> Snap | <strong>L-Click:</strong> Place Door | <strong>R-Click:</strong> Delete</div>
+            <div id="inst-exterior" class="instructions panel-section"><strong>Hover:</strong> Snap | <strong>L-Click:</strong> Place Array | <strong>R-Click:</strong> Delete<br><span style="font-size: 11px;">Arrays must touch the hull or chain to identical arrays.</span></div>
+            <div id="inst-select" class="instructions panel-section">
+                <strong>L-Click:</strong> Select Entity | <strong>Drag:</strong> Marquee Multiple
+                <div class="btn-grid" style="margin-top: 10px;">
+                    <button id="btn-filter-rooms" class="toggle-btn active" onclick="toggleFilter('rooms')">Modules: ON</button>
+                    <button id="btn-filter-doors" class="toggle-btn active" onclick="toggleFilter('doors')">Doors: ON</button>
+                    <button id="btn-filter-ext" class="toggle-btn active" onclick="toggleFilter('exterior')" style="grid-column: span 2;">Exterior: ON</button>
+                </div>
+            </div>
+            <div id="inst-integrity" class="instructions panel-section"><strong style="color:#ffaa00;">SYSTEMS ACTIVE:</strong> Visualizing hazards.<br><strong>Click Module:</strong> View telemetry & crossways.</div>
+        </div>
+
+        <div id="panel-info" class="panel-section">
+            <h3 style="color: #66ccff; margin-top: 0;">Vessel Identity</h3>
+            <label>Ship Designation:</label> <input type="text" id="ship-name" oninput="updateShipInfo()">
+            <label>Class / Description:</label> <textarea id="ship-desc" oninput="updateShipInfo()"></textarea>
+            <h4 style="color: #ffaa00; margin-top: 20px;">Global Telemetry Summary</h4>
+            <div id="info-telemetry" class="sub-panel" style="font-size: 13px; color: #aaa; line-height: 1.8;"></div>
+            <hr style="border-color: #333; margin: 20px 0;">
+            <button class="action-btn" style="background:#00ffcc; border-bottom-color:#00aa88;" onclick="exportShip()">Download JSON Blueprint</button>
+            <input type="file" id="import-file" style="display:none;" accept=".json" onchange="importShip(event)">
+            <button class="action-btn" style="background: #333; color: #00ffcc; border-bottom-color: #111;" onclick="document.getElementById('import-file').click()">Upload JSON Blueprint</button>
+            <button class="delete-btn" style="margin-top: 30px;" onclick="wipeBlueprint()">Wipe Entire Blueprint</button>
+        </div>
+
+        <div id="panel-connectors" class="panel-section">
+            <label>Doorway Material / Type:</label>
+            <select id="door-build-type">
+                <option value="standard">Standard Hatch (Green)</option>
+                <option value="security">Security / Armored (Red)</option>
+                <option value="airlock">Pressure Airlock (Orange)</option>
+            </select>
+        </div>
+
+        <div id="panel-exterior" class="panel-section">
+            <label>Array Sub-System:</label>
+            <select id="ext-build-type">
+                <option value="engine">Main Engine / Thruster</option>
+                <option value="radiator">Thermal Radiator</option>
+                <option value="solar">Solar Array Panel</option>
+                <option value="whipple">Whipple Armor Plate</option>
+            </select>
+        </div>
+
+        <div id="panel-editor" class="panel-section active">
+            <div id="placeholder-text" style="color: #555; font-style: italic;">Select an element to view telemetry.</div>
+            <div id="multi-select-panel" style="display: none;">
+                <h3 style="color: #ffaa00;">Multiple Entities Selected</h3>
+                <p style="font-size: 13px; color: #aaa;">Group dragging enabled on grid.</p>
+                <button class="delete-btn" onclick="deleteSelectedEntity()">Purge All Selected</button>
+            </div>
+            
+            <div id="room-editor" style="display: none;">
+                <h3 style="color: #00ffcc;">Hull Module</h3>
+                <label>Designation:</label> <input type="text" id="room-name" oninput="updateEntityData()">
+                <label>Department:</label>
+                <select id="room-type" onchange="updateEntityData()">
+                    <option value="default">Standard / Unassigned</option> <option value="command">Command / Bridge</option>
+                    <option value="engineering">Engineering / Drive</option> <option value="medical">Medical / Science</option>
+                    <option value="tactical">Tactical / Security</option> <option value="cargo">Cargo / Storage</option>
+                    <option value="crew">Crew Quarters</option>
+                </select>
+                <div class="sub-panel">
+                    <label style="color:#ffaa00; font-size:12px;">Base Power Draw (MW per cell):</label>
+                    <input type="number" id="room-pwr" value="1" oninput="updateEntityData()">
+                    <div style="font-size:11px; color:#aaa; margin-top:5px;" id="room-area-stat">Area: 0 cells | Space Used: 0.0</div>
+                </div>
+                <div class="sub-panel" id="room-internals">
+                    <h4 style="margin:0 0 10px 0; color:#ffaa00;">Internal Sub-Systems</h4>
+                    <div id="comp-list"></div>
+                    <select id="comp-select" style="margin-top: 10px;">
+                        <option value="battery">Battery Bank (0.5s) [+50 MW Cap]</option>
+                        <option value="diesel">Diesel Turbine (1.0s) [+20 MW Gen, Heat]</option>
+                        <option value="scrubber">CO2 Scrubber (0.5s) [Draws 2MW, Clears CO2]</option>
+                        <option value="smr">Fission SMR (4.0s) [+100 MW Gen, Heat, Rad Risk]</option>
+                        <option value="mainframe">Mainframe Core (2.0s) [Draws 15MW, Heat]</option>
+                        <option value="processor">Sec. Processor (0.5s) [Draws 4MW, Heat]</option>
+                    </select>
+                    <button class="action-btn" style="padding: 5px; font-size: 11px;" onclick="installComponent()">Install Hardware</button>
+                </div>
+                <label>GM Notes:</label> <textarea id="room-notes" oninput="updateEntityData()"></textarea>
+                <button class="delete-btn" onclick="deleteSelectedEntity()">Purge Module</button>
+            </div>
+
+            <div id="door-editor" style="display: none;">
+                <h3 style="color: #ffaa00;">Connector Node</h3>
+                <label>Type designation:</label>
+                <select id="door-edit-type" onchange="updateEntityData()">
+                    <option value="standard">Standard Hatch</option> <option value="security">Security / Armored</option> <option value="airlock">Pressure Airlock</option>
+                </select>
+                <button id="btn-door-blocks" class="toggle-btn" style="width: 100%; margin-bottom: 10px;" onclick="toggleEntityState('blocksHazards')">Rated to Block Hazards: ON</button>
+                <div class="btn-grid">
+                    <button id="btn-door-open" class="toggle-btn" onclick="toggleEntityState('isOpen')">State: Open</button>
+                    <button id="btn-door-locked" class="toggle-btn warn" onclick="toggleEntityState('isLocked')">Sys: Locked</button>
+                    <button id="btn-door-broken" class="toggle-btn alert" style="grid-column: span 2;" onclick="toggleEntityState('isBroken')">Integrity: Broken</button>
+                </div>
+                <textarea id="door-notes" placeholder="Mechanism notes..." oninput="updateEntityData()"></textarea>
+                <button class="delete-btn" onclick="deleteSelectedEntity()">Remove Door</button>
+            </div>
+
+            <div id="ext-editor" style="display: none;">
+                <h3 style="color: #00ccff;">Exterior Sub-System</h3>
+                <label>Array Type:</label>
+                <select id="ext-edit-type" disabled>
+                    <option value="engine">Main Engine / Thruster</option> <option value="radiator">Thermal Radiator</option>
+                    <option value="solar">Solar Array Panel</option> <option value="whipple">Whipple Armor Plate</option>
+                </select>
+                <div class="stat-row" style="margin-bottom: 10px;">
+                    <span class="stat-label">Damage:</span>
+                    <input type="range" id="ext-dmg" min="0" max="100" value="0" oninput="updateEntityData()">
+                    <span id="ext-dmg-val" class="stat-val" style="color:#ff3333;">0%</span>
+                </div>
+                <div class="btn-grid">
+                    <button id="btn-ext-active" class="toggle-btn active" onclick="toggleEntityState('isActive')">Power: Active</button>
+                    <button id="btn-ext-broken" class="toggle-btn alert" onclick="toggleEntityState('isBroken')">Integrity: Broken</button>
+                </div>
+                <div id="ext-status-text" style="font-size:11px; margin-bottom: 10px; color:#ffaa00; text-align:center;">Checking Connection...</div>
+
+                <div class="sub-panel" id="ext-prop-solar" style="display:none;"><label style="color:#7799ff; font-size:12px;">Base Power Gen (MW):</label> <input type="number" id="ext-solar-pwr" oninput="updateEntityData()"></div>
+                <div class="sub-panel" id="ext-prop-radiator" style="display:none;"><label style="color:#00ccff; font-size:12px;">Target Temp (°C):</label> <input type="number" id="ext-rad-temp" oninput="updateEntityData()"> <label style="color:#00ccff; font-size:12px;">Cooling Rate (per step):</label> <input type="number" id="ext-rad-cool" oninput="updateEntityData()"></div>
+                <div class="sub-panel" id="ext-prop-engine" style="display:none;"><label style="color:#ff5500; font-size:12px;">Max Thrust (kN):</label> <input type="number" id="ext-eng-thrust" oninput="updateEntityData()"></div>
+                <div class="sub-panel" id="ext-prop-whipple" style="display:none;"><label style="color:#fff; font-size:12px;">Armor Integrity (HP):</label> <input type="number" id="ext-whipple-hp" oninput="updateEntityData()"></div>
+                
+                <textarea id="ext-notes" placeholder="System notes..." oninput="updateEntityData()"></textarea>
+                <button class="delete-btn" onclick="deleteSelectedEntity()">Dismantle Array</button>
+            </div>
+        </div>
+
+        <div id="panel-integrity" class="panel-section">
+            <div id="integrity-placeholder" style="color: #555; font-style: italic;">Select a module to assess crossways and integrity.</div>
+            <div id="integrity-editor" style="display: none;">
+                <h3 id="integ-title" style="color: #ffaa00; margin-bottom: 15px;">Module Status</h3>
+                <div class="stat-row"><button id="eye-dmg" class="eye-btn active" onclick="toggleEye('dmg')">👁</button> <span class="stat-label" style="padding-left:10px;">Damage:</span> <input type="range" id="sys-dmg" min="0" max="100" value="0" oninput="updateIntegrityData('dmg')"> <span id="sys-dmg-val" class="stat-val">0%</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('dmg')">Def</button></div>
+                <div class="stat-row" style="margin-top: 10px;"><button id="eye-pres" class="eye-btn" onclick="toggleEye('pres')">❌</button> <span class="stat-label" style="padding-left:10px;">Pressure:</span> <input type="range" id="sys-pres" min="0" max="300" value="100" oninput="updateIntegrityData('pres')"> <span id="sys-pres-val" class="stat-val">1.0b</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('pres')">Def</button></div>
+                <div class="stat-row"><button id="eye-temp" class="eye-btn" onclick="toggleEye('temp')">❌</button> <span class="stat-label" style="padding-left:10px;">Temp:</span> <input type="range" id="sys-temp" min="-50" max="150" value="21" oninput="updateIntegrityData('temp')"> <span id="sys-temp-val" class="stat-val">21°C</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('temp')">Def</button></div>
+                <div class="stat-row">
+                    <button id="eye-gas" class="eye-btn" onclick="toggleEye('gas')">❌</button> <span class="stat-label" style="padding-left:10px;">Atmo:</span>
+                    <select id="sys-type" onchange="updateIntegrityData('gas')" style="flex:1; margin:0 10px 0 10px;"> <option value="O2">O2 / Standard</option> <option value="CO2">CO2 / Stale</option> <option value="Toxins">Hazardous Toxins</option> <option value="Vacuum">Hard Vacuum</option> </select>
+                    <button class="toggle-btn" style="padding:6px 6px; font-size:11px;" onclick="resetStat('gas')">Def</button>
+                </div>
+                <h4 style="margin: 15px 0 5px 0; color: #00ffcc;">Crossways Network</h4>
+                <div id="crossways-list" class="connections-list"></div>
+                <button class="action-btn" style="margin-top: 10px;" onclick="propagateHazards()">Trace Environment from Source</button>
+            </div>
+            <hr style="border-color: #333; margin: 15px 0;">
+            <h3 style="color: #ff3333; margin-bottom: 5px;">Damage Simulation</h3>
+            <select id="sim-type">
+                <option value="micrometeor">Micrometeoroid Strike (Hull Breach)</option> <option value="debris">High-V Debris Cloud (Widespread Damage)</option>
+                <option value="coolant">Coolant Line Rupture (Cryo/Toxin)</option> <option value="scrubber">Life Support Scrubber Failure (CO2)</option>
+                <option value="reactor">Cascade Drive Overload (Heat/Rad)</option>
+            </select>
+            <button class="action-btn hazard-btn" onclick="runSimulation()">Trigger Hazard Event</button>
+            <div id="sim-actions" style="display: none; flex-direction: column; gap: 10px; margin-top: 10px;">
+                <button class="action-btn" style="background:#ffaa00; color:#000; margin-top:0;" onclick="stepAllHazards()">Step Hazard Progression</button>
+                <div style="display: flex; gap: 10px;"><button class="action-btn" style="flex: 1; background: #555; color: #fff; margin-top:0; border-bottom:3px solid #333;" onclick="resetSimulation()">Revert</button> <button class="action-btn" style="flex: 1; margin-top:0;" onclick="applySimulation()">Apply</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const COLS = 48, ROWS = 32, CELL_SIZE = 25;
+        const COMP_DICT = {
+            battery: { name: "Lithium Bank", size: 0.5, pwrCap: 50, pwrGen: 0, pwrDraw: 0 },
+            diesel: { name: "Diesel Turbine", size: 1.0, pwrCap: 0, pwrGen: 20, pwrDraw: 0, heat: 5 },
+            smr: { name: "Fission SMR", size: 4.0, pwrCap: 0, pwrGen: 100, pwrDraw: 0, heat: 15 },
+            scrubber: { name: "CO2 Scrubber", size: 0.5, pwrCap: 0, pwrGen: 0, pwrDraw: 2 },
+            mainframe: { name: "Mainframe Core", size: 2.0, pwrCap: 0, pwrGen: 0, pwrDraw: 15, heat: 8 },
+            processor: { name: "Sec. Processor", size: 0.5, pwrCap: 0, pwrGen: 0, pwrDraw: 4, heat: 2 }
+        };
+
+        let state = {
+            ship: { name: "Broadsword-Class Corvette", desc: "Long-range patrol and system transit vessel. Built for horizontal burn architecture." },
+            mode: 'structure', rooms: {}, doors: {}, exterior: {}, gridData: Array(ROWS).fill().map(() => Array(COLS).fill(null)), idCounters: { room: 0, door: 0, ext: 0, comp: 0 }
+        };
+
+        let selection = { roomIds: new Set(), doorIds: new Set(), extIds: new Set() };
+        let filters = { rooms: true, doors: true, exterior: true };
+        let isDragging = false;
+        let dragContext = { startX: 0, startY: 0, currentX: 0, currentY: 0, action: null, backupGrid: null, backupDoors: null, backupExt: null };
+        let ghostItem = null; 
+        let visibleStats = { dmg: true, pres: false, temp: false, gas: false };
+        let simActive = false; let backupRooms = null, backupDoorsSim = null, backupExtSim = null;
+        let globalTelemetry = { shipPowerGen: 0, shipPowerCap: 0, shipPowerDraw: 0, totalArea: 0 };
+
+        const themes = {
+            default: { r: 0, g: 255, b: 204, a: 0.15, border: '#00ffcc', sel: 'rgba(0, 255, 204, 0.4)' },
+            command: { r: 255, g: 50, b: 50, a: 0.15, border: '#ff3333', sel: 'rgba(255, 50, 50, 0.4)' },
+            engineering: { r: 255, g: 150, b: 0, a: 0.15, border: '#ff9900', sel: 'rgba(255, 150, 0, 0.4)' },
+            medical: { r: 100, g: 200, b: 255, a: 0.15, border: '#66ccff', sel: 'rgba(100, 200, 255, 0.4)' },
+            tactical: { r: 150, g: 0, b: 255, a: 0.15, border: '#9900ff', sel: 'rgba(150, 0, 255, 0.4)' },
+            cargo: { r: 200, g: 200, b: 50, a: 0.15, border: '#cccc33', sel: 'rgba(200, 200, 50, 0.4)' },
+            crew: { r: 50, g: 255, b: 50, a: 0.15, border: '#33ff33', sel: 'rgba(50, 255, 50, 0.4)' }
+        };
+
+        const DOM = { viewport: document.getElementById('viewport'), container: document.getElementById('grid-container'), grid: document.getElementById('grid'), labelsLayer: document.getElementById('labels-layer'), doorsLayer: document.getElementById('doors-layer'), extLayer: document.getElementById('ext-layer'), draftBox: document.getElementById('draft-box'), cells: [] };
+        let camera = { zoom: 1, panX: 0, panY: 0, isPanning: false, lastX: 0, lastY: 0 };
+
+        function initApp() {
+            for (let y = 0; y < ROWS; y++) {
+                DOM.cells[y] = [];
+                for (let x = 0; x < COLS; x++) {
+                    const cell = document.createElement('div'); cell.className = 'cell'; DOM.grid.appendChild(cell); DOM.cells[y][x] = cell;
+                }
+            }
+            const vpRect = DOM.viewport.getBoundingClientRect();
+            camera.panX = (vpRect.width - (COLS * CELL_SIZE)) / 2; camera.panY = (vpRect.height - (ROWS * CELL_SIZE)) / 2;
+            updateCamera(); loadDefaultShip(); setupEventListeners(); renderLoop();
+        }
+
+        // --- COMPRESSED FACTORIES ---
+        function applyToGrid(minX, maxX, minY, maxY, val) { for (let y=minY; y<=maxY; y++) { for(let x=minX; x<=maxX; x++) state.gridData[y][x]=val; } }
+        function addRoom(idStr, name, type, temp, pres, pwr, comps=[]) { state.rooms[idStr] = {id:idStr, name, type, notes:"", dmg:0, airType:'O2', temp, pres, pwrPerCell:pwr, area:0, components:comps}; }
+        function addExt(idStr, x, y, type, notes="") { let hp = type==='whipple'?100:undefined; let bp = type==='solar'?15:undefined; let mt = type==='engine'?8000:undefined; let bc = type==='radiator'?20:undefined; let tt = type==='radiator'?21:undefined; state.exterior[idStr] = {id:idStr, x,y, type, isActive:true, isBroken:false, dmg:0, notes, hp, maxHp:hp, basePower:bp, maxThrust:mt, baseCooling:bc, targetTemp:tt}; }
+        function addDoor(idStr, x, y, dir, type, locked, notes="", blocks=null) { if(blocks===null) blocks = (type!=='standard'); state.doors[idStr] = {id:idStr, x,y, dir, type, isOpen: type==='standard', isLocked:locked, isBroken:false, notes, blocksHazards:blocks}; }
+
+        function loadDefaultShip() {
+            state.ship = { name: "Broadsword-Class Corvette", desc: "Long-range patrol and system transit vessel. Built for horizontal burn architecture." };
+            state.rooms={}; state.doors={}; state.exterior={};
+            state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+            
+            addRoom("r_cmd", "Command Deck", "command", 21, 1.0, 1, [{id:"c_m1", type:"mainframe", isActive:true, isBroken:false}]);
+            addRoom("r_spine", "Main Truss", "default", 15, 0.8, 0, []);
+            addRoom("r_hab", "Centrifuge Hab", "crew", 21, 1.0, 1, [{id:"c_0", type:"scrubber", isActive:true, isBroken:false}]);
+            addRoom("r_lab", "Medbay / Science", "medical", 21, 1.0, 2, [{id:"c_p1", type:"processor", isActive:true, isBroken:false}]);
+            addRoom("r_cargo", "Cargo Bay", "cargo", 10, 0.5, 0, [{id:"c_1", type:"battery", isActive:true, isBroken:false}, {id:"c_2", type:"battery", isActive:true, isBroken:false}]);
+            addRoom("r_tac", "Armory", "tactical", 21, 1.0, 1, []);
+            addRoom("r_eng", "Fission Drive Core", "engineering", 65, 1.0, 3, [{id:"c_3", type:"smr", isActive:true, isBroken:false}]);
+            state.idCounters.room = 20; state.idCounters.comp = 10;
+
+            applyToGrid(4, 8, 14, 17, "r_cmd"); applyToGrid(9, 33, 15, 16, "r_spine");
+            applyToGrid(12, 17, 11, 14, "r_hab"); applyToGrid(12, 17, 17, 20, "r_lab");
+            applyToGrid(22, 28, 11, 14, "r_cargo"); applyToGrid(22, 28, 17, 20, "r_tac"); applyToGrid(34, 41, 13, 18, "r_eng");
+
+            addDoor("d_1", 9, 15, "v", "security", true, "Bridge Access"); addDoor("d_2", 9, 16, "v", "security", true, "Bridge Access");
+            addDoor("d_3", 14, 15, "h", "standard", false, ""); addDoor("d_4", 14, 17, "h", "standard", false, "");
+            addDoor("d_5", 25, 15, "h", "airlock", false, ""); addDoor("d_6", 25, 17, "h", "security", false, "");
+            addDoor("d_7", 34, 15, "v", "airlock", true, "Reactor Check"); addDoor("d_8", 34, 16, "v", "airlock", true, "Reactor Check");
+            state.idCounters.door = 20;
+
+            for(let i=13; i<=18; i++) addExt(`e_eng${i}`, 42, i, "engine", "Nozzle");
+            for(let i=14; i<=17; i++) addExt(`e_whip${i}`, 3, i, "whipple", "Bow Armor");
+            for(let i=13; i<=16; i++) addExt(`e_sol${i}`, i, 10, "solar", i===13?"Root":"");
+            for(let i=36; i<=39; i++) { addExt(`e_rad1_${i}`, i, 12, "radiator", i===36?"Root":""); addExt(`e_rad2_${i}`, i, 19, "radiator", i===36?"Root":""); }
+            state.idCounters.ext = 40;
+        }
+
+        function exportShip() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const a = document.createElement('a'); a.href = dataStr; a.download = (state.ship.name || "Spaceship") + "_Blueprint.json";
+            document.body.appendChild(a); a.click(); a.remove();
+        }
+        function importShip(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const imp = JSON.parse(e.target.result);
+                    if(imp.rooms && imp.gridData) { state = imp; clearSelection(); renderLoop(); } else alert("Invalid JSON.");
+                } catch (err) { alert("Error parsing JSON file."); }
+            };
+            reader.readAsText(file); event.target.value = ''; 
+        }
+        function updateShipInfo() { state.ship.name = document.getElementById('ship-name').value; state.ship.desc = document.getElementById('ship-desc').value; }
+
+        function getHazardColorBlend(base, target, pct) {
+            if (pct <= 0) return `rgba(${base.r}, ${base.g}, ${base.b}, ${base.a})`;
+            let r, g, b, a;
+            if (pct <= 25) { let mix = (pct/25)*0.4; r=base.r*(1-mix)+target.r*mix; g=base.g*(1-mix)+target.g*mix; b=base.b*(1-mix)+target.b*mix; a=base.a; }
+            else if (pct <= 50) { let t=(pct-25)/25; let mix=0.4+(t*0.6); r=base.r*(1-mix)+target.r*mix; g=base.g*(1-mix)+target.g*mix; b=base.b*(1-mix)+target.b*mix; a=base.a+(t*(0.25-base.a)); }
+            else { let t=(pct-50)/50; r=target.r; g=target.g; b=target.b; a=0.25+(t*0.45); }
+            return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`;
+        }
+
+        function generateCellEnvironmentStyle(room, theme) {
+            let base = { r: theme.r, g: theme.g, b: theme.b, a: theme.a }; let target = null; let severity = 0;
+            if (visibleStats.dmg && room.dmg > 0) { target = { r: 255, g: 40, b: 0 }; severity = room.dmg; }
+            else if (visibleStats.pres) { if (room.pres < 1.0) { target = { r: 0, g: 110, b: 255 }; severity = Math.min(100, (1.0 - room.pres) * 100); } else if (room.pres > 1.5) { target = { r: 190, g: 0, b: 255 }; severity = Math.min(100, ((room.pres - 1.5) / 1.5) * 100); } }
+            else if (visibleStats.temp) { if (room.temp > 40) { target = { r: 255, g: 110, b: 0 }; severity = Math.min(100, ((room.temp - 40) / 80) * 100); } else if (room.temp < 10) { target = { r: 0, g: 240, b: 255 }; severity = Math.min(100, ((10 - room.temp) / 60) * 100); } }
+            else if (visibleStats.gas) { if (room.airType === 'Toxins') { target = { r: 100, g: 210, b: 40 }; severity = 100; } else if (room.airType === 'CO2') { target = { r: 180, g: 160, b: 50 }; severity = 60; } else if (room.airType === 'Vacuum') { target = { r: 0, g: 110, b: 255 }; severity = 100; } }
+            if (!target || severity <= 0) return `rgba(${base.r}, ${base.g}, ${base.b}, ${base.a})`;
+            return getHazardColorBlend(base, target, severity);
+        }
+
+        function findExtRootRoom(extId, visited = new Set()) {
+            if (visited.has(extId)) return null; visited.add(extId);
+            const ext = state.exterior[extId]; if(!ext || ext.isBroken || !ext.isActive) return null;
+            const adjs = [ {x: ext.x, y: ext.y-1}, {x: ext.x, y: ext.y+1}, {x: ext.x-1, y: ext.y}, {x: ext.x+1, y: ext.y} ];
+            for(let a of adjs) { if(a.x>=0 && a.x<COLS && a.y>=0 && a.y<ROWS && state.gridData[a.y][a.x]) return { roomId: state.gridData[a.y][a.x], chainLength: 0 }; }
+            let bestRoot = null; let shortestDist = Infinity;
+            for(let a of adjs) {
+                let adjExt = Object.values(state.exterior).find(e => e.x === a.x && e.y === a.y && e.type === ext.type);
+                if(adjExt) { let root = findExtRootRoom(adjExt.id, visited); if(root && root.chainLength < shortestDist) { bestRoot = { roomId: root.roomId, chainLength: root.chainLength + 1 }; shortestDist = root.chainLength; } }
+            }
+            return bestRoot;
+        }
+
+        function calculateSystems() {
+            Object.values(state.rooms).forEach(r => { r.area = 0; if(r.pwrPerCell === undefined) r.pwrPerCell = 1; });
+            for (let y = 0; y < ROWS; y++) { for (let x = 0; x < COLS; x++) { const rId = state.gridData[y][x]; if (rId) state.rooms[rId].area += 1; } }
+            globalTelemetry.shipPowerGen = 0; globalTelemetry.shipPowerCap = 0; globalTelemetry.shipPowerDraw = 0; globalTelemetry.totalArea = 0;
+
+            Object.values(state.rooms).forEach(r => {
+                let load = r.area * (r.pwrPerCell || 0); let cap = 0; let gen = 0; let used = 0;
+                if(r.components) {
+                    r.components.forEach(c => { let def = COMP_DICT[c.type]; if (def) { used += def.size; if (c.isActive && !c.isBroken) { cap += def.pwrCap || 0; gen += def.pwrGen || 0; load += def.pwrDraw || 0; } } });
+                } else r.components = [];
+                r.spaceUsed = used; globalTelemetry.shipPowerCap += cap; globalTelemetry.shipPowerGen += gen; globalTelemetry.shipPowerDraw += load; globalTelemetry.totalArea += r.area;
+            });
+
+            Object.values(state.exterior).forEach(ext => {
+                if(ext.isBroken || !ext.isActive) return;
+                let root = findExtRootRoom(ext.id);
+                if(ext.type === 'solar' && root) { let eff = (1 - (ext.dmg || 0) / 100); globalTelemetry.shipPowerGen += (ext.basePower || 10) * eff; }
+            });
+
+            const readOut = document.getElementById('power-readout');
+            let drawRound = Math.round(globalTelemetry.shipPowerDraw); let genRound = Math.round(globalTelemetry.shipPowerGen); let capRound = Math.round(globalTelemetry.shipPowerCap);
+            readOut.innerText = `PWR: USED ${drawRound} / GEN ${genRound} MW | CAP ${capRound} MW`;
+            if (drawRound > genRound) readOut.classList.add('telemetry-warning'); else readOut.classList.remove('telemetry-warning');
+        }
+
+        // Cleanup: remove rooms that no longer exist on grid
+        function cleanUpRooms() {
+            let activeIds = new Set();
+            for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (state.gridData[y][x]) activeIds.add(state.gridData[y][x]);
+            Object.keys(state.rooms).forEach(id => { if (!activeIds.has(id)) { delete state.rooms[id]; selection.roomIds.delete(id); } });
+        }
+
+        function splitDisconnectedRooms() {
+            cleanUpRooms();
+            let newlyCreatedRooms = [];
+            Object.keys(state.rooms).forEach(roomId => {
+                let cells = [];
+                for (let y=0; y<ROWS; y++) for(let x=0; x<COLS; x++) if(state.gridData[y][x] === roomId) cells.push({x, y});
+                if (cells.length === 0) return;
+                let visited = new Set(); let islands = [];
+                cells.forEach(c => {
+                    let key = `${c.x},${c.y}`;
+                    if (!visited.has(key)) {
+                        let island = []; let queue = [c]; visited.add(key);
+                        while(queue.length > 0) {
+                            let curr = queue.shift(); island.push(curr);
+                            [{x: curr.x+1, y: curr.y}, {x: curr.x-1, y: curr.y}, {x: curr.x, y: curr.y+1}, {x: curr.x, y: curr.y-1}].forEach(n => {
+                                let nKey = `${n.x},${n.y}`;
+                                if (n.x>=0 && n.x<COLS && n.y>=0 && n.y<ROWS && state.gridData[n.y][n.x] === roomId && !visited.has(nKey)) { visited.add(nKey); queue.push(n); }
+                            });
+                        }
+                        islands.push(island);
+                    }
+                });
+                if (islands.length > 1) {
+                    islands.sort((a, b) => b.length - a.length);
+                    for (let i = 1; i < islands.length; i++) {
+                        let newId = `room_${state.idCounters.room++}`; let oldRoom = state.rooms[roomId];
+                        state.rooms[newId] = { ...oldRoom, id: newId, name: oldRoom.name + " (Split)", components: [] };
+                        islands[i].forEach(c => state.gridData[c.y][c.x] = newId);
+                    }
+                }
+            });
+            cleanUpRooms();
+        }
+
+        function renderLoop() {
+            calculateSystems();
+            DOM.labelsLayer.innerHTML = ''; DOM.doorsLayer.innerHTML = ''; DOM.extLayer.innerHTML = '';
+            
+            const roomCenters = {};
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    const cell = DOM.cells[y][x]; const roomId = state.gridData[y][x];
+                    if (roomId) {
+                        const room = state.rooms[roomId]; const theme = themes[room.type] || themes['default'];
+                        if (!roomCenters[roomId]) roomCenters[roomId] = { sumX:0, sumY:0, count:0, minX:x, maxX:x, minY:y, maxY:y, cells:new Set() };
+                        let rc = roomCenters[roomId]; rc.sumX+=x; rc.sumY+=y; rc.count++;
+                        rc.minX = Math.min(rc.minX, x); rc.maxX = Math.max(rc.maxX, x); rc.minY = Math.min(rc.minY, y); rc.maxY = Math.max(rc.maxY, y);
+                        rc.cells.add(`${x},${y}`);
+
+                        if (state.mode === 'integrity') cell.style.background = generateCellEnvironmentStyle(room, theme);
+                        else cell.style.background = selection.roomIds.has(roomId) ? theme.sel : `rgba(${theme.r}, ${theme.g}, ${theme.b}, ${theme.a})`;
+                        
+                        const bStyle = `2px solid ${theme.border}`;
+                        cell.style.borderTop = (y===0 || state.gridData[y-1][x]!==roomId) ? bStyle : 'none';
+                        cell.style.borderBottom = (y===ROWS-1 || state.gridData[y+1][x]!==roomId) ? bStyle : 'none';
+                        cell.style.borderLeft = (x===0 || state.gridData[y][x-1]!==roomId) ? bStyle : 'none';
+                        cell.style.borderRight = (x===COLS-1 || state.gridData[y][x+1]!==roomId) ? bStyle : 'none';
+                    } else { cell.style.background = 'transparent'; cell.style.border = '1px solid #1a1a1a'; }
+                }
+            }
+
+            Object.keys(roomCenters).forEach(id => {
+                const data = roomCenters[id]; 
+                
+                // Centroid Geometry Math for better anchoring in irregular shapes
+                let cx = data.sumX / data.count; 
+                let cy = data.sumY / data.count;
+                let cxFloor = Math.floor(cx); let cyFloor = Math.floor(cy);
+                
+                // If the mathematical center is floating in space, snap it to the physically closest internal cell using Euclidean math
+                if (!data.cells.has(`${cxFloor},${cyFloor}`)) {
+                    let closest = null; let minDist = Infinity;
+                    data.cells.forEach(c => { 
+                        let [px, py] = c.split(',').map(Number); 
+                        let dist = Math.sqrt(Math.pow(px - cx, 2) + Math.pow(py - cy, 2)); 
+                        if (dist < minDist) { minDist = dist; closest = {x: px, y: py}; } 
+                    });
+                    if (closest) { cx = closest.x; cy = closest.y; }
+                }
+
+                const label = document.createElement('div'); label.className = 'room-label';
+                label.style.left = (cx * CELL_SIZE + (CELL_SIZE/2)) + 'px'; label.style.top = (cy * CELL_SIZE + (CELL_SIZE/2)) + 'px';
+                
+                let wCells = data.maxX - data.minX + 1; let hCells = data.maxY - data.minY + 1;
+                label.style.maxWidth = Math.max(wCells * CELL_SIZE - 6, 20) + 'px'; label.style.maxHeight = Math.max(hCells * CELL_SIZE - 6, 20) + 'px';
+                if (hCells >= wCells * 1.5 && wCells <= 3) { label.style.writingMode = 'vertical-rl'; label.style.transform = 'translate(-50%, -50%) rotate(180deg)'; }
+
+                let text = state.rooms[id].name;
+                if (state.mode === 'integrity') {
+                    if (state.rooms[id].dmg > 0) text += `\n[DMG ${state.rooms[id].dmg}%]`;
+                    text += `\n[${state.rooms[id].pres.toFixed(1)}b/${state.rooms[id].temp}°C]`;
+                    if (state.rooms[id].airType !== 'O2') text += `\n[${state.rooms[id].airType}]`;
+                }
+                label.innerText = text;
+                if (selection.roomIds.has(id)) label.style.color = '#ffaa00';
+                DOM.labelsLayer.appendChild(label);
+            });
+
+            Object.values(state.exterior).forEach(ext => {
+                const el = document.createElement('div'); let cName = `ext-item ${ext.type}`;
+                if (!ext.isActive) cName += ' inactive'; if (ext.isBroken) cName += ' broken'; if (selection.extIds.has(ext.id)) cName += ' selected';
+                el.className = cName; el.dataset.id = ext.id; el.style.left = `${ext.x * CELL_SIZE}px`; el.style.top = `${ext.y * CELL_SIZE}px`;
+                DOM.extLayer.appendChild(el);
+            });
+
+            if (state.mode === 'exterior' && ghostItem && !isDragging) {
+                const el = document.createElement('div'); el.className = `ext-item ${ghostItem.type} ghost`;
+                el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; DOM.extLayer.appendChild(el);
+            }
+
+            Object.values(state.doors).forEach(d => {
+                const el = document.createElement('div'); let cName = `door dir-${d.dir} ${d.type}`;
+                if (d.isOpen) cName += ' open'; if (d.isLocked) cName += ' locked'; if (d.isBroken) cName += ' broken'; if (selection.doorIds.has(d.id)) cName += ' selected';
+                el.className = cName; el.dataset.id = d.id; 
+                if (d.dir === 'h') { el.style.width = `${CELL_SIZE}px`; el.style.height = '10px'; el.style.left = `${d.x * CELL_SIZE}px`; el.style.top = `${d.y * CELL_SIZE - 5}px`; } 
+                else { el.style.width = '10px'; el.style.height = `${CELL_SIZE}px`; el.style.left = `${d.x * CELL_SIZE - 5}px`; el.style.top = `${d.y * CELL_SIZE}px`; }
+                DOM.doorsLayer.appendChild(el);
+            });
+
+            if (state.mode === 'connectors' && ghostItem && !isDragging) {
+                const el = document.createElement('div'); el.className = `door dir-${ghostItem.dir} ghost`;
+                if (ghostItem.dir === 'h') { el.style.width = `${CELL_SIZE}px`; el.style.height = '10px'; el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE - 5}px`; } 
+                else { el.style.width = '10px'; el.style.height = `${CELL_SIZE}px`; el.style.left = `${ghostItem.x * CELL_SIZE - 5}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; }
+                DOM.doorsLayer.appendChild(el);
+            }
+
+            updateEditorUI();
+        }
+
+        function setupEventListeners() {
+            DOM.viewport.addEventListener('wheel', handleZoom, { passive: false });
+            DOM.viewport.addEventListener('contextmenu', e => e.preventDefault());
+            DOM.viewport.addEventListener('mousedown', handleMouseDown);
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+
+        function handleZoom(e) {
+            e.preventDefault(); const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1; const newZoom = Math.max(0.3, Math.min(camera.zoom * zoomDelta, 3));
+            const rect = DOM.viewport.getBoundingClientRect();
+            camera.panX = (e.clientX - rect.left) - ((e.clientX - rect.left) - camera.panX) / camera.zoom * newZoom;
+            camera.panY = (e.clientY - rect.top) - ((e.clientY - rect.top) - camera.panY) / camera.zoom * newZoom;
+            camera.zoom = newZoom; updateCamera();
+        }
+        function updateCamera() { DOM.container.style.transform = `translate(${camera.panX}px, ${camera.panY}px) scale(${camera.zoom})`; }
+
+        function getGridCoords(e) {
+            const rect = DOM.container.getBoundingClientRect(); const rawX = (e.clientX - rect.left) / camera.zoom, rawY = (e.clientY - rect.top) / camera.zoom;
+            return { x: Math.max(0, Math.min(Math.floor(rawX / CELL_SIZE), COLS - 1)), y: Math.max(0, Math.min(Math.floor(rawY / CELL_SIZE), ROWS - 1)), rawX, rawY };
+        }
+
+        function handleMouseDown(e) {
+            if (e.button === 1 || e.altKey) { e.preventDefault(); camera.isPanning = true; camera.lastX = e.clientX; camera.lastY = e.clientY; DOM.viewport.style.cursor = 'grabbing'; return; }
+            if (e.button === 2) {
+                let targetEl = e.target;
+                if (state.mode === 'connectors' && targetEl.classList.contains('door')) { delete state.doors[targetEl.dataset.id]; renderLoop(); return; }
+                if (state.mode === 'exterior' && targetEl.classList.contains('ext-item')) { delete state.exterior[targetEl.dataset.id]; renderLoop(); return; }
+            }
+            
+            const coords = getGridCoords(e);
+            dragContext.startX = coords.x; dragContext.startY = coords.y; dragContext.currentX = coords.x; dragContext.currentY = coords.y;
+            isDragging = true;
+
+            if (state.mode === 'structure') {
+                dragContext.action = e.button === 2 ? 'erase' : 'add';
+                if (dragContext.action === 'add') {
+                    const clickedId = state.gridData[coords.y][coords.x];
+                    if (!clickedId || !selection.roomIds.has(clickedId)) { clearSelection(); if (clickedId) { selection.roomIds.add(clickedId); } }
+                }
+                DOM.draftBox.className = `selection-box ${dragContext.action}`; DOM.draftBox.style.display = 'block'; updateDraftBox(coords.x, coords.y);
+            } 
+            else if (state.mode === 'select') {
+                let targetEl = e.target; let clickedRoom = state.gridData[coords.y][coords.x];
+                let clickedDoor = targetEl.classList.contains('door') ? targetEl.dataset.id : null;
+                let clickedExt = targetEl.classList.contains('ext-item') ? targetEl.dataset.id : null;
+                let isClickingSelected = (clickedDoor && selection.doorIds.has(clickedDoor)) || (clickedExt && selection.extIds.has(clickedExt)) || (clickedRoom && selection.roomIds.has(clickedRoom));
+
+                if (isClickingSelected) {
+                    dragContext.action = 'move'; dragContext.backupGrid = state.gridData.map(row => [...row]);
+                    dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior));
+                } else {
+                    clearSelection();
+                    if (filters.doors && clickedDoor) { selection.doorIds.add(clickedDoor); dragContext.action = null; }
+                    else if (filters.exterior && clickedExt) { selection.extIds.add(clickedExt); dragContext.action = null; }
+                    else if (filters.rooms && clickedRoom) {
+                        dragContext.action = 'move'; selection.roomIds.add(clickedRoom); dragContext.backupGrid = state.gridData.map(row => [...row]);
+                        dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior));
+                    } else { dragContext.action = 'marquee'; DOM.draftBox.className = `selection-box marquee`; DOM.draftBox.style.display = 'block'; updateDraftBox(coords.x, coords.y); }
+                }
+            }
+            else if (state.mode === 'integrity') { isDragging = false; const clickedId = state.gridData[coords.y][coords.x]; clearSelection(); if (clickedId) { selection.roomIds.add(clickedId); } }
+            else if (state.mode === 'connectors' || state.mode === 'exterior') {
+                isDragging = false; 
+                if (ghostItem && e.button !== 2) {
+                    if (state.mode === 'connectors') { addDoor(`door_${state.idCounters.door++}`, ghostItem.x, ghostItem.y, ghostItem.dir, document.getElementById('door-build-type').value, false); } 
+                    else if (state.mode === 'exterior') {
+                        let existing = Object.values(state.exterior).find(ex => ex.x === ghostItem.x && ex.y === ghostItem.y);
+                        if (!existing) addExt(`ext_${state.idCounters.ext++}`, ghostItem.x, ghostItem.y, document.getElementById('ext-build-type').value);
+                    }
+                }
+            }
+            renderLoop();
+        }
+
+        function handleMouseMove(e) {
+            if (camera.isPanning) { camera.panX += e.clientX - camera.lastX; camera.panY += e.clientY - camera.lastY; camera.lastX = e.clientX; camera.lastY = e.clientY; updateCamera(); return; }
+            const coords = getGridCoords(e); dragContext.currentX = coords.x; dragContext.currentY = coords.y;
+
+            if (!isDragging) {
+                if (state.mode === 'connectors') {
+                    const cellLocalX = coords.rawX % CELL_SIZE, cellLocalY = coords.rawY % CELL_SIZE;
+                    const dL = cellLocalX, dR = CELL_SIZE - cellLocalX, dT = cellLocalY, dB = CELL_SIZE - cellLocalY;
+                    const minDist = Math.min(dL, dR, dT, dB); let gX = coords.x, gY = coords.y, gDir = 'v';
+                    if (minDist === dL) gDir = 'v'; else if (minDist === dR) { gDir = 'v'; gX++; } else if (minDist === dT) gDir = 'h'; else { gDir = 'h'; gY++; }
+                    let exists = Object.values(state.doors).find(d => d.x === gX && d.y === gY && d.dir === gDir);
+                    if (gX >= 0 && gX <= COLS && gY >= 0 && gY <= ROWS && !exists) ghostItem = { x: gX, y: gY, dir: gDir }; else ghostItem = null;
+                    renderLoop();
+                } else if (state.mode === 'exterior') {
+                    ghostItem = { x: coords.x, y: coords.y, type: document.getElementById('ext-build-type').value }; renderLoop();
+                }
+            }
+
+            if (!isDragging) return;
+            if (['add', 'erase', 'marquee'].includes(dragContext.action)) { updateDraftBox(dragContext.currentX, dragContext.currentY); } 
+            else if (dragContext.action === 'move') {
+                const dx = dragContext.currentX - dragContext.startX, dy = dragContext.currentY - dragContext.startY; let canMove = true;
+                for (let y = 0; y < ROWS; y++) {
+                    for (let x = 0; x < COLS; x++) {
+                        if (selection.roomIds.has(dragContext.backupGrid[y][x])) {
+                            let nx = x + dx, ny = y + dy;
+                            if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { canMove = false; break; }
+                            let destId = dragContext.backupGrid[ny][nx]; if (destId && !selection.roomIds.has(destId)) { canMove = false; break; } 
+                        }
+                    }
+                }
+                selection.doorIds.forEach(id => { let d = dragContext.backupDoors[id]; let nx = d.x + dx, ny = d.y + dy; if(nx < 0 || nx > COLS || ny < 0 || ny > ROWS) canMove = false; });
+                selection.extIds.forEach(id => { let ex = dragContext.backupExt[id]; let nx = ex.x + dx, ny = ex.y + dy; if(nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) canMove = false; });
+
+                if (canMove) {
+                    for (let y=0; y<ROWS; y++) for (let x=0; x<COLS; x++) { if (selection.roomIds.has(dragContext.backupGrid[y][x])) state.gridData[y][x] = null; else state.gridData[y][x] = dragContext.backupGrid[y][x]; }
+                    for (let y=0; y<ROWS; y++) for (let x=0; x<COLS; x++) { if (selection.roomIds.has(dragContext.backupGrid[y][x])) state.gridData[y+dy][x+dx] = dragContext.backupGrid[y][x]; }
+                    state.doors = JSON.parse(JSON.stringify(dragContext.backupDoors)); selection.doorIds.forEach(id => { state.doors[id].x += dx; state.doors[id].y += dy; });
+                    state.exterior = JSON.parse(JSON.stringify(dragContext.backupExt)); selection.extIds.forEach(id => { state.exterior[id].x += dx; state.exterior[id].y += dy; });
+                    renderLoop();
+                }
+            }
+        }
+
+        function handleMouseUp(e) {
+            if (camera.isPanning) { camera.isPanning = false; DOM.viewport.style.cursor = (state.mode === 'select' || state.mode === 'integrity') ? 'default' : 'crosshair'; return; }
+            if (!isDragging) return;
+            isDragging = false; DOM.draftBox.style.display = 'none';
+            const minX = Math.min(dragContext.startX, dragContext.currentX), maxX = Math.max(dragContext.startX, dragContext.currentX);
+            const minY = Math.min(dragContext.startY, dragContext.currentY), maxY = Math.max(dragContext.startY, dragContext.currentY);
+
+            if (dragContext.action === 'add') {
+                let activeId = Array.from(selection.roomIds)[0];
+                if (!activeId) { activeId = `room_${state.idCounters.room++}`; addRoom(activeId, 'New Sector', 'default', 21, 1.0, 1); }
+                
+                const clickedId = state.gridData[dragContext.startY][dragContext.startX];
+                if (minX === maxX && minY === maxY && clickedId && clickedId !== activeId) {
+                    clearSelection(); selection.roomIds.add(clickedId);
+                } else {
+                    applyToGrid(minX, maxX, minY, maxY, activeId);
+                    clearSelection(); selection.roomIds.add(activeId);
+                    splitDisconnectedRooms();
+                }
+            } 
+            else if (dragContext.action === 'erase') { applyToGrid(minX, maxX, minY, maxY, null); splitDisconnectedRooms(); cleanUpRooms(); }
+            else if (dragContext.action === 'marquee') {
+                clearSelection();
+                if (filters.rooms) { for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) if (state.gridData[y][x]) selection.roomIds.add(state.gridData[y][x]); }
+                if (filters.doors) Object.values(state.doors).forEach(d => { if(d.x >= minX && d.x <= maxX && d.y >= minY && d.y <= maxY) selection.doorIds.add(d.id); });
+                if (filters.exterior) Object.values(state.exterior).forEach(ex => { if(ex.x >= minX && ex.x <= maxX && ex.y >= minY && ex.y <= maxY) selection.extIds.add(ex.id); });
+            }
+            dragContext.action = null; dragContext.backupGrid = null; dragContext.backupDoors = null; dragContext.backupExt = null;
+            renderLoop();
+        }
+
+        // --- UTILS & SIMULATION ---
+        function setMode(newMode) {
+            if (simActive && (newMode === 'structure' || newMode === 'connectors' || newMode === 'exterior')) return;
+            state.mode = newMode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + newMode).classList.add('active');
+            document.getElementById('mode-indicator').innerText = `Mode: ${newMode.toUpperCase()}`;
+            document.querySelectorAll('.panel-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('inst-' + newMode) && document.getElementById('inst-' + newMode).classList.add('active');
+            
+            if (newMode === 'info') { document.getElementById('panel-info').classList.add('active'); document.getElementById('ship-name').value = state.ship.name || ""; document.getElementById('ship-desc').value = state.ship.desc || ""; clearSelection(); } 
+            else if (newMode === 'connectors' || newMode === 'exterior') { document.getElementById('panel-' + newMode).classList.add('active'); clearSelection(); } 
+            else if (newMode === 'integrity') { document.getElementById('panel-integrity').classList.add('active'); if (selection.roomIds.size > 1) clearSelection(); } 
+            else { document.getElementById('panel-editor').classList.add('active'); }
+            
+            DOM.viewport.style.cursor = (newMode === 'select' || newMode === 'integrity') ? 'default' : 'crosshair'; ghostItem = null; renderLoop();
+        }
+
+        function toggleFilter(type) { filters[type] = !filters[type]; const btn = document.getElementById(`btn-filter-${type === 'exterior' ? 'ext' : type}`); btn.classList.toggle('active', filters[type]); btn.innerText = `${type.charAt(0).toUpperCase() + type.slice(1)}: ${filters[type] ? 'ON' : 'OFF'}`; clearSelection(); renderLoop(); }
+        function clearSelection() { selection.roomIds.clear(); selection.doorIds.clear(); selection.extIds.clear(); }
+        function updateDraftBox(cx, cy) { const minX = Math.min(dragContext.startX, cx), minY = Math.min(dragContext.startY, cy); const w = Math.abs(cx - dragContext.startX) + 1, h = Math.abs(cy - dragContext.startY) + 1; DOM.draftBox.style.left = (minX * CELL_SIZE) + 'px'; DOM.draftBox.style.top = (minY * CELL_SIZE) + 'px'; DOM.draftBox.style.width = (w * CELL_SIZE) + 'px'; DOM.draftBox.style.height = (h * CELL_SIZE) + 'px'; }
+        
+        function wipeBlueprint() { if(confirm("WARNING: This will completely delete the current ship layout. Proceed?")) { state.rooms = {}; state.doors = {}; state.exterior = {}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null)); clearSelection(); renderLoop(); } }
+
+        function getRoomConnections(roomId) {
+            let connections = [];
+            Object.values(state.doors).forEach(d => {
+                let r1 = null, r2 = null;
+                if (d.dir === 'h') { if (d.y > 0) r1 = state.gridData[d.y - 1][d.x]; if (d.y < ROWS) r2 = state.gridData[d.y][d.x]; } 
+                else { if (d.x > 0) r1 = state.gridData[d.y][d.x - 1]; if (d.x < COLS) r2 = state.gridData[d.y][d.x]; }
+                if (r1 === roomId && r2 && r2 !== roomId) connections.push({ targetRoom: r2, door: d });
+                if (r2 === roomId && r1 && r1 !== roomId) connections.push({ targetRoom: r1, door: d });
+            }); return connections;
+        }
+
+        function doesDoorBlock(d) { return !(d.isOpen || d.isBroken) && d.blocksHazards; }
+
+        function propagateHazards() {
+            if (selection.roomIds.size !== 1) return;
+            const startId = Array.from(selection.roomIds)[0]; const sourceEnv = state.rooms[startId];
+            let queue = [startId], visited = new Set([startId]);
+            while(queue.length > 0) {
+                let currentId = queue.shift(); let conns = getRoomConnections(currentId);
+                conns.forEach(c => {
+                    if (!visited.has(c.targetRoom) && !doesDoorBlock(c.door)) {
+                        let target = state.rooms[c.targetRoom]; target.airType = sourceEnv.airType; target.pres = sourceEnv.pres; target.temp = sourceEnv.temp;
+                        visited.add(c.targetRoom); queue.push(c.targetRoom);
+                    }
+                });
+            } renderLoop();
+        }
+
+        function stepAllHazards() {
+            const snapshot = JSON.parse(JSON.stringify(state.rooms));
+            Object.keys(snapshot).forEach(sourceId => {
+                const sourceEnv = snapshot[sourceId];
+                if (sourceEnv.airType !== 'O2' || sourceEnv.temp > 40 || sourceEnv.temp < 10 || sourceEnv.pres < 1) {
+                    getRoomConnections(sourceId).forEach(c => {
+                        if (!doesDoorBlock(c.door)) {
+                            let target = state.rooms[c.targetRoom];
+                            target.airType = sourceEnv.airType === 'Vacuum' ? 'Vacuum' : (sourceEnv.airType === 'Toxins' ? 'Toxins' : target.airType);
+                            target.pres = Math.min(target.pres, sourceEnv.pres);
+                            if (sourceEnv.temp > 40) target.temp = Math.max(target.temp, sourceEnv.temp);
+                            if (sourceEnv.temp < 10) target.temp = Math.min(target.temp, sourceEnv.temp);
+                        }
+                    });
+                }
+            });
+
+            Object.values(state.rooms).forEach(r => {
+                if(!r.components) return;
+                r.components.forEach(c => {
+                    if(!c.isActive || c.isBroken) return; let def = COMP_DICT[c.type];
+                    if (c.type === 'diesel' || c.type === 'mainframe' || c.type === 'processor') r.temp += def.heat;
+                    if (c.type === 'smr') { r.temp += def.heat; if (r.dmg > 50) r.airType = 'Toxins'; }
+                    if (c.type === 'scrubber') { if (r.airType === 'CO2') r.airType = 'O2'; }
+                });
+            });
+
+            let radiatorsByRoom = {};
+            Object.values(state.exterior).forEach(ext => {
+                if(ext.isBroken || !ext.isActive || ext.type !== 'radiator') return;
+                let root = findExtRootRoom(ext.id); if(root) { if(!radiatorsByRoom[root.roomId]) radiatorsByRoom[root.roomId] = []; radiatorsByRoom[root.roomId].push(ext); }
+            });
+
+            Object.keys(radiatorsByRoom).forEach(roomId => {
+                let rads = radiatorsByRoom[roomId];
+                let effList = rads.map(r => r.baseCooling * (1 - (r.dmg || 0)/100));
+                let totalCooling = effList.reduce((sum, val) => sum + val, 0);
+                let avgTargetTemp = rads.reduce((sum, r) => sum + (r.targetTemp || 21), 0) / rads.length;
+
+                let queue = [{ rId: roomId, coolPwr: totalCooling }]; let visited = new Set([roomId]);
+                while(queue.length > 0) {
+                    let curr = queue.shift(); let room = state.rooms[curr.rId];
+                    if (room.temp > avgTargetTemp) room.temp = Math.max(avgTargetTemp, room.temp - curr.coolPwr);
+                    getRoomConnections(curr.rId).forEach(c => {
+                        if(!visited.has(c.targetRoom) && !doesDoorBlock(c.door)) {
+                            visited.add(c.targetRoom); let nextCoolPwr = curr.coolPwr * 0.75; 
+                            if(nextCoolPwr > 1) queue.push({ rId: c.targetRoom, coolPwr: nextCoolPwr });
+                        }
+                    });
+                }
+            }); renderLoop();
+        }
+
+        function runSimulation() {
+            const roomKeys = Object.keys(state.rooms); if (roomKeys.length === 0) return alert("You must build hull modules before running a simulation.");
+            if (!simActive) {
+                backupRooms = JSON.parse(JSON.stringify(state.rooms)); backupDoorsSim = JSON.parse(JSON.stringify(state.doors)); backupExtSim = JSON.parse(JSON.stringify(state.exterior));
+                simActive = true; document.getElementById('sim-warning').style.display = 'block'; document.getElementById('btn-structure').classList.add('disabled-mode'); document.getElementById('btn-connectors').classList.add('disabled-mode'); document.getElementById('btn-exterior').classList.add('disabled-mode'); document.getElementById('sim-actions').style.display = 'flex'; setMode('integrity');
+            }
+            
+            const type = document.getElementById('sim-type').value;
+            let targets = (selection.roomIds.size > 0) ? Array.from(selection.roomIds) : [roomKeys[Math.floor(Math.random() * roomKeys.length)]];
+            
+            targets.forEach(target => {
+                let hasShield = false;
+                if(type === 'micrometeor' || type === 'debris') {
+                    for(let ext of Object.values(state.exterior)) {
+                        if(ext.type === 'whipple' && !ext.isBroken) {
+                            let root = findExtRootRoom(ext.id);
+                            if(root && root.roomId === target) { hasShield = true; ext.hp -= 50; if(ext.hp <= 0) ext.isBroken = true; break; }
+                        }
+                    }
+                }
+                if (hasShield) { console.log(`Whipple shield absorbed impact on ${state.rooms[target].name}`); return; }
+
+                if (type === 'micrometeor') {
+                    state.rooms[target].dmg = Math.min(100, parseInt(state.rooms[target].dmg) + Math.floor(Math.random() * 30 + 20));
+                    if (state.rooms[target].dmg > 50) { state.rooms[target].airType = 'Vacuum'; state.rooms[target].pres = 0; }
+                } 
+                else if (type === 'debris') {
+                    state.rooms[target].dmg = 100; state.rooms[target].airType = 'Vacuum'; state.rooms[target].pres = 0;
+                    getRoomConnections(target).forEach(c => { c.door.isBroken = true; state.rooms[c.targetRoom].dmg = Math.min(100, parseInt(state.rooms[c.targetRoom].dmg) + 40); });
+                }
+                else if (type === 'coolant') { state.rooms[target].temp = -50; state.rooms[target].airType = 'Toxins'; }
+                else if (type === 'scrubber') { state.rooms[target].airType = 'CO2'; }
+                else if (type === 'reactor') {
+                    if(selection.roomIds.size === 0) { let eng = Object.values(state.rooms).find(r => r.type === 'engineering'); if (eng) target = eng.id; }
+                    state.rooms[target].temp = Math.min(150, parseInt(state.rooms[target].temp) + 80); state.rooms[target].dmg = Math.min(100, parseInt(state.rooms[target].dmg) + 60); state.rooms[target].airType = 'Toxins';
+                }
+            }); renderLoop();
+        }
+
+        function resetSimulation() { state.rooms = JSON.parse(JSON.stringify(backupRooms)); state.doors = JSON.parse(JSON.stringify(backupDoorsSim)); state.exterior = JSON.parse(JSON.stringify(backupExtSim)); endSimulation(); }
+        function applySimulation() { endSimulation(); }
+        function endSimulation() { simActive = false; backupRooms = null; backupDoorsSim = null; backupExtSim = null; document.getElementById('sim-warning').style.display = 'none'; document.getElementById('btn-structure').classList.remove('disabled-mode'); document.getElementById('btn-connectors').classList.remove('disabled-mode'); document.getElementById('btn-exterior').classList.remove('disabled-mode'); document.getElementById('sim-actions').style.display = 'none'; renderLoop(); }
+
+        // --- EDITOR UI & COMPONENTS LOGIC ---
+        function toggleEye(stat) { Object.keys(visibleStats).forEach(k => visibleStats[k] = false); visibleStats[stat] = true; renderLoop(); }
+        function updateIntegrityData(activeKey) {
+            if (selection.roomIds.size !== 1) return; const id = Array.from(selection.roomIds)[0]; const r = state.rooms[id];
+            if(activeKey && !visibleStats[activeKey]) toggleEye(activeKey);
+            r.dmg = parseInt(document.getElementById('sys-dmg').value); r.pres = parseInt(document.getElementById('sys-pres').value) / 100; r.temp = parseInt(document.getElementById('sys-temp').value); r.airType = document.getElementById('sys-type').value; renderLoop(); 
+        }
+        function resetStat(stat) {
+            if (selection.roomIds.size !== 1) return; const id = Array.from(selection.roomIds)[0]; const r = state.rooms[id];
+            if (stat === 'dmg') r.dmg = 0; if (stat === 'pres') r.pres = 1.0; if (stat === 'temp') r.temp = 21; if (stat === 'gas') r.airType = 'O2'; renderLoop();
+        }
+        function installComponent() {
+            if (selection.roomIds.size !== 1) return; const rId = Array.from(selection.roomIds)[0]; const room = state.rooms[rId];
+            const type = document.getElementById('comp-select').value; const def = COMP_DICT[type];
+            if (room.spaceUsed + def.size > room.area) { alert(`Insufficient Space! Room Area: ${room.area}. Space Used: ${room.spaceUsed}. Machine Size: ${def.size}`); return; }
+            if (!room.components) room.components = [];
+            room.components.push({ id: `comp_${state.idCounters.comp++}`, type: type, isActive: true, isBroken: false }); renderLoop();
+        }
+        function toggleComponent(compId, prop) { if (selection.roomIds.size !== 1) return; const room = state.rooms[Array.from(selection.roomIds)[0]]; const comp = room.components.find(c => c.id === compId); if (comp) { comp[prop] = !comp[prop]; renderLoop(); } }
+        function removeComponent(compId) { if (selection.roomIds.size !== 1) return; const room = state.rooms[Array.from(selection.roomIds)[0]]; room.components = room.components.filter(c => c.id !== compId); renderLoop(); }
+
+        function updateEditorUI() {
+            if (state.mode === 'info') {
+                document.getElementById('info-telemetry').innerHTML = `
+                    <strong>Total Hull Area:</strong> ${globalTelemetry.totalArea} Cells<br>
+                    <strong>Power Demand:</strong> ${Math.round(globalTelemetry.shipPowerDraw)} MW<br>
+                    <strong>Power Generation:</strong> ${Math.round(globalTelemetry.shipPowerGen)} MW<br>
+                    <strong>Network Capacity:</strong> ${Math.round(globalTelemetry.shipPowerCap)} MW<br>
+                    <strong>Active Hull Modules:</strong> ${Object.keys(state.rooms).length}<br>
+                    <strong>Active Exterior Arrays:</strong> ${Object.keys(state.exterior).length}<br>
+                    <strong>Connector Nodes:</strong> ${Object.keys(state.doors).length}`; return;
+            }
+            if (state.mode === 'integrity') {
+                const placeholder = document.getElementById('integrity-placeholder'); const editor = document.getElementById('integrity-editor');
+                Object.keys(visibleStats).forEach(s => { const btn = document.getElementById(`eye-${s}`); if (btn) { btn.classList.toggle('active', visibleStats[s]); btn.innerText = visibleStats[s] ? "👁" : "❌"; } });
+                if (selection.roomIds.size === 1) {
+                    const id = Array.from(selection.roomIds)[0]; const r = state.rooms[id];
+                    document.getElementById('integ-title').innerText = r.name;
+                    document.getElementById('sys-dmg').value = r.dmg; document.getElementById('sys-dmg-val').innerText = r.dmg + "%";
+                    document.getElementById('sys-pres').value = Math.round(r.pres * 100); document.getElementById('sys-pres-val').innerText = r.pres.toFixed(1) + "b";
+                    document.getElementById('sys-temp').value = r.temp; document.getElementById('sys-temp-val').innerText = r.temp + "°C";
+                    document.getElementById('sys-type').value = r.airType;
+                    const list = document.getElementById('crossways-list'); list.innerHTML = ''; const conns = getRoomConnections(id);
+                    if (conns.length === 0) list.innerHTML = '<div class="conn-item" style="color:#555;">No connections.</div>';
+                    else conns.forEach(c => { let block = doesDoorBlock(c.door); let statusHtml = block ? `<span class="status-safe">BLOCKED</span>` : `<span class="status-danger">EXPOSED</span>`; list.innerHTML += `<div class="conn-item"><span>To: <strong>${state.rooms[c.targetRoom].name}</strong></span><span>${statusHtml}</span></div>`; });
+                    placeholder.style.display = 'none'; editor.style.display = 'block';
+                } else { placeholder.style.display = 'block'; editor.style.display = 'none'; }
+                return;
+            }
+
+            const panels = { placeholder: document.getElementById('placeholder-text'), multi: document.getElementById('multi-select-panel'), room: document.getElementById('room-editor'), door: document.getElementById('door-editor'), ext: document.getElementById('ext-editor') };
+            Object.values(panels).forEach(p => p.style.display = 'none');
+            const totalSelected = selection.roomIds.size + selection.doorIds.size + selection.extIds.size;
+
+            if (totalSelected === 0) panels.placeholder.style.display = 'block';
+            else if (totalSelected > 1) panels.multi.style.display = 'block';
+            else {
+                if (selection.doorIds.size === 1) {
+                    const d = state.doors[Array.from(selection.doorIds)[0]];
+                    if (d) {
+                        document.getElementById('door-edit-type').value = d.type; document.getElementById('door-notes').value = d.notes;
+                        const blocksBtn = document.getElementById('btn-door-blocks'); blocksBtn.classList.toggle('active', d.blocksHazards); blocksBtn.innerText = `Rated to Block Hazards: ${d.blocksHazards ? 'ON' : 'OFF'}`;
+                        const openBtn = document.getElementById('btn-door-open'); openBtn.innerText = d.isOpen ? "State: OPEN" : "State: Closed"; openBtn.className = d.isLocked ? "toggle-btn alert active" : (d.isOpen ? "toggle-btn active" : "toggle-btn");
+                        document.getElementById('btn-door-locked').classList.toggle('active', d.isLocked); document.getElementById('btn-door-broken').classList.toggle('active', d.isBroken);
+                        panels.door.style.display = 'block';
+                    }
+                }
+                else if (selection.extIds.size === 1) {
+                    const e = state.exterior[Array.from(selection.extIds)[0]];
+                    if (e) {
+                        document.getElementById('ext-edit-type').value = e.type; document.getElementById('ext-notes').value = e.notes;
+                        document.getElementById('ext-dmg').value = e.dmg || 0; document.getElementById('ext-dmg-val').innerText = (e.dmg || 0) + "%";
+                        document.getElementById('btn-ext-active').classList.toggle('active', e.isActive); document.getElementById('btn-ext-active').innerText = `Power: ${e.isActive ? 'Active' : 'Offline'}`; document.getElementById('btn-ext-broken').classList.toggle('active', e.isBroken);
+                        const root = findExtRootRoom(e.id); const statText = document.getElementById('ext-status-text');
+                        if (root) { statText.innerText = `Connected to: ${state.rooms[root.roomId].name} (Chain: ${root.chainLength})`; statText.style.color = '#00ffcc'; } else { statText.innerText = `Unconnected Array (Offline)`; statText.style.color = '#ff3333'; }
+                        ['solar', 'radiator', 'engine', 'whipple'].forEach(t => document.getElementById(`ext-prop-${t}`).style.display = 'none');
+                        if (e.type === 'solar') { document.getElementById('ext-prop-solar').style.display = 'block'; document.getElementById('ext-solar-pwr').value = e.basePower; } 
+                        else if (e.type === 'radiator') { document.getElementById('ext-prop-radiator').style.display = 'block'; document.getElementById('ext-rad-temp').value = e.targetTemp; document.getElementById('ext-rad-cool').value = e.baseCooling; } 
+                        else if (e.type === 'engine') { document.getElementById('ext-prop-engine').style.display = 'block'; document.getElementById('ext-eng-thrust').value = e.maxThrust; } 
+                        else if (e.type === 'whipple') { document.getElementById('ext-prop-whipple').style.display = 'block'; document.getElementById('ext-whipple-hp').value = e.hp || 0; }
+                        panels.ext.style.display = 'block';
+                    }
+                }
+                else if (selection.roomIds.size === 1) {
+                    const r = state.rooms[Array.from(selection.roomIds)[0]];
+                    if (r) {
+                        document.getElementById('room-name').value = r.name; document.getElementById('room-type').value = r.type; document.getElementById('room-notes').value = r.notes; document.getElementById('room-pwr').value = r.pwrPerCell;
+                        document.getElementById('room-area-stat').innerText = `Area: ${r.area} cells | Space Used: ${r.spaceUsed.toFixed(1)}`;
+                        const list = document.getElementById('comp-list'); list.innerHTML = '';
+                        if (r.components && r.components.length > 0) {
+                            r.components.forEach(c => {
+                                const def = COMP_DICT[c.type]; let cssClass = "comp-item"; if(c.isBroken) cssClass += " broken"; else if(!c.isActive) cssClass += " inactive";
+                                list.innerHTML += `<div class="${cssClass}"><span><strong>${def.name}</strong> [${def.size}s]</span><div class="comp-controls"><button onclick="toggleComponent('${c.id}', 'isActive')">${c.isActive ? 'ON' : 'OFF'}</button><button onclick="toggleComponent('${c.id}', 'isBroken')" class="red">${c.isBroken ? 'FIX' : 'BRK'}</button><button onclick="removeComponent('${c.id}')">X</button></div></div>`;
+                            });
+                        } else { list.innerHTML = `<div style="font-size:11px; color:#555; padding-bottom:10px;">No internal systems installed.</div>`; }
+                        panels.room.style.display = 'block';
+                    }
+                }
+            }
+        }
+
+        function updateEntityData() {
+            if (selection.roomIds.size === 1 && selection.doorIds.size === 0 && selection.extIds.size === 0) {
+                const r = state.rooms[Array.from(selection.roomIds)[0]]; r.name = document.getElementById('room-name').value; r.type = document.getElementById('room-type').value; r.notes = document.getElementById('room-notes').value; r.pwrPerCell = parseFloat(document.getElementById('room-pwr').value) || 0;
+            } else if (selection.doorIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0) {
+                const d = state.doors[Array.from(selection.doorIds)[0]]; d.type = document.getElementById('door-edit-type').value; d.notes = document.getElementById('door-notes').value;
+            } else if (selection.extIds.size === 1 && selection.roomIds.size === 0 && selection.doorIds.size === 0) {
+                const e = state.exterior[Array.from(selection.extIds)[0]]; e.notes = document.getElementById('ext-notes').value; e.dmg = parseInt(document.getElementById('ext-dmg').value) || 0;
+                if (e.type === 'solar') { e.basePower = parseFloat(document.getElementById('ext-solar-pwr').value) || 0; }
+                if (e.type === 'radiator') { e.targetTemp = parseFloat(document.getElementById('ext-rad-temp').value) || 21; e.baseCooling = parseFloat(document.getElementById('ext-rad-cool').value) || 0; }
+                if (e.type === 'engine') { e.maxThrust = parseFloat(document.getElementById('ext-eng-thrust').value) || 0; }
+                if (e.type === 'whipple') { e.hp = parseInt(document.getElementById('ext-whipple-hp').value) || 0; }
+            }
+            renderLoop();
+        }
+
+        function toggleEntityState(prop) {
+            if (selection.doorIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0) {
+                const d = state.doors[Array.from(selection.doorIds)[0]];
+                if (prop === 'isOpen' && d.isLocked) { const btn = document.getElementById('btn-door-open'); btn.classList.add('flash-error'); setTimeout(() => btn.classList.remove('flash-error'), 1500); return; }
+                d[prop] = !d[prop];
+            } else if (selection.extIds.size === 1 && selection.roomIds.size === 0 && selection.doorIds.size === 0) {
+                const e = state.exterior[Array.from(selection.extIds)[0]]; e[prop] = !e[prop];
+            } renderLoop();
+        }
+
+        function deleteSelectedEntity() {
+            if (selection.roomIds.size > 0) {
+                for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (selection.roomIds.has(state.gridData[y][x])) state.gridData[y][x] = null;
+                selection.roomIds.forEach(id => delete state.rooms[id]);
+            }
+            if (selection.doorIds.size > 0) selection.doorIds.forEach(id => delete state.doors[id]);
+            if (selection.extIds.size > 0) selection.extIds.forEach(id => delete state.exterior[id]);
+            clearSelection(); cleanUpRooms(); renderLoop();
+        }
+
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>
