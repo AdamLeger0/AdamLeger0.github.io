@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced TTRPG Spaceship Architect V 0.3.0</title>
+    <title>Advanced TTRPG Spaceship Architect V 0.3.6</title>
     <style>
         body { background-color: #050508; color: #00ffcc; font-family: 'Courier New', Courier, monospace; display: flex; margin: 0; height: 100vh; overflow: hidden; user-select: none; }
         #workspace { flex: 3; display: flex; flex-direction: column; background-color: #050508; position: relative; }
@@ -18,7 +18,10 @@
         #viewport { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
         #grid-container { position: absolute; width: 1200px; height: 800px; background-color: #0a0a0f; border: 2px solid #333; box-shadow: 0 0 40px rgba(0, 255, 204, 0.05); transform-origin: 0 0; }
         #grid { display: grid; grid-template-columns: repeat(48, 25px); grid-template-rows: repeat(32, 25px); width: 100%; height: 100%; position: absolute; z-index: 1; }
-        .cell { box-sizing: border-box; border: 1px solid #1a1a1a; }
+        
+        /* Transition allows smooth color fading on erase */
+        .cell { box-sizing: border-box; border: 1px solid #1a1a1a; transition: background-color 0.4s ease, border-color 0.4s ease; }
+        
         .layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         #doors-layer { z-index: 2; } #ext-layer { z-index: 3; } #vents-layer { z-index: 3; } #labels-layer { z-index: 4; } #interaction-layer { z-index: 10; pointer-events: none; }
 
@@ -41,14 +44,12 @@
         .door.dir-h.locked::after { width: 6px; height: 4px; } .door.dir-v.locked::after { width: 4px; height: 6px; }
         .door.selected { box-shadow: 0 0 8px 3px #ffaa00; border-color: #ffaa00 !important; z-index: 10; }
 
-        .ext-item { position: absolute; width: 25px; height: 25px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: center; align-items: center; pointer-events: auto; transition: all 0.2s;}
+        .ext-item { position: absolute; width: 25px; height: 25px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: center; align-items: center; pointer-events: auto; transition: all 0.2s; }
         .ext-item.engine { background: rgba(255, 85, 0, 0.2); border: 2px solid #ff5500; } .ext-item.engine::after { content: '♨'; color: #ff5500; font-size: 14px; }
         .ext-item.radiator { background: rgba(0, 204, 255, 0.2); border: 2px solid #00ccff; } .ext-item.radiator::after { content: '≡'; font-size: 18px; font-weight: bold; color: #00ccff;}
         .ext-item.solar { background: rgba(0, 50, 150, 0.4); border: 2px solid #4466ff; } .ext-item.solar::after { content: '☼'; color: #7799ff; font-size: 16px; font-weight: bold;}
         .ext-item.whipple { background: rgba(150, 150, 150, 0.2); border: 2px solid #fff; border-style: dashed;} .ext-item.whipple::after { content: '⛊'; color: #fff; font-size: 12px; }
-        
-        .ext-item.vent { border-radius: 4px; border: 2px solid transparent; } 
-        .ext-item.vent::after { content: '⌗'; font-size: 16px; font-weight: bold; }
+        .ext-item.vent { background-image: linear-gradient(rgba(0,0,0,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.5) 1px, transparent 1px); background-size: 5px 5px; background-color: rgba(0, 0, 0, 0.2); border: 1px solid rgba(0, 0, 0, 0.6); box-shadow: inset 0 0 5px rgba(0,0,0,0.5); border-radius: 2px; } 
         
         .ext-item.inactive { opacity: 0.3; filter: grayscale(80%); }
         .ext-item.broken { background: repeating-linear-gradient(45deg, rgba(255,0,0,0.5), rgba(0,0,0,0.5) 8px) !important; border-style: dashed !important; opacity: 0.7;}
@@ -131,16 +132,35 @@
         .connections-list { background: #000; border: 1px solid #333; padding: 10px; max-height: 120px; overflow-y: auto; font-size: 12px; margin-top: 5px; border-radius: 4px;}
         .conn-item { padding: 5px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; } .conn-item:last-child { border-bottom: none; }
         .status-safe { color: #00ffcc; } .status-danger { color: #ff3333; } .status-vent { color: #aaa; }
+
+        /* BOOT ANIMATION CLASSES */
+        .pre-boot { opacity: 0; pointer-events: none; }
+        .boot-fade { animation: bootFade 0.8s ease-out forwards; pointer-events: auto; }
+        .boot-slide { animation: bootSlide 0.6s ease-out forwards; pointer-events: auto; }
+        
+        /* Softer, less visually painful flicker */
+        .badge-flicker { animation: flicker 1s ease-in-out forwards; }
+        
+        @keyframes bootFade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes bootSlide { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes flicker {
+            0% { opacity: 0; }
+            20% { opacity: 0.6; }
+            40% { opacity: 0.2; }
+            60% { opacity: 0.8; }
+            80% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
     <div id="workspace">
-        <div class="header-bar">
-            <h2>Naval Architectural Blueprint <span class="beta-badge">V 0.3.0</span></h2>
+        <div class="header-bar pre-boot" id="ui-header">
+            <h2>Naval Architectural Blueprint <span class="beta-badge pre-boot" id="badge-version">V 0.3.6</span></h2>
             <span id="mode-indicator" style="color: #888; font-size: 14px;">Mode: STRUCTURE</span>
         </div>
-        <div id="global-telemetry">
-            <div>NETWORK: ONLINE <span class="beta-badge">BETA</span></div>
+        <div id="global-telemetry" class="pre-boot">
+            <div>NETWORK: ONLINE <span class="beta-badge pre-boot" id="badge-beta">BETA</span></div>
             <span id="power-readout">PWR: USED 0 / GEN 0 MW | CAP 0 MW</span>
         </div>
         <div id="sim-warning">⚠ Hazard Simulation Active ⚠</div>
@@ -156,7 +176,7 @@
         </div>
     </div>
 
-    <div id="side-panel">
+    <div id="side-panel" class="pre-boot">
         <div class="mode-container">
             <button class="mode-btn info" onclick="setMode('info')" id="btn-info">Ship Info</button>
             <button class="mode-btn active" onclick="setMode('structure')" id="btn-structure">Structure</button>
@@ -408,7 +428,7 @@
         };
 
         let state = {
-            ship: { name: "Broadsword-Class Corvette", desc: "Long-range patrol and system transit vessel. Built for horizontal burn architecture." },
+            ship: { name: "Scout-Class Wedge", desc: "Short-range fast interceptor and planetary scout vessel." },
             mode: 'structure', connectorSubMode: 'door',
             activeBuildTypeExt: 'engine', activeBuildTypeDoor: 'standard',
             rooms: {}, doors: {}, vents: {}, exterior: {}, gridData: Array(ROWS).fill().map(() => Array(COLS).fill(null)), idCounters: { room: 0, door: 0, ext: 0, comp: 0, vent: 0 }
@@ -422,6 +442,8 @@
         let visibleStats = { dmg: true, pres: false, temp: false, gas: false };
         let simActive = false; let backupRooms = null, backupDoorsSim = null, backupVentsSim = null, backupExtSim = null;
         let globalTelemetry = { shipPowerGen: 0, shipPowerCap: 0, shipPowerDraw: 0, totalArea: 0 };
+
+        let isBooting = false; let bootedRooms = new Set();
 
         const themes = {
             default: { r: 0, g: 255, b: 204, a: 0.15, border: '#00ffcc', sel: 'rgba(0, 255, 204, 0.4)' },
@@ -439,7 +461,35 @@
         function initApp() {
             for (let y = 0; y < ROWS; y++) { DOM.cells[y] = []; for (let x = 0; x < COLS; x++) { const cell = document.createElement('div'); cell.className = 'cell'; DOM.grid.appendChild(cell); DOM.cells[y][x] = cell; } }
             const vpRect = DOM.viewport.getBoundingClientRect(); camera.panX = (vpRect.width - (COLS * CELL_SIZE)) / 2; camera.panY = (vpRect.height - (ROWS * CELL_SIZE)) / 2;
-            updateCamera(); loadDefaultShip(); setupEventListeners(); renderLoop();
+            updateCamera(); loadDefaultShip(); setupEventListeners(); triggerBoot(true);
+        }
+
+        function triggerBoot(isInitial = false) {
+            isBooting = true; bootedRooms.clear();
+            const header = document.getElementById('ui-header'); const sidePanel = document.getElementById('side-panel'); const telemetry = document.getElementById('global-telemetry');
+            const badgeV = document.getElementById('badge-version'); const badgeB = document.getElementById('badge-beta');
+            
+            if (isInitial) {
+                [header, sidePanel, telemetry, badgeV, badgeB].forEach(el => { el.classList.remove('boot-fade', 'boot-slide', 'badge-flicker'); el.classList.add('pre-boot'); });
+                void header.offsetWidth;
+                setTimeout(() => { header.classList.remove('pre-boot'); header.classList.add('boot-fade'); }, 100);
+                setTimeout(() => { sidePanel.classList.remove('pre-boot'); sidePanel.classList.add('boot-slide'); }, 500);
+                setTimeout(() => { telemetry.classList.remove('pre-boot'); telemetry.classList.add('boot-fade'); }, 900);
+            } else {
+                [header, sidePanel, telemetry, badgeV, badgeB].forEach(el => el.classList.remove('pre-boot', 'boot-fade', 'boot-slide', 'badge-flicker'));
+            }
+
+            let delay = isInitial ? 1400 : 100;
+            setTimeout(() => {
+                const roomIds = Object.keys(state.rooms); let i = 0;
+                const interval = setInterval(() => {
+                    if (i >= roomIds.length) { 
+                        clearInterval(interval); isBooting = false; renderLoop(); 
+                        if (isInitial) setTimeout(() => { badgeV.classList.add('badge-flicker'); badgeB.classList.add('badge-flicker'); }, 100); 
+                    } 
+                    else { bootedRooms.add(roomIds[i]); renderLoop(); i++; }
+                }, 120);
+            }, delay);
         }
 
         function applyToGrid(minX, maxX, minY, maxY, val) { for (let y=minY; y<=maxY; y++) { for(let x=minX; x<=maxX; x++) state.gridData[y][x]=val; } }
@@ -498,7 +548,7 @@
         }
         function importShip(event) {
             const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
-            reader.onload = e => { try { const imp = JSON.parse(e.target.result); if(imp.rooms && imp.gridData) { state = imp; document.getElementById('ship-name').value = state.ship.name || ""; document.getElementById('ship-desc').value = state.ship.desc || ""; clearSelection(); renderLoop(); } else alert("Invalid JSON."); } catch (err) { alert("Error parsing JSON file."); } };
+            reader.onload = e => { try { const imp = JSON.parse(e.target.result); if(imp.rooms && imp.gridData) { state = imp; document.getElementById('ship-name').value = state.ship.name || ""; document.getElementById('ship-desc').value = state.ship.desc || ""; clearSelection(); triggerBoot(false); } else alert("Invalid JSON."); } catch (err) { alert("Error parsing JSON file."); } };
             reader.readAsText(file); event.target.value = ''; 
         }
         function updateShipInfo() { state.ship.name = document.getElementById('ship-name').value; state.ship.desc = document.getElementById('ship-desc').value; }
@@ -651,18 +701,25 @@
                         rc.cells.add(`${x},${y}`);
 
                         if (state.mode === 'integrity') cell.style.background = generateCellEnvironmentStyle(room, theme);
-                        else cell.style.background = selection.roomIds.has(roomId) ? theme.sel : `rgba(${theme.r}, ${theme.g}, ${theme.b}, ${theme.a})`;
+                        else {
+                            if (!isBooting || bootedRooms.has(roomId)) {
+                                cell.style.background = selection.roomIds.has(roomId) ? theme.sel : `rgba(${theme.r}, ${theme.g}, ${theme.b}, ${theme.a})`;
+                            } else cell.style.background = 'transparent';
+                        }
                         
-                        const bStyle = `2px solid ${theme.border}`;
-                        cell.style.borderTop = (y===0 || state.gridData[y-1][x]!==roomId) ? bStyle : 'none';
-                        cell.style.borderBottom = (y===ROWS-1 || state.gridData[y+1][x]!==roomId) ? bStyle : 'none';
-                        cell.style.borderLeft = (x===0 || state.gridData[y][x-1]!==roomId) ? bStyle : 'none';
-                        cell.style.borderRight = (x===COLS-1 || state.gridData[y][x+1]!==roomId) ? bStyle : 'none';
+                        if (!isBooting || bootedRooms.has(roomId)) {
+                            const bStyle = `2px solid ${theme.border}`;
+                            cell.style.borderTop = (y===0 || state.gridData[y-1][x]!==roomId) ? bStyle : 'none';
+                            cell.style.borderBottom = (y===ROWS-1 || state.gridData[y+1][x]!==roomId) ? bStyle : 'none';
+                            cell.style.borderLeft = (x===0 || state.gridData[y][x-1]!==roomId) ? bStyle : 'none';
+                            cell.style.borderRight = (x===COLS-1 || state.gridData[y][x+1]!==roomId) ? bStyle : 'none';
+                        } else cell.style.border = '1px solid #1a1a1a';
                     } else { cell.style.background = 'transparent'; cell.style.border = '1px solid #1a1a1a'; }
                 }
             }
 
             Object.keys(roomCenters).forEach(id => {
+                if (isBooting && !bootedRooms.has(id)) return;
                 const data = roomCenters[id]; 
                 let cx = data.sumX / data.count; let cy = data.sumY / data.count;
                 let cxFloor = Math.floor(cx); let cyFloor = Math.floor(cy);
@@ -690,41 +747,38 @@
                 DOM.labelsLayer.appendChild(label);
             });
 
-            Object.values(state.exterior).forEach(ext => {
-                const el = document.createElement('div'); let cName = `ext-item ${ext.type}`;
-                if (!ext.isActive) cName += ' inactive'; if (ext.isBroken) cName += ' broken'; if (selection.extIds.has(ext.id)) cName += ' selected';
-                el.className = cName; el.dataset.id = ext.id; el.style.left = `${ext.x * CELL_SIZE}px`; el.style.top = `${ext.y * CELL_SIZE}px`;
-                DOM.extLayer.appendChild(el);
-            });
+            if (!isBooting) {
+                Object.values(state.exterior).forEach(ext => {
+                    const el = document.createElement('div'); let cName = `ext-item ${ext.type}`;
+                    if (!ext.isActive) cName += ' inactive'; if (ext.isBroken) cName += ' broken'; if (selection.extIds.has(ext.id)) cName += ' selected';
+                    el.className = cName; el.dataset.id = ext.id; el.style.left = `${ext.x * CELL_SIZE}px`; el.style.top = `${ext.y * CELL_SIZE}px`;
+                    DOM.extLayer.appendChild(el);
+                });
+
+                Object.values(state.doors).forEach(d => {
+                    const el = document.createElement('div'); let cName = `door dir-${d.dir} ${d.type}`;
+                    if (d.isOpen) cName += ' open'; if (d.isLocked) cName += ' locked'; if (d.isBroken) cName += ' broken'; if (selection.doorIds.has(d.id)) cName += ' selected';
+                    el.className = cName; el.dataset.id = d.id; 
+                    if (d.dir === 'h') { el.style.width = `${CELL_SIZE}px`; el.style.height = '10px'; el.style.left = `${d.x * CELL_SIZE}px`; el.style.top = `${d.y * CELL_SIZE - 5}px`; } 
+                    else { el.style.width = '10px'; el.style.height = `${CELL_SIZE}px`; el.style.left = `${d.x * CELL_SIZE - 5}px`; el.style.top = `${d.y * CELL_SIZE}px`; }
+                    DOM.doorsLayer.appendChild(el);
+                });
+
+                Object.values(state.vents).forEach(v => {
+                    const el = document.createElement('div'); let cName = `ext-item vent`;
+                    if (!v.isActive) cName += ' inactive'; if (v.isBroken) cName += ' broken'; if (selection.ventIds.has(v.id)) cName += ' selected';
+                    el.className = cName; el.dataset.id = v.id; el.style.left = `${v.x * CELL_SIZE}px`; el.style.top = `${v.y * CELL_SIZE}px`;
+                    let rId = state.gridData[v.y][v.x]; let theme = rId && state.rooms[rId] ? themes[state.rooms[rId].type] : themes['default'];
+                    el.style.color = theme.border; el.style.backgroundColor = `rgba(${theme.r}, ${theme.g}, ${theme.b}, 0.2)`;
+                    el.style.boxShadow = `0 0 8px ${theme.border}, inset 0 0 8px ${theme.border}`; el.style.borderColor = theme.border;
+                    DOM.ventsLayer.appendChild(el);
+                });
+            }
 
             if (state.mode === 'exterior' && ghostItem && !isDragging) {
                 const el = document.createElement('div'); el.className = `ext-item ${ghostItem.type} ghost`;
                 el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; DOM.extLayer.appendChild(el);
             }
-
-            Object.values(state.doors).forEach(d => {
-                const el = document.createElement('div'); let cName = `door dir-${d.dir} ${d.type}`;
-                if (d.isOpen) cName += ' open'; if (d.isLocked) cName += ' locked'; if (d.isBroken) cName += ' broken'; if (selection.doorIds.has(d.id)) cName += ' selected';
-                el.className = cName; el.dataset.id = d.id; 
-                if (d.dir === 'h') { el.style.width = `${CELL_SIZE}px`; el.style.height = '10px'; el.style.left = `${d.x * CELL_SIZE}px`; el.style.top = `${d.y * CELL_SIZE - 5}px`; } 
-                else { el.style.width = '10px'; el.style.height = `${CELL_SIZE}px`; el.style.left = `${d.x * CELL_SIZE - 5}px`; el.style.top = `${d.y * CELL_SIZE}px`; }
-                DOM.doorsLayer.appendChild(el);
-            });
-
-            Object.values(state.vents).forEach(v => {
-                const el = document.createElement('div'); let cName = `ext-item vent`;
-                if (!v.isActive) cName += ' inactive'; if (v.isBroken) cName += ' broken'; if (selection.ventIds.has(v.id)) cName += ' selected';
-                el.className = cName; el.dataset.id = v.id; el.style.left = `${v.x * CELL_SIZE}px`; el.style.top = `${v.y * CELL_SIZE}px`;
-                
-                let rId = state.gridData[v.y][v.x];
-                let theme = rId && state.rooms[rId] ? themes[state.rooms[rId].type] : themes['default'];
-                el.style.color = theme.border;
-                el.style.backgroundColor = `rgba(${theme.r}, ${theme.g}, ${theme.b}, 0.2)`;
-                el.style.boxShadow = `0 0 8px ${theme.border}, inset 0 0 8px ${theme.border}`;
-                el.style.borderColor = theme.border;
-                
-                DOM.ventsLayer.appendChild(el);
-            });
 
             if (state.mode === 'connectors' && ghostItem && !isDragging) {
                 if (state.connectorSubMode === 'door') {
@@ -735,8 +789,7 @@
                 } else if (state.connectorSubMode === 'vent') {
                     const el = document.createElement('div'); el.className = `ext-item vent ghost`;
                     el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; 
-                    let rId = state.gridData[ghostItem.y][ghostItem.x];
-                    let theme = rId && state.rooms[rId] ? themes[state.rooms[rId].type] : themes['default'];
+                    let rId = state.gridData[ghostItem.y][ghostItem.x]; let theme = rId && state.rooms[rId] ? themes[state.rooms[rId].type] : themes['default'];
                     el.style.color = theme.border; el.style.backgroundColor = `rgba(${theme.r}, ${theme.g}, ${theme.b}, 0.2)`;
                     el.style.boxShadow = `0 0 8px ${theme.border}, inset 0 0 8px ${theme.border}`; el.style.borderColor = theme.border;
                     DOM.ventsLayer.appendChild(el);
@@ -792,20 +845,18 @@
             } 
             else if (state.mode === 'connectors' || state.mode === 'exterior') {
                 dragContext.action = e.button === 2 ? 'erase_item' : 'build_item';
-                if (state.mode === 'connectors') {
-                    if (state.connectorSubMode === 'door') {
-                        const cellLocalX = coords.rawX % CELL_SIZE, cellLocalY = coords.rawY % CELL_SIZE; const dL = cellLocalX, dR = CELL_SIZE - cellLocalX, dT = cellLocalY, dB = CELL_SIZE - cellLocalY; const minDist = Math.min(dL, dR, dT, dB); let gX = coords.x, gY = coords.y, gDir = 'v';
-                        if (minDist === dL) gDir = 'v'; else if (minDist === dR) { gDir = 'v'; gX++; } else if (minDist === dT) gDir = 'h'; else { gDir = 'h'; gY++; }
-                        ghostItem = { x: gX, y: gY, dir: gDir };
-                    } else if (state.connectorSubMode === 'vent') { ghostItem = { x: coords.x, y: coords.y, type: 'vent' }; }
-                } else if (state.mode === 'exterior') { ghostItem = { x: coords.x, y: coords.y, type: state.activeBuildTypeExt }; }
-
                 if (dragContext.action === 'build_item') triggerBuildAtGhost(); else triggerEraseAtGhost(); renderLoop();
             }
             else if (state.mode === 'select') {
                 let targetEl = e.target.closest('.door, .vent, .ext-item') || e.target; let clickedRoom = state.gridData[coords.y][coords.x];
                 let clickedDoor = targetEl.classList.contains('door') ? targetEl.dataset.id : null; let clickedVent = targetEl.classList.contains('vent') ? targetEl.dataset.id : null; let clickedExt = (targetEl.classList.contains('ext-item') && !clickedVent) ? targetEl.dataset.id : null;
                 let isClickingSelected = (clickedDoor && selection.doorIds.has(clickedDoor)) || (clickedExt && selection.extIds.has(clickedExt)) || (clickedVent && selection.ventIds.has(clickedVent)) || (clickedRoom && selection.roomIds.has(clickedRoom));
+
+                if (e.button === 2 && !isClickingSelected) {
+                    if (clickedDoor) { delete state.doors[clickedDoor]; renderLoop(); return; }
+                    if (clickedVent) { delete state.vents[clickedVent]; renderLoop(); return; }
+                    if (clickedExt) { delete state.exterior[clickedExt]; renderLoop(); return; }
+                }
 
                 if (isClickingSelected) {
                     dragContext.action = 'move'; dragContext.backupGrid = state.gridData.map(row => [...row]);
