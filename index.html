@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced TTRPG Spaceship Architect V 0.2.13</title>
+    <title>Advanced TTRPG Spaceship Architect V 0.3.0</title>
     <style>
         body { background-color: #050508; color: #00ffcc; font-family: 'Courier New', Courier, monospace; display: flex; margin: 0; height: 100vh; overflow: hidden; user-select: none; }
         #workspace { flex: 3; display: flex; flex-direction: column; background-color: #050508; position: relative; }
@@ -28,17 +28,14 @@
         .door.standard { background-color: #00ffcc; border: 2px solid #00aa88; }
         .door.security { background-color: #ff3333; border: 2px solid #aa0000; }
         .door.airlock { background-color: #ff9900; border: 2px solid #aa5500; }
-        .door.vent { background-color: #555; border: 2px dashed #aaa; }
         .door.ghost { opacity: 0.5; box-shadow: 0 0 10px #fff; pointer-events: none; border-color: #fff; background: #fff;}
         .door.standard.open { background-color: rgba(0, 255, 204, 0.2) !important; border-style: dashed; }
         .door.security.open { background-color: rgba(255, 51, 51, 0.2) !important; border-style: dashed; }
         .door.airlock.open { background-color: rgba(255, 153, 0, 0.2) !important; border-style: dashed; }
-        .door.vent.open { background-color: rgba(100, 100, 100, 0.2) !important; border-style: dotted; }
         
         .door.standard.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(0, 255, 204, 0.3) !important; border-style: dotted !important; }
         .door.security.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(255, 51, 51, 0.3) !important; border-style: dotted !important; }
         .door.airlock.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(255, 153, 0, 0.3) !important; border-style: dotted !important; }
-        .door.vent.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(100, 100, 100, 0.3) !important; border-style: dotted !important; }
         
         .door.locked::after { content: ''; position: absolute; background: #ffcc00; border-radius: 2px; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 3px #000; }
         .door.dir-h.locked::after { width: 6px; height: 4px; } .door.dir-v.locked::after { width: 4px; height: 6px; }
@@ -49,10 +46,13 @@
         .ext-item.radiator { background: rgba(0, 204, 255, 0.2); border: 2px solid #00ccff; } .ext-item.radiator::after { content: '≡'; font-size: 18px; font-weight: bold; color: #00ccff;}
         .ext-item.solar { background: rgba(0, 50, 150, 0.4); border: 2px solid #4466ff; } .ext-item.solar::after { content: '☼'; color: #7799ff; font-size: 16px; font-weight: bold;}
         .ext-item.whipple { background: rgba(150, 150, 150, 0.2); border: 2px solid #fff; border-style: dashed;} .ext-item.whipple::after { content: '⛊'; color: #fff; font-size: 12px; }
-        .ext-item.vent { background: rgba(100, 100, 100, 0.4); border: 1px solid #777; border-radius: 4px; } .ext-item.vent::after { content: '⌗'; color: #ccc; font-size: 14px; }
+        
+        .ext-item.vent { border-radius: 4px; border: 2px solid transparent; } 
+        .ext-item.vent::after { content: '⌗'; font-size: 16px; font-weight: bold; }
+        
         .ext-item.inactive { opacity: 0.3; filter: grayscale(80%); }
         .ext-item.broken { background: repeating-linear-gradient(45deg, rgba(255,0,0,0.5), rgba(0,0,0,0.5) 8px) !important; border-style: dashed !important; opacity: 0.7;}
-        .ext-item.selected { box-shadow: 0 0 8px 3px #ffaa00; border-color: #ffaa00 !important; z-index: 10; }
+        .ext-item.selected { box-shadow: 0 0 8px 3px #ffaa00 !important; border-color: #ffaa00 !important; z-index: 10; }
         .ext-item.ghost { opacity: 0.5; pointer-events: none; filter: brightness(1.5); }
 
         .selection-box { position: absolute; display: none; pointer-events: none; z-index: 10; }
@@ -78,6 +78,12 @@
         textarea { height: 80px; resize: vertical; }
         
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        
+        .palette-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 15px;}
+        .palette-btn { background: #111; color: var(--c); border: 1px solid var(--c); padding: 8px; font-size: 11px; cursor: pointer; border-radius: 4px; transition: all 0.1s; text-align: center; font-weight: bold;}
+        .palette-btn:hover { background: #222; }
+        .palette-btn.active { background: var(--c); color: #000 !important; border-color: var(--c); }
+        
         .toggle-btn { background: #111; color: #aaa; border: 1px solid #333; border-bottom: 3px solid #1a1a1a; padding: 8px; cursor: pointer; font-family: inherit; font-weight: bold; text-align: center; transition: all 0.1s; border-radius: 4px;}
         .toggle-btn:active { transform: translateY(2px); border-bottom: 1px solid #1a1a1a; }
         .toggle-btn.active { background: #333; color: #00ffcc; border-color: #00ffcc; border-bottom: 3px solid #008866;}
@@ -110,6 +116,10 @@
         .comp-controls button:active { transform: translateY(1px); border-bottom: 1px solid #111; }
         .comp-controls button:hover { background: #444; } .comp-controls button.red { color: #ff3333; border-color: #ff3333; background: transparent; }
 
+        .comp-add-btn { background: #1a1a1a; color: #00ffcc; border: 1px solid #005544; padding: 8px; margin-bottom: 4px; font-size: 11px; cursor: pointer; border-radius: 3px; text-align: left; transition: background 0.1s; }
+        .comp-add-btn:hover { background: #004433; }
+        .comp-group-title { font-size: 10px; color: #888; margin: 10px 0 5px 0; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 2px;}
+
         .stat-row { display: flex; align-items: center; margin-bottom: 12px; font-size: 13px; }
         .stat-label { width: 85px; color: #aaa; }
         .stat-row input[type="range"] { flex: 1; margin: 0 10px; cursor: pointer; width: 100%; min-width: 0; -webkit-appearance: none; background: transparent; }
@@ -126,7 +136,7 @@
 <body>
     <div id="workspace">
         <div class="header-bar">
-            <h2>Naval Architectural Blueprint <span class="beta-badge">V 0.2.13</span></h2>
+            <h2>Naval Architectural Blueprint <span class="beta-badge">V 0.3.0</span></h2>
             <span id="mode-indicator" style="color: #888; font-size: 14px;">Mode: STRUCTURE</span>
         </div>
         <div id="global-telemetry">
@@ -164,9 +174,9 @@
                     <button id="btn-sub-door" class="toggle-btn active" onclick="setConnectorSubMode('door')">Wall Door</button>
                     <button id="btn-sub-vent" class="toggle-btn" onclick="setConnectorSubMode('vent')">Floor Vent</button>
                 </div>
-                <strong>Hover:</strong> Snap | <strong>L-Click:</strong> Place | <strong>R-Click:</strong> Delete<br><span style="font-size: 11px;">Vents jump hazards globally by channel ID.</span>
+                <strong>L-Click/Drag:</strong> Paint | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px;">Vents jump hazards globally by channel ID.</span>
             </div>
-            <div id="inst-exterior" class="instructions panel-section"><strong>Hover:</strong> Snap | <strong>L-Click:</strong> Place Array | <strong>R-Click:</strong> Delete<br><span style="font-size: 11px;">Arrays must touch the hull or chain to identical arrays.</span></div>
+            <div id="inst-exterior" class="instructions panel-section"><strong>L-Click/Drag:</strong> Paint | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px;">Arrays must touch the hull or chain to identical arrays.</span></div>
             <div id="inst-select" class="instructions panel-section">
                 <strong>L-Click:</strong> Select Entity | <strong>Drag:</strong> Marquee Multiple
                 <div class="btn-grid" style="margin-top: 10px;">
@@ -193,12 +203,12 @@
 
         <div id="panel-connectors" class="panel-section">
             <div id="door-build-settings">
-                <label>Doorway Material / Type:</label>
-                <select id="door-build-type">
-                    <option value="standard">Standard Hatch (Green)</option>
-                    <option value="security">Security / Armored (Red)</option>
-                    <option value="airlock">Pressure Airlock (Orange)</option>
-                </select>
+                <label style="color:#ffaa00; font-size:12px;">Select Hatch Type:</label>
+                <div class="palette-grid">
+                    <button class="palette-btn active" onclick="setBuildPalette('door', 'standard')" id="pal-door-standard" style="--c:#00ffcc;">Standard Hatch</button>
+                    <button class="palette-btn" onclick="setBuildPalette('door', 'security')" id="pal-door-security" style="--c:#ff3333;">Security Armored</button>
+                    <button class="palette-btn" onclick="setBuildPalette('door', 'airlock')" id="pal-door-airlock" style="--c:#ff9900; grid-column: span 2;">Pressure Airlock</button>
+                </div>
             </div>
             <div id="vent-build-settings" style="display: none;">
                 <label>Vent Channel (Network ID):</label>
@@ -207,13 +217,13 @@
         </div>
 
         <div id="panel-exterior" class="panel-section">
-            <label>Array Sub-System:</label>
-            <select id="ext-build-type">
-                <option value="engine">Main Engine / Thruster</option>
-                <option value="radiator">Thermal Radiator</option>
-                <option value="solar">Solar Array Panel</option>
-                <option value="whipple">Whipple Armor Plate</option>
-            </select>
+            <label style="color:#00ccff; font-size:12px;">Select Array Type:</label>
+            <div class="palette-grid">
+                <button class="palette-btn active" onclick="setBuildPalette('ext', 'engine')" id="pal-ext-engine" style="--c:#ff5500;">Main Engine</button>
+                <button class="palette-btn" onclick="setBuildPalette('ext', 'radiator')" id="pal-ext-radiator" style="--c:#00ccff;">Thermal Radiator</button>
+                <button class="palette-btn" onclick="setBuildPalette('ext', 'solar')" id="pal-ext-solar" style="--c:#7799ff;">Solar Array</button>
+                <button class="palette-btn" onclick="setBuildPalette('ext', 'whipple')" id="pal-ext-whipple" style="--c:#fff;">Whipple Shield</button>
+            </div>
         </div>
 
         <div id="panel-editor" class="panel-section active">
@@ -227,57 +237,68 @@
             <div id="room-editor" style="display: none;">
                 <h3 style="color: #00ffcc;">Hull Module</h3>
                 <label>Designation:</label> <input type="text" id="room-name" oninput="updateEntityData()">
-                <label>Department:</label>
-                <select id="room-type" onchange="updateEntityData()">
-                    <option value="default">Standard / Unassigned</option> <option value="command">Command / Bridge</option>
-                    <option value="engineering">Engineering / Drive</option> <option value="medical">Medical / Science</option>
-                    <option value="tactical">Tactical / Security</option> <option value="cargo">Cargo / Storage</option>
-                    <option value="crew">Crew Quarters</option>
-                </select>
+                
+                <label style="color:#ffaa00; font-size:12px;">Change Department:</label>
+                <div class="palette-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 10px;">
+                    <button class="palette-btn" onclick="editSelectedRoomType('default')" id="edit-room-default" style="--c:#00ffcc;">Def</button>
+                    <button class="palette-btn" onclick="editSelectedRoomType('command')" id="edit-room-command" style="--c:#ff3333;">Cmd</button>
+                    <button class="palette-btn" onclick="editSelectedRoomType('engineering')" id="edit-room-engineering" style="--c:#ff9900;">Eng</button>
+                    <button class="palette-btn" onclick="editSelectedRoomType('medical')" id="edit-room-medical" style="--c:#66ccff;">Med</button>
+                    <button class="palette-btn" onclick="editSelectedRoomType('tactical')" id="edit-room-tactical" style="--c:#9900ff;">Tac</button>
+                    <button class="palette-btn" onclick="editSelectedRoomType('cargo')" id="edit-room-cargo" style="--c:#cccc33;">Cgo</button>
+                    <button class="palette-btn" onclick="editSelectedRoomType('crew')" id="edit-room-crew" style="--c:#33ff33; grid-column:span 3;">Crew Quarters</button>
+                </div>
+
                 <div class="sub-panel">
                     <label style="color:#ffaa00; font-size:12px;">Base Power Draw (MW per cell):</label>
                     <input type="number" id="room-pwr" value="1" oninput="updateEntityData()">
                     <div style="font-size:11px; color:#aaa; margin-top:5px;" id="room-area-stat">Area: 0 cells | Space Used: 0.0</div>
                 </div>
+
                 <div class="sub-panel" id="room-internals">
-                    <h4 style="margin:0 0 10px 0; color:#ffaa00;">Internal Sub-Systems</h4>
+                    <h4 style="margin:0 0 10px 0; color:#ffaa00;">Installed Sub-Systems</h4>
                     <div id="comp-list"></div>
-                    <select id="comp-select" style="margin-top: 10px;">
-                        <optgroup label="Storage & Logistics">
-                            <option value="storage_s">Small Storage (0.5s)</option>
-                            <option value="storage_m">Med Storage (1.0s)</option>
-                            <option value="storage_l">Large Storage (2.0s)</option>
-                        </optgroup>
-                        <optgroup label="Power & Propulsion">
-                            <option value="battery">Battery Bank (0.5s) [+50 MW Cap]</option>
-                            <option value="diesel">Diesel Turbine (1.0s) [+20 MW Gen, Heat]</option>
-                            <option value="smr">Fission SMR (4.0s) [+100 MW Gen, Heat, Rad Risk]</option>
-                        </optgroup>
-                        <optgroup label="Life Support & Bio">
-                            <option value="scrubber">CO2 Scrubber (0.5s) [Draws 2MW, Clears CO2]</option>
-                            <option value="hydroponics">Hydroponics Vat (2.0s) [Draws 4MW, Clears CO2]</option>
-                            <option value="autodoc">Med Auto-Doc (1.0s) [Draws 6MW]</option>
-                            <option value="cryo">Perfluorocarbon Liquid Pod (1.0s) [Draws 5MW, -2°C Heat]</option>
-                        </optgroup>
-                        <optgroup label="Computing">
-                            <option value="mainframe">Mainframe Core (2.0s) [Draws 15MW, Heat]</option>
-                            <option value="processor">Sec. Processor (0.5s) [Draws 4MW, Heat]</option>
-                        </optgroup>
-                    </select>
-                    <button class="action-btn" style="padding: 5px; font-size: 11px;" onclick="installComponent()">Install Hardware</button>
+                    
+                    <h4 style="margin:15px 0 5px 0; color:#aaa; font-size:11px; border-bottom:1px solid #333;">AVAILABLE HARDWARE</h4>
+                    <div style="max-height: 180px; overflow-y: auto; padding-right: 5px;" id="install-catalog">
+                        <div class="comp-group-title">Storage & Logistics</div>
+                        <div class="comp-add-btn" onclick="installComponent('storage_s')">[+] Small Storage (0.5s)</div>
+                        <div class="comp-add-btn" onclick="installComponent('storage_m')">[+] Med Storage (1.0s)</div>
+                        <div class="comp-add-btn" onclick="installComponent('storage_l')">[+] Large Storage (2.0s)</div>
+                        
+                        <div class="comp-group-title">Power & Propulsion</div>
+                        <div class="comp-add-btn" onclick="installComponent('battery')">[+] Battery Bank (0.5s) | +50 MW Cap</div>
+                        <div class="comp-add-btn" onclick="installComponent('diesel')">[+] Diesel Turbine (1.0s) | +20 MW Gen</div>
+                        <div class="comp-add-btn" onclick="installComponent('smr')">[+] Fission SMR (4.0s) | +100 MW Gen</div>
+                        
+                        <div class="comp-group-title">Life Support & Bio</div>
+                        <div class="comp-add-btn" onclick="installComponent('scrubber')">[+] CO2 Scrubber (0.5s) | Clears CO2</div>
+                        <div class="comp-add-btn" onclick="installComponent('hydroponics')">[+] Hydroponics Vat (2.0s) | Clears CO2</div>
+                        <div class="comp-add-btn" onclick="installComponent('autodoc')">[+] Med Auto-Doc (1.0s) | Needs 6MW</div>
+                        <div class="comp-add-btn" onclick="installComponent('cryo')">[+] Liq. Perfluoro Pod (1.0s) | -2°C Heat</div>
+                        
+                        <div class="comp-group-title">Computing</div>
+                        <div class="comp-add-btn" onclick="installComponent('mainframe')">[+] Mainframe Core (2.0s) | Needs 15MW</div>
+                        <div class="comp-add-btn" onclick="installComponent('processor')">[+] Sec. Processor (0.5s) | Needs 4MW</div>
+                    </div>
                 </div>
+
                 <label>GM Notes:</label> <textarea id="room-notes" oninput="updateEntityData()"></textarea>
                 <button class="delete-btn" onclick="deleteSelectedEntity()">Purge Module</button>
             </div>
 
             <div id="door-editor" style="display: none;">
                 <h3 style="color: #ffaa00;" id="connector-title">Connector Node</h3>
-                <label id="connector-type-label">Type designation:</label>
-                <select id="door-edit-type" onchange="updateEntityData()" disabled>
-                    <option value="standard">Standard Hatch</option> <option value="security">Security / Armored</option> 
-                    <option value="airlock">Pressure Airlock</option> <option value="vent">Ventilation Shaft</option>
-                </select>
                 
+                <div id="door-type-editor">
+                    <label style="color:#ffaa00; font-size:12px;">Change Type:</label>
+                    <div class="palette-grid">
+                        <button class="palette-btn" onclick="editSelectedDoorType('standard')" id="edit-door-standard" style="--c:#00ffcc;">Standard</button>
+                        <button class="palette-btn" onclick="editSelectedDoorType('security')" id="edit-door-security" style="--c:#ff3333;">Security</button>
+                        <button class="palette-btn" onclick="editSelectedDoorType('airlock')" id="edit-door-airlock" style="--c:#ff9900; grid-column: span 2;">Airlock</button>
+                    </div>
+                </div>
+
                 <div class="stat-row" style="margin-bottom: 10px;">
                     <span class="stat-label">Damage:</span>
                     <input type="range" id="door-dmg" min="0" max="100" value="0" oninput="updateEntityData()">
@@ -308,11 +329,15 @@
 
             <div id="ext-editor" style="display: none;">
                 <h3 style="color: #00ccff;">Exterior Sub-System</h3>
-                <label>Array Type:</label>
-                <select id="ext-edit-type" disabled>
-                    <option value="engine">Main Engine / Thruster</option> <option value="radiator">Thermal Radiator</option>
-                    <option value="solar">Solar Array Panel</option> <option value="whipple">Whipple Armor Plate</option>
-                </select>
+                
+                <label style="color:#00ccff; font-size:12px;">Change Type:</label>
+                <div class="palette-grid">
+                    <button class="palette-btn" onclick="editSelectedExtType('engine')" id="edit-ext-engine" style="--c:#ff5500;">Engine</button>
+                    <button class="palette-btn" onclick="editSelectedExtType('radiator')" id="edit-ext-radiator" style="--c:#00ccff;">Radiator</button>
+                    <button class="palette-btn" onclick="editSelectedExtType('solar')" id="edit-ext-solar" style="--c:#7799ff;">Solar</button>
+                    <button class="palette-btn" onclick="editSelectedExtType('whipple')" id="edit-ext-whipple" style="--c:#fff;">Whipple</button>
+                </div>
+
                 <div class="stat-row" style="margin-bottom: 10px;">
                     <span class="stat-label">Damage:</span>
                     <input type="range" id="ext-dmg" min="0" max="100" value="0" oninput="updateEntityData()">
@@ -351,7 +376,7 @@
                 <button class="action-btn" style="margin-top: 10px;" onclick="propagateHazards()">Trace Environment from Source</button>
             </div>
             <hr style="border-color: #333; margin: 15px 0;">
-            <h3 style="color: #ff3333; margin-bottom: 5px;">Damage Simulation</h3>
+            <h3 style="color: #ff3333; margin-bottom: 5px;">Hazard & Damage Events</h3>
             <select id="sim-type">
                 <option value="micrometeor">Micrometeoroid Strike (Hull Breach)</option> <option value="debris">High-V Debris Cloud (Widespread Damage)</option>
                 <option value="coolant">Coolant Line Rupture (Cryo/Toxin)</option> <option value="scrubber">Life Support Scrubber Failure (CO2)</option>
@@ -379,17 +404,19 @@
             mainframe: { name: "Mainframe Core", size: 2.0, pwrCap: 0, pwrGen: 0, pwrDraw: 15, heat: 8 },
             processor: { name: "Sec. Processor", size: 0.5, pwrCap: 0, pwrGen: 0, pwrDraw: 4, heat: 2 },
             autodoc: { name: "Auto-Doc", size: 1.0, pwrCap: 0, pwrGen: 0, pwrDraw: 6 },
-            cryo: { name: "Liquid Perfluorocarbon Pod", size: 1.0, pwrCap: 0, pwrGen: 0, pwrDraw: 5, heat: -2 }
+            cryo: { name: "Liq. Perfluoro Pod", size: 1.0, pwrCap: 0, pwrGen: 0, pwrDraw: 5, heat: -2 }
         };
 
         let state = {
             ship: { name: "Broadsword-Class Corvette", desc: "Long-range patrol and system transit vessel. Built for horizontal burn architecture." },
-            mode: 'structure', connectorSubMode: 'door', rooms: {}, doors: {}, vents: {}, exterior: {}, gridData: Array(ROWS).fill().map(() => Array(COLS).fill(null)), idCounters: { room: 0, door: 0, ext: 0, comp: 0, vent: 0 }
+            mode: 'structure', connectorSubMode: 'door',
+            activeBuildTypeExt: 'engine', activeBuildTypeDoor: 'standard',
+            rooms: {}, doors: {}, vents: {}, exterior: {}, gridData: Array(ROWS).fill().map(() => Array(COLS).fill(null)), idCounters: { room: 0, door: 0, ext: 0, comp: 0, vent: 0 }
         };
 
         let selection = { roomIds: new Set(), doorIds: new Set(), extIds: new Set(), ventIds: new Set() };
         let filters = { rooms: true, doors: true, exterior: true };
-        let isDragging = false;
+        let isDragging = false; let hasDragged = false;
         let dragContext = { startX: 0, startY: 0, currentX: 0, currentY: 0, action: null, backupGrid: null, backupDoors: null, backupVents: null, backupExt: null };
         let ghostItem = null; 
         let visibleStats = { dmg: true, pres: false, temp: false, gas: false };
@@ -422,36 +449,46 @@
         function addVent(idStr, x, y, channel) { state.vents[idStr] = {id:idStr, x,y, type:'vent', isActive:true, isBroken:false, dmg:0, channel:channel, notes:""}; }
 
         function loadDefaultShip() {
-            state.ship = { name: "Broadsword-Class Corvette", desc: "Long-range patrol and system transit vessel. Built for horizontal burn architecture." };
+            state.ship = { name: "Scout-Class Wedge", desc: "Short-range fast interceptor and planetary scout vessel." };
             state.rooms={}; state.doors={}; state.vents={}; state.exterior={}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+            document.getElementById('ship-name').value = state.ship.name; document.getElementById('ship-desc').value = state.ship.desc;
             
-            addRoom("r_cmd", "Command Deck", "command", 21, 1.0, 1, [{id:"c_m1", type:"mainframe", isActive:true, isBroken:false}]);
-            addRoom("r_spine", "Main Truss", "default", 15, 0.8, 0, []);
-            addRoom("r_hab", "Centrifuge Hab", "crew", 21, 1.0, 1, [{id:"c_0", type:"scrubber", isActive:true, isBroken:false}]);
-            addRoom("r_lab", "Medbay / Science", "medical", 21, 1.0, 2, [{id:"c_p1", type:"processor", isActive:true, isBroken:false}, {id:"c_p2", type:"autodoc", isActive:true, isBroken:false}]);
-            addRoom("r_cargo", "Cargo Bay", "cargo", 10, 0.5, 0, [{id:"c_1", type:"battery", isActive:true, isBroken:false}, {id:"c_2", type:"storage_l", isActive:true, isBroken:false}]);
-            addRoom("r_tac", "Armory", "tactical", 21, 1.0, 1, []);
-            addRoom("r_eng", "Fission Drive Core", "engineering", 65, 1.0, 3, [{id:"c_3", type:"smr", isActive:true, isBroken:false}]);
-            state.idCounters.room = 20; state.idCounters.comp = 10;
+            addRoom("r_bridge", "Bridge", "command", 21, 1.0, 1, [{id:"c_1", type:"mainframe", isActive:true, isBroken:false}]);
+            addRoom("r_bunks", "Double Bunks", "crew", 21, 1.0, 1, []);
+            addRoom("r_fresher", "Prep / Fresher", "medical", 21, 1.0, 1, [{id:"c_2", type:"scrubber", isActive:true, isBroken:false}]);
+            addRoom("r_hall", "Main Hall", "default", 21, 1.0, 1, [{id:"c_3", type:"storage_m", isActive:true, isBroken:false}]);
+            addRoom("r_fuel_p", "Port Fuel", "cargo", 15, 1.0, 0, [{id:"c_4", type:"storage_l", isActive:true, isBroken:false}]);
+            addRoom("r_fuel_s", "Starboard Fuel", "cargo", 15, 1.0, 0, [{id:"c_5", type:"storage_l", isActive:true, isBroken:false}]);
+            addRoom("r_drive_p", "Port Drives", "engineering", 40, 1.0, 2, [{id:"c_6", type:"battery", isActive:true, isBroken:false}]);
+            addRoom("r_drive_s", "Starboard Drives", "engineering", 40, 1.0, 2, [{id:"c_7", type:"battery", isActive:true, isBroken:false}]);
+            state.idCounters.room = 10; state.idCounters.comp = 10;
 
-            applyToGrid(4, 8, 14, 17, "r_cmd"); applyToGrid(9, 33, 15, 16, "r_spine");
-            applyToGrid(12, 17, 11, 14, "r_hab"); applyToGrid(12, 17, 17, 20, "r_lab");
-            applyToGrid(22, 28, 11, 14, "r_cargo"); applyToGrid(22, 28, 17, 20, "r_tac"); applyToGrid(34, 41, 13, 18, "r_eng");
+            applyToGrid(22, 26, 4, 7, "r_bridge");
+            applyToGrid(20, 21, 6, 9, "r_bunks");
+            applyToGrid(27, 28, 6, 9, "r_fresher");
+            applyToGrid(22, 26, 8, 22, "r_hall");
+            applyToGrid(18, 21, 10, 16, "r_fuel_p");
+            applyToGrid(27, 30, 10, 16, "r_fuel_s");
+            applyToGrid(16, 21, 17, 22, "r_drive_p");
+            applyToGrid(27, 32, 17, 22, "r_drive_s");
 
-            addDoor("d_1", 9, 15, "v", "security", true, "Bridge Access"); addDoor("d_2", 9, 16, "v", "security", true, "Bridge Access");
-            addDoor("d_3", 14, 15, "h", "standard", false, ""); addDoor("d_4", 14, 17, "h", "standard", false, "");
-            addDoor("d_5", 25, 15, "h", "airlock", false, ""); addDoor("d_6", 25, 17, "h", "security", false, "");
-            addDoor("d_7", 34, 15, "v", "airlock", true, "Reactor Check"); addDoor("d_8", 34, 16, "v", "airlock", true, "Reactor Check");
-            state.idCounters.door = 20;
+            addDoor("d_1", 24, 8, "h", "standard", false, "Bridge Access");
+            addDoor("d_2", 22, 8, "v", "standard", false, "Bunks");
+            addDoor("d_3", 27, 8, "v", "standard", false, "Fresher");
+            addDoor("d_4", 22, 13, "v", "security", true, "Fuel P");
+            addDoor("d_5", 27, 13, "v", "security", true, "Fuel S");
+            addDoor("d_6", 22, 19, "v", "security", true, "Drive P");
+            addDoor("d_7", 27, 19, "v", "security", true, "Drive S");
+            addDoor("d_8", 24, 23, "h", "airlock", false, "Aft Exit");
+            state.idCounters.door = 10;
 
-            addVent("v_1", 6, 15, 1); addVent("v_2", 15, 12, 1); addVent("v_3", 15, 19, 1); addVent("v_4", 25, 19, 1);
+            addVent("v_1", 24, 6, 1); addVent("v_2", 24, 15, 1);
             state.idCounters.vent = 10;
 
-            for(let i=13; i<=18; i++) addExt(`e_eng${i}`, 42, i, "engine", "Nozzle");
-            for(let i=14; i<=17; i++) addExt(`e_whip${i}`, 3, i, "whipple", "Bow Armor");
-            for(let i=13; i<=16; i++) addExt(`e_sol${i}`, i, 10, "solar", i===13?"Root":"");
-            for(let i=36; i<=39; i++) { addExt(`e_rad1_${i}`, i, 12, "radiator", i===36?"Root":""); addExt(`e_rad2_${i}`, i, 19, "radiator", i===36?"Root":""); }
-            state.idCounters.ext = 40;
+            for(let x=17; x<=19; x++) addExt(`e_eng${x}`, x, 23, "engine");
+            for(let x=29; x<=31; x++) addExt(`e_eng${x}`, x, 23, "engine");
+            for(let y=18; y<=20; y++) { addExt(`e_rad1${y}`, 15, y, "radiator"); addExt(`e_rad2${y}`, 33, y, "radiator"); }
+            state.idCounters.ext = 20;
         }
 
         function exportShip() {
@@ -461,10 +498,19 @@
         }
         function importShip(event) {
             const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
-            reader.onload = e => { try { const imp = JSON.parse(e.target.result); if(imp.rooms && imp.gridData) { state = imp; clearSelection(); renderLoop(); } else alert("Invalid JSON."); } catch (err) { alert("Error parsing JSON file."); } };
+            reader.onload = e => { try { const imp = JSON.parse(e.target.result); if(imp.rooms && imp.gridData) { state = imp; document.getElementById('ship-name').value = state.ship.name || ""; document.getElementById('ship-desc').value = state.ship.desc || ""; clearSelection(); renderLoop(); } else alert("Invalid JSON."); } catch (err) { alert("Error parsing JSON file."); } };
             reader.readAsText(file); event.target.value = ''; 
         }
         function updateShipInfo() { state.ship.name = document.getElementById('ship-name').value; state.ship.desc = document.getElementById('ship-desc').value; }
+
+        function wipeBlueprint() { 
+            if(confirm("WARNING: This will completely delete the current ship layout. Proceed?")) { 
+                state.ship = { name: "", desc: "" };
+                document.getElementById('ship-name').value = ""; document.getElementById('ship-desc').value = "";
+                state.rooms = {}; state.doors = {}; state.vents = {}; state.exterior = {}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null)); 
+                clearSelection(); renderLoop(); 
+            } 
+        }
 
         function getHazardColorBlend(base, target, pct) {
             if (pct <= 0) return `rgba(${base.r}, ${base.g}, ${base.b}, ${base.a})`; let r, g, b, a;
@@ -578,10 +624,7 @@
                 if (r2 === roomId && r1 && r1 !== roomId) { connections.push({ targetRoom: r1, door: d }); touches = true; }
             });
             
-            Object.values(state.vents).forEach(v => {
-                if (v.isActive && !v.isBroken && state.gridData[v.y][v.x] === roomId) myVents.push(v);
-            });
-
+            Object.values(state.vents).forEach(v => { if (v.isActive && !v.isBroken && state.gridData[v.y][v.x] === roomId) myVents.push(v); });
             myVents.forEach(v1 => {
                 Object.values(state.vents).forEach(v2 => {
                     if (v2.id !== v1.id && v2.channel === v1.channel && v2.isActive && !v2.isBroken) {
@@ -672,6 +715,14 @@
                 const el = document.createElement('div'); let cName = `ext-item vent`;
                 if (!v.isActive) cName += ' inactive'; if (v.isBroken) cName += ' broken'; if (selection.ventIds.has(v.id)) cName += ' selected';
                 el.className = cName; el.dataset.id = v.id; el.style.left = `${v.x * CELL_SIZE}px`; el.style.top = `${v.y * CELL_SIZE}px`;
+                
+                let rId = state.gridData[v.y][v.x];
+                let theme = rId && state.rooms[rId] ? themes[state.rooms[rId].type] : themes['default'];
+                el.style.color = theme.border;
+                el.style.backgroundColor = `rgba(${theme.r}, ${theme.g}, ${theme.b}, 0.2)`;
+                el.style.boxShadow = `0 0 8px ${theme.border}, inset 0 0 8px ${theme.border}`;
+                el.style.borderColor = theme.border;
+                
                 DOM.ventsLayer.appendChild(el);
             });
 
@@ -683,11 +734,32 @@
                     DOM.doorsLayer.appendChild(el);
                 } else if (state.connectorSubMode === 'vent') {
                     const el = document.createElement('div'); el.className = `ext-item vent ghost`;
-                    el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; DOM.ventsLayer.appendChild(el);
+                    el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; 
+                    let rId = state.gridData[ghostItem.y][ghostItem.x];
+                    let theme = rId && state.rooms[rId] ? themes[state.rooms[rId].type] : themes['default'];
+                    el.style.color = theme.border; el.style.backgroundColor = `rgba(${theme.r}, ${theme.g}, ${theme.b}, 0.2)`;
+                    el.style.boxShadow = `0 0 8px ${theme.border}, inset 0 0 8px ${theme.border}`; el.style.borderColor = theme.border;
+                    DOM.ventsLayer.appendChild(el);
                 }
             }
 
             updateEditorUI();
+        }
+
+        function triggerBuildAtGhost() {
+            if (!ghostItem) return;
+            if (state.mode === 'connectors') { 
+                if (state.connectorSubMode === 'door') { let exists = Object.values(state.doors).find(d => d.x === ghostItem.x && d.y === ghostItem.y && d.dir === ghostItem.dir); if (!exists) addDoor(`door_${state.idCounters.door++}`, ghostItem.x, ghostItem.y, ghostItem.dir, state.activeBuildTypeDoor, false); } 
+                else if (state.connectorSubMode === 'vent') { let exists = Object.values(state.vents).find(v => v.x === ghostItem.x && v.y === ghostItem.y); if (!exists) addVent(`vent_${state.idCounters.vent++}`, ghostItem.x, ghostItem.y, parseInt(document.getElementById('vent-build-channel').value)||1); }
+            } else if (state.mode === 'exterior') { let existing = Object.values(state.exterior).find(ex => ex.x === ghostItem.x && ex.y === ghostItem.y); if (!existing) addExt(`ext_${state.idCounters.ext++}`, ghostItem.x, ghostItem.y, state.activeBuildTypeExt); }
+        }
+
+        function triggerEraseAtGhost() {
+            if (!ghostItem) return;
+            if (state.mode === 'connectors') {
+                if (state.connectorSubMode === 'door') { let d = Object.values(state.doors).find(d => d.x === ghostItem.x && d.y === ghostItem.y && d.dir === ghostItem.dir); if (d) delete state.doors[d.id]; } 
+                else if (state.connectorSubMode === 'vent') { let v = Object.values(state.vents).find(v => v.x === ghostItem.x && v.y === ghostItem.y); if (v) delete state.vents[v.id]; }
+            } else if (state.mode === 'exterior') { let ex = Object.values(state.exterior).find(ex => ex.x === ghostItem.x && ex.y === ghostItem.y); if (ex) delete state.exterior[ex.id]; }
         }
 
         function setupEventListeners() {
@@ -698,8 +770,7 @@
         function handleZoom(e) {
             e.preventDefault(); const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1; const newZoom = Math.max(0.3, Math.min(camera.zoom * zoomDelta, 3));
             const rect = DOM.viewport.getBoundingClientRect();
-            camera.panX = (e.clientX - rect.left) - ((e.clientX - rect.left) - camera.panX) / camera.zoom * newZoom;
-            camera.panY = (e.clientY - rect.top) - ((e.clientY - rect.top) - camera.panY) / camera.zoom * newZoom;
+            camera.panX = (e.clientX - rect.left) - ((e.clientX - rect.left) - camera.panX) / camera.zoom * newZoom; camera.panY = (e.clientY - rect.top) - ((e.clientY - rect.top) - camera.panY) / camera.zoom * newZoom;
             camera.zoom = newZoom; updateCamera();
         }
         function updateCamera() { DOM.container.style.transform = `translate(${camera.panX}px, ${camera.panY}px) scale(${camera.zoom})`; }
@@ -712,32 +783,28 @@
         function handleMouseDown(e) {
             if (e.button === 1 || e.altKey) { e.preventDefault(); camera.isPanning = true; camera.lastX = e.clientX; camera.lastY = e.clientY; DOM.viewport.style.cursor = 'grabbing'; return; }
             
-            let targetEl = e.target.closest('.door, .vent, .ext-item') || e.target;
-            
-            if (e.button === 2) {
-                if (state.mode === 'connectors') {
-                    if (targetEl.classList.contains('door')) { delete state.doors[targetEl.dataset.id]; renderLoop(); return; }
-                    if (targetEl.classList.contains('vent')) { delete state.vents[targetEl.dataset.id]; renderLoop(); return; }
-                }
-                if (state.mode === 'exterior' && targetEl.classList.contains('ext-item')) { delete state.exterior[targetEl.dataset.id]; renderLoop(); return; }
-            }
-            
-            const coords = getGridCoords(e); dragContext.startX = coords.x; dragContext.startY = coords.y; dragContext.currentX = coords.x; dragContext.currentY = coords.y; isDragging = true;
+            const coords = getGridCoords(e); dragContext.startX = coords.x; dragContext.startY = coords.y; dragContext.currentX = coords.x; dragContext.currentY = coords.y; isDragging = true; hasDragged = false;
 
             if (state.mode === 'structure') {
                 dragContext.action = e.button === 2 ? 'erase' : 'add';
-                if (dragContext.action === 'add') {
-                    const clickedId = state.gridData[coords.y][coords.x];
-                    if (!clickedId || !selection.roomIds.has(clickedId)) { clearSelection(); if (clickedId) { selection.roomIds.add(clickedId); } }
-                }
+                if (dragContext.action === 'add') { const clickedId = state.gridData[coords.y][coords.x]; if (!clickedId || !selection.roomIds.has(clickedId)) { clearSelection(); if (clickedId) { selection.roomIds.add(clickedId); } } }
                 DOM.draftBox.className = `selection-box ${dragContext.action}`; DOM.draftBox.style.display = 'block'; updateDraftBox(coords.x, coords.y);
             } 
-            else if (state.mode === 'select') {
-                let clickedRoom = state.gridData[coords.y][coords.x];
-                let clickedDoor = targetEl.classList.contains('door') ? targetEl.dataset.id : null;
-                let clickedVent = targetEl.classList.contains('vent') ? targetEl.dataset.id : null;
-                let clickedExt = (targetEl.classList.contains('ext-item') && !clickedVent) ? targetEl.dataset.id : null;
+            else if (state.mode === 'connectors' || state.mode === 'exterior') {
+                dragContext.action = e.button === 2 ? 'erase_item' : 'build_item';
+                if (state.mode === 'connectors') {
+                    if (state.connectorSubMode === 'door') {
+                        const cellLocalX = coords.rawX % CELL_SIZE, cellLocalY = coords.rawY % CELL_SIZE; const dL = cellLocalX, dR = CELL_SIZE - cellLocalX, dT = cellLocalY, dB = CELL_SIZE - cellLocalY; const minDist = Math.min(dL, dR, dT, dB); let gX = coords.x, gY = coords.y, gDir = 'v';
+                        if (minDist === dL) gDir = 'v'; else if (minDist === dR) { gDir = 'v'; gX++; } else if (minDist === dT) gDir = 'h'; else { gDir = 'h'; gY++; }
+                        ghostItem = { x: gX, y: gY, dir: gDir };
+                    } else if (state.connectorSubMode === 'vent') { ghostItem = { x: coords.x, y: coords.y, type: 'vent' }; }
+                } else if (state.mode === 'exterior') { ghostItem = { x: coords.x, y: coords.y, type: state.activeBuildTypeExt }; }
 
+                if (dragContext.action === 'build_item') triggerBuildAtGhost(); else triggerEraseAtGhost(); renderLoop();
+            }
+            else if (state.mode === 'select') {
+                let targetEl = e.target.closest('.door, .vent, .ext-item') || e.target; let clickedRoom = state.gridData[coords.y][coords.x];
+                let clickedDoor = targetEl.classList.contains('door') ? targetEl.dataset.id : null; let clickedVent = targetEl.classList.contains('vent') ? targetEl.dataset.id : null; let clickedExt = (targetEl.classList.contains('ext-item') && !clickedVent) ? targetEl.dataset.id : null;
                 let isClickingSelected = (clickedDoor && selection.doorIds.has(clickedDoor)) || (clickedExt && selection.extIds.has(clickedExt)) || (clickedVent && selection.ventIds.has(clickedVent)) || (clickedRoom && selection.roomIds.has(clickedRoom));
 
                 if (isClickingSelected) {
@@ -750,42 +817,31 @@
                     else if (filters.exterior && clickedExt) { selection.extIds.add(clickedExt); dragContext.action = null; }
                     else if (filters.rooms && clickedRoom) { dragContext.action = 'move'; selection.roomIds.add(clickedRoom); dragContext.backupGrid = state.gridData.map(row => [...row]); dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupVents = JSON.parse(JSON.stringify(state.vents)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior)); } 
                     else { dragContext.action = 'marquee'; DOM.draftBox.className = `selection-box marquee`; DOM.draftBox.style.display = 'block'; updateDraftBox(coords.x, coords.y); }
-                }
+                } renderLoop();
             }
-            else if (state.mode === 'integrity') { isDragging = false; const clickedId = state.gridData[coords.y][coords.x]; clearSelection(); if (clickedId) { selection.roomIds.add(clickedId); } }
-            else if (state.mode === 'connectors' || state.mode === 'exterior') {
-                isDragging = false; 
-                if (ghostItem && e.button !== 2) {
-                    if (state.mode === 'connectors') { 
-                        if (state.connectorSubMode === 'door') addDoor(`door_${state.idCounters.door++}`, ghostItem.x, ghostItem.y, ghostItem.dir, document.getElementById('door-build-type').value, false); 
-                        else if (state.connectorSubMode === 'vent') addVent(`vent_${state.idCounters.vent++}`, ghostItem.x, ghostItem.y, parseInt(document.getElementById('vent-build-channel').value)||1); 
-                    } 
-                    else if (state.mode === 'exterior') { let existing = Object.values(state.exterior).find(ex => ex.x === ghostItem.x && ex.y === ghostItem.y); if (!existing) addExt(`ext_${state.idCounters.ext++}`, ghostItem.x, ghostItem.y, document.getElementById('ext-build-type').value); }
-                }
-            } renderLoop();
+            else if (state.mode === 'integrity') { isDragging = false; const clickedId = state.gridData[coords.y][coords.x]; clearSelection(); if (clickedId) { selection.roomIds.add(clickedId); } renderLoop();}
         }
 
         function handleMouseMove(e) {
             if (camera.isPanning) { camera.panX += e.clientX - camera.lastX; camera.panY += e.clientY - camera.lastY; camera.lastX = e.clientX; camera.lastY = e.clientY; updateCamera(); return; }
             const coords = getGridCoords(e); dragContext.currentX = coords.x; dragContext.currentY = coords.y;
+            if (isDragging && (coords.x !== dragContext.startX || coords.y !== dragContext.startY)) hasDragged = true;
 
             if (!isDragging) {
                 if (state.mode === 'connectors') {
                     if (state.connectorSubMode === 'door') {
                         const cellLocalX = coords.rawX % CELL_SIZE, cellLocalY = coords.rawY % CELL_SIZE; const dL = cellLocalX, dR = CELL_SIZE - cellLocalX, dT = cellLocalY, dB = CELL_SIZE - cellLocalY; const minDist = Math.min(dL, dR, dT, dB); let gX = coords.x, gY = coords.y, gDir = 'v';
                         if (minDist === dL) gDir = 'v'; else if (minDist === dR) { gDir = 'v'; gX++; } else if (minDist === dT) gDir = 'h'; else { gDir = 'h'; gY++; }
-                        let exists = Object.values(state.doors).find(d => d.x === gX && d.y === gY && d.dir === gDir);
-                        if (gX >= 0 && gX <= COLS && gY >= 0 && gY <= ROWS && !exists) ghostItem = { x: gX, y: gY, dir: gDir }; else ghostItem = null;
-                    } else if (state.connectorSubMode === 'vent') {
-                        let exists = Object.values(state.vents).find(v => v.x === coords.x && v.y === coords.y);
-                        if (!exists) ghostItem = { x: coords.x, y: coords.y, type: 'vent' }; else ghostItem = null;
-                    }
+                        ghostItem = { x: gX, y: gY, dir: gDir };
+                    } else if (state.connectorSubMode === 'vent') { ghostItem = { x: coords.x, y: coords.y, type: 'vent' }; }
                     renderLoop();
-                } else if (state.mode === 'exterior') { ghostItem = { x: coords.x, y: coords.y, type: document.getElementById('ext-build-type').value }; renderLoop(); }
+                } else if (state.mode === 'exterior') { ghostItem = { x: coords.x, y: coords.y, type: state.activeBuildTypeExt }; renderLoop(); }
             }
 
             if (!isDragging) return;
             if (['add', 'erase', 'marquee'].includes(dragContext.action)) { updateDraftBox(dragContext.currentX, dragContext.currentY); } 
+            else if (dragContext.action === 'build_item') { triggerBuildAtGhost(); renderLoop(); }
+            else if (dragContext.action === 'erase_item') { triggerEraseAtGhost(); renderLoop(); }
             else if (dragContext.action === 'move') {
                 const dx = dragContext.currentX - dragContext.startX, dy = dragContext.currentY - dragContext.startY; let canMove = true;
                 for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (selection.roomIds.has(dragContext.backupGrid[y][x])) { let nx = x + dx, ny = y + dy; if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { canMove = false; break; } let destId = dragContext.backupGrid[ny][nx]; if (destId && !selection.roomIds.has(destId)) { canMove = false; break; } }
@@ -814,36 +870,40 @@
                 let activeId = Array.from(selection.roomIds)[0];
                 if (!activeId) { activeId = `room_${state.idCounters.room++}`; addRoom(activeId, 'New Sector', 'default', 21, 1.0, 1); }
                 const clickedId = state.gridData[dragContext.startY][dragContext.startX];
-                if (minX === maxX && minY === maxY && clickedId && clickedId !== activeId) { clearSelection(); selection.roomIds.add(clickedId); } 
+                if (!hasDragged && clickedId && clickedId !== activeId) { clearSelection(); selection.roomIds.add(clickedId); } 
                 else { applyToGrid(minX, maxX, minY, maxY, activeId); clearSelection(); selection.roomIds.add(activeId); splitDisconnectedRooms(); }
             } 
             else if (dragContext.action === 'erase') { applyToGrid(minX, maxX, minY, maxY, null); splitDisconnectedRooms(); cleanUpRooms(); }
             else if (dragContext.action === 'marquee') {
                 clearSelection();
                 if (filters.rooms) { for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) if (state.gridData[y][x]) selection.roomIds.add(state.gridData[y][x]); }
-                if (filters.doors) {
-                    Object.values(state.doors).forEach(d => { if(d.x >= minX && d.x <= maxX && d.y >= minY && d.y <= maxY) selection.doorIds.add(d.id); });
-                    Object.values(state.vents).forEach(v => { if(v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) selection.ventIds.add(v.id); });
-                }
+                if (filters.doors) { Object.values(state.doors).forEach(d => { if(d.x >= minX && d.x <= maxX && d.y >= minY && d.y <= maxY) selection.doorIds.add(d.id); }); Object.values(state.vents).forEach(v => { if(v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) selection.ventIds.add(v.id); }); }
                 if (filters.exterior) Object.values(state.exterior).forEach(ex => { if(ex.x >= minX && ex.x <= maxX && ex.y >= minY && ex.y <= maxY) selection.extIds.add(ex.id); });
             }
             dragContext.action = null; dragContext.backupGrid = null; dragContext.backupDoors = null; dragContext.backupVents = null; dragContext.backupExt = null; renderLoop();
         }
 
+        // --- PALETTE UI FUNCTIONS ---
+        function setBuildPalette(category, type) {
+            if (category === 'ext') { state.activeBuildTypeExt = type; ['engine', 'radiator', 'solar', 'whipple'].forEach(t => document.getElementById('pal-ext-' + t).classList.remove('active')); document.getElementById('pal-ext-' + type).classList.add('active'); } 
+            else if (category === 'door') { state.activeBuildTypeDoor = type; ['standard', 'security', 'airlock'].forEach(t => document.getElementById('pal-door-' + t).classList.remove('active')); document.getElementById('pal-door-' + type).classList.add('active'); }
+            ghostItem = null; renderLoop();
+        }
+        function editSelectedRoomType(type) { if (selection.roomIds.size === 1) { state.rooms[Array.from(selection.roomIds)[0]].type = type; renderLoop(); } }
+        function editSelectedDoorType(type) { if (selection.doorIds.size === 1) { state.doors[Array.from(selection.doorIds)[0]].type = type; renderLoop(); } }
+        function editSelectedExtType(type) { if (selection.extIds.size === 1) { state.exterior[Array.from(selection.extIds)[0]].type = type; renderLoop(); } }
+
         function setMode(newMode) {
             if (simActive && (newMode === 'structure' || newMode === 'connectors' || newMode === 'exterior')) return;
             state.mode = newMode;
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('btn-' + newMode).classList.add('active');
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active')); document.getElementById('btn-' + newMode).classList.add('active');
             document.getElementById('mode-indicator').innerText = `Mode: ${newMode.toUpperCase()}`;
-            document.querySelectorAll('.panel-section').forEach(el => el.classList.remove('active'));
-            document.getElementById('inst-' + newMode) && document.getElementById('inst-' + newMode).classList.add('active');
+            document.querySelectorAll('.panel-section').forEach(el => el.classList.remove('active')); document.getElementById('inst-' + newMode) && document.getElementById('inst-' + newMode).classList.add('active');
             
             if (newMode === 'info') { document.getElementById('panel-info').classList.add('active'); document.getElementById('ship-name').value = state.ship.name || ""; document.getElementById('ship-desc').value = state.ship.desc || ""; clearSelection(); } 
             else if (newMode === 'connectors' || newMode === 'exterior') { document.getElementById('panel-' + newMode).classList.add('active'); clearSelection(); } 
             else if (newMode === 'integrity') { document.getElementById('panel-integrity').classList.add('active'); if (selection.roomIds.size > 1) clearSelection(); } 
             else { document.getElementById('panel-editor').classList.add('active'); }
-            
             DOM.viewport.style.cursor = (newMode === 'select' || newMode === 'integrity') ? 'default' : 'crosshair'; ghostItem = null; renderLoop();
         }
         
@@ -851,20 +911,17 @@
             state.connectorSubMode = subMode;
             document.getElementById('btn-sub-door').classList.remove('active'); document.getElementById('btn-sub-vent').classList.remove('active');
             document.getElementById('btn-sub-' + subMode).classList.add('active');
-            document.getElementById('door-build-settings').style.display = subMode === 'door' ? 'block' : 'none';
-            document.getElementById('vent-build-settings').style.display = subMode === 'vent' ? 'block' : 'none';
+            document.getElementById('door-build-settings').style.display = subMode === 'door' ? 'block' : 'none'; document.getElementById('vent-build-settings').style.display = subMode === 'vent' ? 'block' : 'none';
             ghostItem = null; renderLoop();
         }
 
         function toggleFilter(type) { filters[type] = !filters[type]; const btn = document.getElementById(`btn-filter-${type === 'exterior' ? 'ext' : type}`); btn.classList.toggle('active', filters[type]); btn.innerText = `${type.charAt(0).toUpperCase() + type.slice(1)}: ${filters[type] ? 'ON' : 'OFF'}`; clearSelection(); renderLoop(); }
         function clearSelection() { selection.roomIds.clear(); selection.doorIds.clear(); selection.extIds.clear(); selection.ventIds.clear(); }
         function updateDraftBox(cx, cy) { const minX = Math.min(dragContext.startX, cx), minY = Math.min(dragContext.startY, cy); const w = Math.abs(cx - dragContext.startX) + 1, h = Math.abs(cy - dragContext.startY) + 1; DOM.draftBox.style.left = (minX * CELL_SIZE) + 'px'; DOM.draftBox.style.top = (minY * CELL_SIZE) + 'px'; DOM.draftBox.style.width = (w * CELL_SIZE) + 'px'; DOM.draftBox.style.height = (h * CELL_SIZE) + 'px'; }
-        function wipeBlueprint() { if(confirm("WARNING: This will completely delete the current ship layout. Proceed?")) { state.rooms = {}; state.doors = {}; state.vents = {}; state.exterior = {}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null)); clearSelection(); renderLoop(); } }
 
         function propagateHazards() {
             if (selection.roomIds.size !== 1) return;
-            const startId = Array.from(selection.roomIds)[0]; const sourceEnv = state.rooms[startId];
-            let queue = [startId], visited = new Set([startId]);
+            const startId = Array.from(selection.roomIds)[0]; const sourceEnv = state.rooms[startId]; let queue = [startId], visited = new Set([startId]);
             while(queue.length > 0) {
                 let currentId = queue.shift(); let conns = getRoomConnections(currentId);
                 conns.forEach(c => {
@@ -883,11 +940,9 @@
                 const sourceEnv = snapshot[sourceId];
                 if (sourceEnv.airType !== 'O2' || sourceEnv.temp > 40 || sourceEnv.temp < 10 || sourceEnv.pres < 1) {
                     getRoomConnections(sourceId).forEach(c => {
-                        let t = c.isVent ? {air:true, temp:true} : getDoorTransfer(c.door);
-                        let target = state.rooms[c.targetRoom];
+                        let t = c.isVent ? {air:true, temp:true} : getDoorTransfer(c.door); let target = state.rooms[c.targetRoom];
                         if (t.air && (sourceEnv.airType !== 'O2' || sourceEnv.pres < 1)) {
-                            target.airType = sourceEnv.airType === 'Vacuum' ? 'Vacuum' : (sourceEnv.airType === 'Toxins' ? 'Toxins' : target.airType);
-                            target.pres = Math.min(target.pres, sourceEnv.pres);
+                            target.airType = sourceEnv.airType === 'Vacuum' ? 'Vacuum' : (sourceEnv.airType === 'Toxins' ? 'Toxins' : target.airType); target.pres = Math.min(target.pres, sourceEnv.pres);
                         }
                         if (t.temp && (sourceEnv.temp > 40 || sourceEnv.temp < 10)) {
                             if (sourceEnv.temp > 40) target.temp = Math.max(target.temp, sourceEnv.temp);
@@ -971,7 +1026,6 @@
         function applySimulation() { endSimulation(); }
         function endSimulation() { simActive = false; backupRooms = null; backupDoorsSim = null; backupVentsSim = null; backupExtSim = null; document.getElementById('sim-warning').style.display = 'none'; document.getElementById('btn-structure').classList.remove('disabled-mode'); document.getElementById('btn-connectors').classList.remove('disabled-mode'); document.getElementById('btn-exterior').classList.remove('disabled-mode'); document.getElementById('sim-actions').style.display = 'none'; renderLoop(); }
 
-        // --- EDITOR UI & COMPONENTS LOGIC ---
         function toggleEye(stat) { Object.keys(visibleStats).forEach(k => visibleStats[k] = false); visibleStats[stat] = true; renderLoop(); }
         function updateIntegrityData(activeKey) {
             if (selection.roomIds.size !== 1) return; const id = Array.from(selection.roomIds)[0]; const r = state.rooms[id];
@@ -982,9 +1036,9 @@
             if (selection.roomIds.size !== 1) return; const id = Array.from(selection.roomIds)[0]; const r = state.rooms[id];
             if (stat === 'dmg') r.dmg = 0; if (stat === 'pres') r.pres = 1.0; if (stat === 'temp') r.temp = 21; if (stat === 'gas') r.airType = 'O2'; renderLoop();
         }
-        function installComponent() {
+        function installComponent(type) {
             if (selection.roomIds.size !== 1) return; const rId = Array.from(selection.roomIds)[0]; const room = state.rooms[rId];
-            const type = document.getElementById('comp-select').value; const def = COMP_DICT[type];
+            const def = COMP_DICT[type];
             if (room.spaceUsed + def.size > room.area) { alert(`Insufficient Space! Room Area: ${room.area}. Space Used: ${room.spaceUsed}. Machine Size: ${def.size}`); return; }
             if (!room.components) room.components = [];
             room.components.push({ id: `comp_${state.idCounters.comp++}`, type: type, isActive: true, isBroken: false }); renderLoop();
@@ -1023,15 +1077,16 @@
                     const d = isVent ? state.vents[Array.from(selection.ventIds)[0]] : state.doors[Array.from(selection.doorIds)[0]];
                     if (d) {
                         document.getElementById('connector-title').innerText = isVent ? "Ventilation Node" : "Connector Node";
-                        document.getElementById('door-edit-type').value = d.type; document.getElementById('door-notes').value = d.notes; document.getElementById('door-dmg').value = d.dmg || 0; document.getElementById('door-dmg-val').innerText = (d.dmg || 0) + "%";
+                        document.getElementById('door-notes').value = d.notes; document.getElementById('door-dmg').value = d.dmg || 0; document.getElementById('door-dmg-val').innerText = (d.dmg || 0) + "%";
                         
                         document.getElementById('door-prop-wall').style.display = isVent ? 'none' : 'block';
                         document.getElementById('door-prop-vent').style.display = isVent ? 'block' : 'none';
                         document.getElementById('btn-vent-active').style.display = isVent ? 'block' : 'none';
-                        document.getElementById('connector-type-label').style.display = isVent ? 'none' : 'block';
-                        document.getElementById('door-edit-type').style.display = isVent ? 'none' : 'block';
+                        document.getElementById('door-type-editor').style.display = isVent ? 'none' : 'block';
 
                         if (!isVent) {
+                            ['standard', 'security', 'airlock'].forEach(t => document.getElementById('edit-door-' + t).classList.remove('active'));
+                            document.getElementById('edit-door-' + d.type).classList.add('active');
                             const blocksBtn = document.getElementById('btn-door-blocks'); blocksBtn.classList.toggle('active', d.blocksHazards); blocksBtn.innerText = `Rated to Block Hazards: ${d.blocksHazards ? 'ON' : 'OFF'}`;
                             const openBtn = document.getElementById('btn-door-open'); openBtn.innerText = d.isOpen ? "State: OPEN" : "State: Closed"; openBtn.className = d.isLocked ? "toggle-btn alert active" : (d.isOpen ? "toggle-btn active" : "toggle-btn");
                             document.getElementById('btn-door-locked').classList.toggle('active', d.isLocked); 
@@ -1047,7 +1102,10 @@
                 else if (selection.extIds.size === 1) {
                     const e = state.exterior[Array.from(selection.extIds)[0]];
                     if (e) {
-                        document.getElementById('ext-edit-type').value = e.type; document.getElementById('ext-notes').value = e.notes; document.getElementById('ext-dmg').value = e.dmg || 0; document.getElementById('ext-dmg-val').innerText = (e.dmg || 0) + "%";
+                        ['engine', 'radiator', 'solar', 'whipple'].forEach(t => document.getElementById('edit-ext-' + t).classList.remove('active'));
+                        document.getElementById('edit-ext-' + e.type).classList.add('active');
+
+                        document.getElementById('ext-notes').value = e.notes; document.getElementById('ext-dmg').value = e.dmg || 0; document.getElementById('ext-dmg-val').innerText = (e.dmg || 0) + "%";
                         document.getElementById('btn-ext-active').classList.toggle('active', e.isActive); document.getElementById('btn-ext-active').innerText = `Power: ${e.isActive ? 'Active' : 'Offline'}`; document.getElementById('btn-ext-broken').classList.toggle('active', e.isBroken);
                         const root = findExtRootRoom(e.id); const statText = document.getElementById('ext-status-text');
                         if (root) { statText.innerText = `Connected to: ${state.rooms[root.roomId].name} (Chain: ${root.chainLength})`; statText.style.color = '#00ffcc'; } else { statText.innerText = `Unconnected Array (Offline)`; statText.style.color = '#ff3333'; }
@@ -1059,7 +1117,10 @@
                 else if (selection.roomIds.size === 1) {
                     const r = state.rooms[Array.from(selection.roomIds)[0]];
                     if (r) {
-                        document.getElementById('room-name').value = r.name; document.getElementById('room-type').value = r.type; document.getElementById('room-notes').value = r.notes; document.getElementById('room-pwr').value = r.pwrPerCell; document.getElementById('room-area-stat').innerText = `Area: ${r.area} cells | Space Used: ${r.spaceUsed.toFixed(1)}`;
+                        ['default', 'command', 'engineering', 'medical', 'tactical', 'cargo', 'crew'].forEach(t => document.getElementById('edit-room-' + t).classList.remove('active'));
+                        document.getElementById('edit-room-' + r.type).classList.add('active');
+
+                        document.getElementById('room-name').value = r.name; document.getElementById('room-notes').value = r.notes; document.getElementById('room-pwr').value = r.pwrPerCell; document.getElementById('room-area-stat').innerText = `Area: ${r.area} cells | Space Used: ${r.spaceUsed.toFixed(1)}`;
                         const list = document.getElementById('comp-list'); list.innerHTML = '';
                         if (r.components && r.components.length > 0) {
                             r.components.forEach(c => {
@@ -1075,9 +1136,9 @@
 
         function updateEntityData() {
             if (selection.roomIds.size === 1 && selection.doorIds.size === 0 && selection.extIds.size === 0 && selection.ventIds.size === 0) {
-                const r = state.rooms[Array.from(selection.roomIds)[0]]; r.name = document.getElementById('room-name').value; r.type = document.getElementById('room-type').value; r.notes = document.getElementById('room-notes').value; r.pwrPerCell = parseFloat(document.getElementById('room-pwr').value) || 0;
+                const r = state.rooms[Array.from(selection.roomIds)[0]]; r.name = document.getElementById('room-name').value; r.notes = document.getElementById('room-notes').value; r.pwrPerCell = parseFloat(document.getElementById('room-pwr').value) || 0;
             } else if (selection.doorIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0 && selection.ventIds.size === 0) {
-                const d = state.doors[Array.from(selection.doorIds)[0]]; d.type = document.getElementById('door-edit-type').value; d.notes = document.getElementById('door-notes').value; d.dmg = parseInt(document.getElementById('door-dmg').value) || 0; if (d.dmg >= 100) { d.isBroken = true; d.isActive = false;} else { d.isBroken = false; }
+                const d = state.doors[Array.from(selection.doorIds)[0]]; d.notes = document.getElementById('door-notes').value; d.dmg = parseInt(document.getElementById('door-dmg').value) || 0; if (d.dmg >= 100) { d.isBroken = true; d.isActive = false;} else { d.isBroken = false; }
             } else if (selection.ventIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0 && selection.doorIds.size === 0) {
                 const v = state.vents[Array.from(selection.ventIds)[0]]; v.channel = parseInt(document.getElementById('door-vent-channel').value) || 1; v.notes = document.getElementById('door-notes').value; v.dmg = parseInt(document.getElementById('door-dmg').value) || 0; if (v.dmg >= 100) {v.isBroken = true; v.isActive = false;} else { v.isBroken = false; }
             } else if (selection.extIds.size === 1 && selection.roomIds.size === 0 && selection.doorIds.size === 0 && selection.ventIds.size === 0) {
