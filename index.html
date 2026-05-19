@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced TTRPG Spaceship Architect V 0.3.6</title>
+    <title>Advanced TTRPG Spaceship Architect V 0.4.0</title>
     <style>
         body { background-color: #050508; color: #00ffcc; font-family: 'Courier New', Courier, monospace; display: flex; margin: 0; height: 100vh; overflow: hidden; user-select: none; }
         #workspace { flex: 3; display: flex; flex-direction: column; background-color: #050508; position: relative; }
@@ -18,14 +18,13 @@
         #viewport { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
         #grid-container { position: absolute; width: 1200px; height: 800px; background-color: #0a0a0f; border: 2px solid #333; box-shadow: 0 0 40px rgba(0, 255, 204, 0.05); transform-origin: 0 0; }
         #grid { display: grid; grid-template-columns: repeat(48, 25px); grid-template-rows: repeat(32, 25px); width: 100%; height: 100%; position: absolute; z-index: 1; }
-        
-        /* Transition allows smooth color fading on erase */
-        .cell { box-sizing: border-box; border: 1px solid #1a1a1a; transition: background-color 0.4s ease, border-color 0.4s ease; }
-        
+        .cell { box-sizing: border-box; border: 1px solid #1a1a1a; transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease; }
         .layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        #doors-layer { z-index: 2; } #ext-layer { z-index: 3; } #vents-layer { z-index: 3; } #labels-layer { z-index: 4; } #interaction-layer { z-index: 10; pointer-events: none; }
+        
+        #wires-layer { z-index: 2; display: none; }
+        #doors-layer { z-index: 3; } #vents-layer { z-index: 4; } #fuseboxes-layer { z-index: 4; } #ext-layer { z-index: 4; } #labels-layer { z-index: 5; } #interaction-layer { z-index: 10; pointer-events: none; }
 
-        .room-label { position: absolute; transform: translate(-50%, -50%); color: #fff; font-weight: bold; font-size: 13px; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000; text-align: center; pointer-events: none; display: flex; align-items: center; justify-content: center; overflow: hidden; word-break: break-word; line-height: 1.1; white-space: pre-wrap; text-overflow: ellipsis; }
+        .room-label { position: absolute; transform: translate(-50%, -50%); color: #fff; font-weight: bold; font-size: 13px; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000; text-align: center; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; word-break: break-word; overflow: hidden; line-height: 1.1; transition: opacity 0.4s ease; }
 
         .door { position: absolute; box-sizing: border-box; transition: all 0.2s; cursor: pointer; pointer-events: auto; }
         .door.standard { background-color: #00ffcc; border: 2px solid #00aa88; }
@@ -44,12 +43,27 @@
         .door.dir-h.locked::after { width: 6px; height: 4px; } .door.dir-v.locked::after { width: 4px; height: 6px; }
         .door.selected { box-shadow: 0 0 8px 3px #ffaa00; border-color: #ffaa00 !important; z-index: 10; }
 
-        .ext-item { position: absolute; width: 25px; height: 25px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: center; align-items: center; pointer-events: auto; transition: all 0.2s; }
+        /* Cell-Centered Redstone Wiring */
+        .wire { position: absolute; width: 25px; height: 25px; pointer-events: none; }
+        .wire div { position: absolute; transition: background-color 0.2s, box-shadow 0.2s; border-radius: 1px;}
+        .wire.powered div { background-color: #ffcc00; box-shadow: 0 0 6px #ffcc00; z-index: 5;}
+        .wire.unpowered div { background-color: #554400; opacity: 0.8; }
+        .wire.ghost { opacity: 0.5 !important; } .wire.ghost div { background-color: #ffcc00 !important; }
+        
+        .w-c { width: 7px; height: 7px; left: 9px; top: 9px; }
+        .w-n { width: 7px; height: 9px; left: 9px; top: 0px; }
+        .w-s { width: 7px; height: 9px; left: 9px; top: 16px; }
+        .w-w { width: 9px; height: 7px; left: 0px; top: 9px; }
+        .w-e { width: 9px; height: 7px; left: 16px; top: 9px; }
+
+        .ext-item { position: absolute; width: 25px; height: 25px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: center; align-items: center; pointer-events: auto; transition: all 0.2s;}
         .ext-item.engine { background: rgba(255, 85, 0, 0.2); border: 2px solid #ff5500; } .ext-item.engine::after { content: '♨'; color: #ff5500; font-size: 14px; }
         .ext-item.radiator { background: rgba(0, 204, 255, 0.2); border: 2px solid #00ccff; } .ext-item.radiator::after { content: '≡'; font-size: 18px; font-weight: bold; color: #00ccff;}
         .ext-item.solar { background: rgba(0, 50, 150, 0.4); border: 2px solid #4466ff; } .ext-item.solar::after { content: '☼'; color: #7799ff; font-size: 16px; font-weight: bold;}
         .ext-item.whipple { background: rgba(150, 150, 150, 0.2); border: 2px solid #fff; border-style: dashed;} .ext-item.whipple::after { content: '⛊'; color: #fff; font-size: 12px; }
+        
         .ext-item.vent { background-image: linear-gradient(rgba(0,0,0,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.5) 1px, transparent 1px); background-size: 5px 5px; background-color: rgba(0, 0, 0, 0.2); border: 1px solid rgba(0, 0, 0, 0.6); box-shadow: inset 0 0 5px rgba(0,0,0,0.5); border-radius: 2px; } 
+        .ext-item.fusebox { background: rgba(255, 204, 0, 0.15); border: 2px solid #ffcc00; box-shadow: inset 0 0 5px rgba(255,204,0,0.5); border-radius: 3px; z-index: 6;} .ext-item.fusebox::after { content: '⚡'; color: #ffcc00; font-size: 14px; text-shadow: 0 0 4px #000; }
         
         .ext-item.inactive { opacity: 0.3; filter: grayscale(80%); }
         .ext-item.broken { background: repeating-linear-gradient(45deg, rgba(255,0,0,0.5), rgba(0,0,0,0.5) 8px) !important; border-style: dashed !important; opacity: 0.7;}
@@ -65,11 +79,14 @@
         .mode-container { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap;}
         .mode-btn { flex: 1 1 25%; background: #111; color: #888; border: 1px solid #333; border-bottom: 3px solid #1a1a1a; padding: 8px 4px; cursor: pointer; font-family: inherit; font-weight: bold; font-size: 11px; transition: transform 0.1s, border-bottom 0.1s; border-radius: 4px; text-align: center; }
         .mode-btn:active { transform: translateY(2px); border-bottom: 1px solid #1a1a1a; }
-        .mode-btn.active { background: #00ffcc; color: #000; border-color: #00ffcc; border-bottom: 3px solid #00aa88; }
+        .mode-btn.active { background: #00ffcc; color: #000 !important; border-color: #00ffcc; border-bottom: 3px solid #00aa88; }
         .mode-btn.active:active { border-bottom: 1px solid #00aa88; }
-        .mode-btn.alert.active { background: #ffaa00; color: #000; border-color: #ffaa00; border-bottom: 3px solid #cc8800; }
-        .mode-btn.info.active { background: #66ccff; color: #000; border-color: #66ccff; border-bottom: 3px solid #0088cc; }
+        .mode-btn.alert.active { background: #ffaa00; color: #000 !important; border-color: #ffaa00; border-bottom: 3px solid #cc8800; }
+        .mode-btn.info.active { background: #66ccff; color: #000 !important; border-color: #66ccff; border-bottom: 3px solid #0088cc; }
         .mode-btn.disabled-mode { opacity: 0.2; cursor: not-allowed; border-bottom: 1px solid #111;}
+        
+        #btn-power { color: #ffcc00; font-weight: bold; border-color: #665500; border-bottom: 3px solid #443300; }
+        #btn-power.active { background: #ffcc00; color: #000 !important; border-color: #ffcc00; border-bottom: 3px solid #ccaa00; }
 
         .controls-box { background-color: #111; border: 1px solid #333; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
         .instructions { font-size: 13px; color: #aaa; line-height: 1.6; }
@@ -78,7 +95,8 @@
         textarea, input[type="text"], input[type="number"], select { width: 100%; background: #000; color: #00ffcc; border: 1px solid #00ffcc; padding: 8px; font-family: inherit; margin-bottom: 10px; box-sizing: border-box; border-radius: 3px; }
         textarea { height: 80px; resize: vertical; }
         
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .btn-grid.two { grid-template-columns: 1fr 1fr; }
         
         .palette-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 15px;}
         .palette-btn { background: #111; color: var(--c); border: 1px solid var(--c); padding: 8px; font-size: 11px; cursor: pointer; border-radius: 4px; transition: all 0.1s; text-align: center; font-weight: bold;}
@@ -91,9 +109,6 @@
         .toggle-btn.active:active { border-bottom: 1px solid #008866; }
         .toggle-btn.alert.active { background: #550000; color: #ff3333; border-color: #ff3333; border-bottom: 3px solid #aa0000;}
         .toggle-btn.warn.active { background: #554400; color: #ffcc00; border-color: #ffcc00; border-bottom: 3px solid #aa8800;}
-
-        @keyframes errorFlash { 0%, 100% { background: #111; color: #aaa; border-color: #333; } 20%, 60% { background: #880000; color: #ff0000; border-color: #ff0000; } }
-        .flash-error { animation: errorFlash 1.5s ease; }
 
         .eye-btn { width: 45px; padding: 5px; background: #111; color: #ff3333; border: 1px solid #333; border-bottom: 3px solid #1a1a1a; font-family: inherit; cursor: pointer; font-weight: bold; border-radius:4px;}
         .eye-btn:active { transform: translateY(2px); border-bottom: 1px solid #1a1a1a; }
@@ -111,7 +126,7 @@
         .panel-section { display: none; } .panel-section.active { display: block; }
         .sub-panel { background: #0a0a0f; border: 1px solid #222; padding: 10px; margin-bottom: 10px; border-radius: 4px;}
 
-        .comp-item { background: #111; border: 1px solid #333; padding: 8px; margin-bottom: 5px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; border-radius: 3px;}
+        .comp-item { background: #111; border: 1px solid #333; color: #fff; padding: 8px; margin-bottom: 5px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; border-radius: 3px;}
         .comp-item.broken { border-color: #ff3333; background: #2a0a0a; } .comp-item.inactive { opacity: 0.5; }
         .comp-controls button { background: #222; color: #fff; border: 1px solid #444; border-bottom: 2px solid #111; border-radius: 3px; padding: 3px 6px; cursor: pointer; font-size: 10px; margin-left: 3px; transition: transform 0.1s;}
         .comp-controls button:active { transform: translateY(1px); border-bottom: 1px solid #111; }
@@ -133,43 +148,35 @@
         .conn-item { padding: 5px 0; border-bottom: 1px solid #222; display: flex; justify-content: space-between; } .conn-item:last-child { border-bottom: none; }
         .status-safe { color: #00ffcc; } .status-danger { color: #ff3333; } .status-vent { color: #aaa; }
 
-        /* BOOT ANIMATION CLASSES */
         .pre-boot { opacity: 0; pointer-events: none; }
         .boot-fade { animation: bootFade 0.8s ease-out forwards; pointer-events: auto; }
         .boot-slide { animation: bootSlide 0.6s ease-out forwards; pointer-events: auto; }
-        
-        /* Softer, less visually painful flicker */
-        .badge-flicker { animation: flicker 1s ease-in-out forwards; }
+        .badge-flicker { animation: flicker 1.2s ease-in-out forwards; }
         
         @keyframes bootFade { from { opacity: 0; } to { opacity: 1; } }
         @keyframes bootSlide { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes flicker {
-            0% { opacity: 0; }
-            20% { opacity: 0.6; }
-            40% { opacity: 0.2; }
-            60% { opacity: 0.8; }
-            80% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
+        @keyframes flicker { 0% { opacity: 0; } 20% { opacity: 0.6; } 40% { opacity: 0.2; } 60% { opacity: 0.8; } 80% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
     <div id="workspace">
         <div class="header-bar pre-boot" id="ui-header">
-            <h2>Naval Architectural Blueprint <span class="beta-badge pre-boot" id="badge-version">V 0.3.6</span></h2>
+            <h2>Naval Architectural Blueprint <span class="beta-badge pre-boot" id="badge-version">V 0.4.0</span></h2>
             <span id="mode-indicator" style="color: #888; font-size: 14px;">Mode: STRUCTURE</span>
         </div>
         <div id="global-telemetry" class="pre-boot">
             <div>NETWORK: ONLINE <span class="beta-badge pre-boot" id="badge-beta">BETA</span></div>
-            <span id="power-readout">PWR: USED 0 / GEN 0 MW | CAP 0 MW</span>
+            <span id="power-readout">PWR: USED 0 / GEN 0 MW | CAP 0 MW | FUEL: 0</span>
         </div>
         <div id="sim-warning">⚠ Hazard Simulation Active ⚠</div>
         <div id="viewport">
             <div id="grid-container">
                 <div id="grid"></div>
                 <div id="labels-layer" class="layer"></div>
+                <div id="wires-layer" class="layer"></div>
                 <div id="doors-layer" class="layer"></div>
                 <div id="vents-layer" class="layer"></div>
+                <div id="fuseboxes-layer" class="layer"></div>
                 <div id="ext-layer" class="layer"></div>
                 <div id="interaction-layer" class="layer"><div id="draft-box" class="selection-box"></div></div>
             </div>
@@ -182,6 +189,7 @@
             <button class="mode-btn active" onclick="setMode('structure')" id="btn-structure">Structure</button>
             <button class="mode-btn" onclick="setMode('connectors')" id="btn-connectors">Connectors</button>
             <button class="mode-btn" onclick="setMode('exterior')" id="btn-exterior">Exterior</button>
+            <button class="mode-btn" onclick="setMode('power')" id="btn-power">Power Grid</button>
             <button class="mode-btn" onclick="setMode('select')" id="btn-select">Select</button>
             <button class="mode-btn alert" onclick="setMode('integrity')" id="btn-integrity">Sys & Integrity</button>
         </div>
@@ -193,17 +201,20 @@
                 <div class="btn-grid" style="margin-bottom: 8px;">
                     <button id="btn-sub-door" class="toggle-btn active" onclick="setConnectorSubMode('door')">Wall Door</button>
                     <button id="btn-sub-vent" class="toggle-btn" onclick="setConnectorSubMode('vent')">Floor Vent</button>
+                    <button id="btn-sub-fusebox" class="toggle-btn" onclick="setConnectorSubMode('fusebox')" style="color:#ffcc00; border-color:#ffcc00;">Fusebox</button>
                 </div>
-                <strong>L-Click/Drag:</strong> Paint | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px;">Vents jump hazards globally by channel ID.</span>
+                <strong>L-Click/Drag:</strong> Paint | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px;">Vents and Fuseboxes link local rooms to global systems.</span>
             </div>
             <div id="inst-exterior" class="instructions panel-section"><strong>L-Click/Drag:</strong> Paint | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px;">Arrays must touch the hull or chain to identical arrays.</span></div>
+            <div id="inst-power" class="instructions panel-section"><strong>L-Click/Drag:</strong> Paint Matrix Cables | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px; color:#ffcc00;">Cables form redstone-style nodes. Rooms MUST have an active Fusebox Node installed in the same cell as a cable to transfer power.</span></div>
             <div id="inst-select" class="instructions panel-section">
                 <strong>L-Click:</strong> Select Entity | <strong>Drag:</strong> Marquee Multiple
-                <div class="btn-grid" style="margin-top: 10px;">
+                <div class="btn-grid two" style="margin-top: 10px;">
                     <button id="btn-filter-rooms" class="toggle-btn active" onclick="toggleFilter('rooms')">Modules: ON</button>
-                    <button id="btn-filter-doors" class="toggle-btn active" onclick="toggleFilter('doors')">Doors/Vents: ON</button>
+                    <button id="btn-filter-doors" class="toggle-btn active" onclick="toggleFilter('doors')">Doors/Nodes: ON</button>
                     <button id="btn-filter-ext" class="toggle-btn active" onclick="toggleFilter('exterior')" style="grid-column: span 2;">Exterior: ON</button>
                 </div>
+                <span style="font-size: 11px; color: #ffaa00;">Ctrl+Z (Undo) | Ctrl+Y (Redo)</span>
             </div>
             <div id="inst-integrity" class="instructions panel-section"><strong style="color:#ffaa00;">SYSTEMS ACTIVE:</strong> Visualizing hazards.<br><strong>Click Module:</strong> View telemetry & crossways.</div>
         </div>
@@ -234,6 +245,9 @@
                 <label>Vent Channel (Network ID):</label>
                 <input type="number" id="vent-build-channel" value="1">
             </div>
+            <div id="fusebox-build-settings" style="display: none;">
+                <p style="font-size:12px; color:#ffcc00; margin-top:0;">Fuseboxes act as mechanical terminals, linking a room's internal systems to the redstone wire grid.</p>
+            </div>
         </div>
 
         <div id="panel-exterior" class="panel-section">
@@ -246,33 +260,49 @@
             </div>
         </div>
 
+        <div id="panel-power" class="panel-section">
+            <h3 style="color: #ffcc00; margin-top: 0;">Circuit Infrastructure</h3>
+            <p style="font-size: 13px; color: #aaa; line-height: 1.5;">Paint redstone-style cables through the ship. They automatically connect. Power only enters or exits a room if the wire shares a tile with a Fusebox.</p>
+            <div class="sub-panel">
+                <h4 style="color:#ffcc00; margin:0 0 5px 0;">Grid State Diagnostic</h4>
+                <div id="power-grid-status" style="font-size:12px; color:#00ffcc;">Grid Path Tracing: Standby</div>
+            </div>
+        </div>
+
         <div id="panel-editor" class="panel-section active">
             <div id="placeholder-text" style="color: #555; font-style: italic;">Select an element to view telemetry.</div>
             <div id="multi-select-panel" style="display: none;">
                 <h3 style="color: #ffaa00;">Multiple Entities Selected</h3>
-                <p style="font-size: 13px; color: #aaa;">Group dragging enabled on grid.</p>
+                <p style="font-size: 13px; color: #aaa;">Group operations enabled.</p>
+                <button class="action-btn" onclick="cloneSelectedCluster()">Clone Cluster</button>
                 <button class="delete-btn" onclick="deleteSelectedEntity()">Purge All Selected</button>
             </div>
             
             <div id="room-editor" style="display: none;">
                 <h3 style="color: #00ffcc;">Hull Module</h3>
-                <label>Designation:</label> <input type="text" id="room-name" oninput="updateEntityData()">
+                <label>Designation:</label> <input type="text" id="room-name" onchange="updateEntityData(); saveState();">
                 
                 <label style="color:#ffaa00; font-size:12px;">Change Department:</label>
-                <div class="palette-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 10px;">
+                <div class="palette-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; margin-bottom: 10px;">
                     <button class="palette-btn" onclick="editSelectedRoomType('default')" id="edit-room-default" style="--c:#00ffcc;">Def</button>
                     <button class="palette-btn" onclick="editSelectedRoomType('command')" id="edit-room-command" style="--c:#ff3333;">Cmd</button>
                     <button class="palette-btn" onclick="editSelectedRoomType('engineering')" id="edit-room-engineering" style="--c:#ff9900;">Eng</button>
                     <button class="palette-btn" onclick="editSelectedRoomType('medical')" id="edit-room-medical" style="--c:#66ccff;">Med</button>
                     <button class="palette-btn" onclick="editSelectedRoomType('tactical')" id="edit-room-tactical" style="--c:#9900ff;">Tac</button>
                     <button class="palette-btn" onclick="editSelectedRoomType('cargo')" id="edit-room-cargo" style="--c:#cccc33;">Cgo</button>
-                    <button class="palette-btn" onclick="editSelectedRoomType('crew')" id="edit-room-crew" style="--c:#33ff33; grid-column:span 3;">Crew Quarters</button>
+                    <button class="palette-btn" onclick="editSelectedRoomType('crew')" id="edit-room-crew" style="--c:#33ff33;">Crw</button>
+                    <button class="palette-btn" onclick="editSelectedRoomType('fuel')" id="edit-room-fuel" style="--c:#ffaa00;">Fuel</button>
                 </div>
 
                 <div class="sub-panel">
                     <label style="color:#ffaa00; font-size:12px;">Base Power Draw (MW per cell):</label>
-                    <input type="number" id="room-pwr" value="1" oninput="updateEntityData()">
+                    <input type="number" id="room-pwr" value="1" onchange="updateEntityData(); saveState();">
                     <div style="font-size:11px; color:#aaa; margin-top:5px;" id="room-area-stat">Area: 0 cells | Space Used: 0.0</div>
+                    <div style="font-size:11px; font-weight:bold; margin-top:2px;" id="room-power-status-label">Grid Link: Operational</div>
+                </div>
+
+                <div id="room-fuel-stat" class="sub-panel" style="display:none; color:#ffaa00; font-size:12px; font-weight:bold; text-align:center;">
+                    Propellant Reserve: 0 Units
                 </div>
 
                 <div class="sub-panel" id="room-internals">
@@ -285,25 +315,23 @@
                         <div class="comp-add-btn" onclick="installComponent('storage_s')">[+] Small Storage (0.5s)</div>
                         <div class="comp-add-btn" onclick="installComponent('storage_m')">[+] Med Storage (1.0s)</div>
                         <div class="comp-add-btn" onclick="installComponent('storage_l')">[+] Large Storage (2.0s)</div>
-                        
                         <div class="comp-group-title">Power & Propulsion</div>
                         <div class="comp-add-btn" onclick="installComponent('battery')">[+] Battery Bank (0.5s) | +50 MW Cap</div>
                         <div class="comp-add-btn" onclick="installComponent('diesel')">[+] Diesel Turbine (1.0s) | +20 MW Gen</div>
                         <div class="comp-add-btn" onclick="installComponent('smr')">[+] Fission SMR (4.0s) | +100 MW Gen</div>
-                        
                         <div class="comp-group-title">Life Support & Bio</div>
+                        <div class="comp-add-btn" onclick="installComponent('o2_gen')">[+] O2 Generator (1.0s) | Restores O2</div>
                         <div class="comp-add-btn" onclick="installComponent('scrubber')">[+] CO2 Scrubber (0.5s) | Clears CO2</div>
                         <div class="comp-add-btn" onclick="installComponent('hydroponics')">[+] Hydroponics Vat (2.0s) | Clears CO2</div>
                         <div class="comp-add-btn" onclick="installComponent('autodoc')">[+] Med Auto-Doc (1.0s) | Needs 6MW</div>
                         <div class="comp-add-btn" onclick="installComponent('cryo')">[+] Liq. Perfluoro Pod (1.0s) | -2°C Heat</div>
-                        
                         <div class="comp-group-title">Computing</div>
                         <div class="comp-add-btn" onclick="installComponent('mainframe')">[+] Mainframe Core (2.0s) | Needs 15MW</div>
                         <div class="comp-add-btn" onclick="installComponent('processor')">[+] Sec. Processor (0.5s) | Needs 4MW</div>
                     </div>
                 </div>
 
-                <label>GM Notes:</label> <textarea id="room-notes" oninput="updateEntityData()"></textarea>
+                <label>GM Notes:</label> <textarea id="room-notes" onchange="updateEntityData(); saveState();"></textarea>
                 <button class="delete-btn" onclick="deleteSelectedEntity()">Purge Module</button>
             </div>
 
@@ -321,13 +349,13 @@
 
                 <div class="stat-row" style="margin-bottom: 10px;">
                     <span class="stat-label">Damage:</span>
-                    <input type="range" id="door-dmg" min="0" max="100" value="0" oninput="updateEntityData()">
+                    <input type="range" id="door-dmg" min="0" max="100" value="0" onchange="updateEntityData(); saveState();" oninput="updateEntityData()">
                     <span id="door-dmg-val" class="stat-val" style="color:#ff3333;">0%</span>
                 </div>
 
                 <div class="sub-panel" id="door-prop-vent" style="display:none;">
                     <label style="color:#ccc; font-size:12px;">Vent Channel (Network ID):</label>
-                    <input type="number" id="door-vent-channel" oninput="updateEntityData()">
+                    <input type="number" id="door-vent-channel" onchange="updateEntityData(); saveState();">
                 </div>
 
                 <div id="door-prop-wall">
@@ -343,8 +371,8 @@
                     <button id="btn-door-broken" class="toggle-btn alert" style="grid-column: span 2;" onclick="toggleEntityState('isBroken')">Integrity: Broken</button>
                 </div>
                 
-                <textarea id="door-notes" placeholder="Mechanism notes..." oninput="updateEntityData()"></textarea>
-                <button class="delete-btn" onclick="deleteSelectedEntity()">Remove Connector</button>
+                <textarea id="door-notes" placeholder="Mechanism notes..." onchange="updateEntityData(); saveState();"></textarea>
+                <button class="delete-btn" onclick="deleteSelectedEntity()">Remove Node</button>
             </div>
 
             <div id="ext-editor" style="display: none;">
@@ -360,7 +388,7 @@
 
                 <div class="stat-row" style="margin-bottom: 10px;">
                     <span class="stat-label">Damage:</span>
-                    <input type="range" id="ext-dmg" min="0" max="100" value="0" oninput="updateEntityData()">
+                    <input type="range" id="ext-dmg" min="0" max="100" value="0" onchange="updateEntityData(); saveState();" oninput="updateEntityData()">
                     <span id="ext-dmg-val" class="stat-val" style="color:#ff3333;">0%</span>
                 </div>
                 <div class="btn-grid">
@@ -369,12 +397,12 @@
                 </div>
                 <div id="ext-status-text" style="font-size:11px; margin-bottom: 10px; color:#ffaa00; text-align:center;">Checking Connection...</div>
 
-                <div class="sub-panel" id="ext-prop-solar" style="display:none;"><label style="color:#7799ff; font-size:12px;">Base Power Gen (MW):</label> <input type="number" id="ext-solar-pwr" oninput="updateEntityData()"></div>
-                <div class="sub-panel" id="ext-prop-radiator" style="display:none;"><label style="color:#00ccff; font-size:12px;">Target Temp (°C):</label> <input type="number" id="ext-rad-temp" oninput="updateEntityData()"> <label style="color:#00ccff; font-size:12px;">Cooling Rate (per step):</label> <input type="number" id="ext-rad-cool" oninput="updateEntityData()"></div>
-                <div class="sub-panel" id="ext-prop-engine" style="display:none;"><label style="color:#ff5500; font-size:12px;">Max Thrust (kN):</label> <input type="number" id="ext-eng-thrust" oninput="updateEntityData()"></div>
-                <div class="sub-panel" id="ext-prop-whipple" style="display:none;"><label style="color:#fff; font-size:12px;">Armor Integrity (HP):</label> <input type="number" id="ext-whipple-hp" oninput="updateEntityData()"></div>
+                <div class="sub-panel" id="ext-prop-solar" style="display:none;"><label style="color:#7799ff; font-size:12px;">Base Power Gen (MW):</label> <input type="number" id="ext-solar-pwr" onchange="updateEntityData(); saveState();"></div>
+                <div class="sub-panel" id="ext-prop-radiator" style="display:none;"><label style="color:#00ccff; font-size:12px;">Target Temp (°C):</label> <input type="number" id="ext-rad-temp" onchange="updateEntityData(); saveState();"> <label style="color:#00ccff; font-size:12px;">Cooling Rate (per step):</label> <input type="number" id="ext-rad-cool" onchange="updateEntityData(); saveState();"></div>
+                <div class="sub-panel" id="ext-prop-engine" style="display:none;"><label style="color:#ff5500; font-size:12px;">Max Thrust (kN):</label> <input type="number" id="ext-eng-thrust" onchange="updateEntityData(); saveState();"></div>
+                <div class="sub-panel" id="ext-prop-whipple" style="display:none;"><label style="color:#fff; font-size:12px;">Armor Integrity (HP):</label> <input type="number" id="ext-whipple-hp" onchange="updateEntityData(); saveState();"></div>
                 
-                <textarea id="ext-notes" placeholder="System notes..." oninput="updateEntityData()"></textarea>
+                <textarea id="ext-notes" placeholder="System notes..." onchange="updateEntityData(); saveState();"></textarea>
                 <button class="delete-btn" onclick="deleteSelectedEntity()">Dismantle Array</button>
             </div>
         </div>
@@ -383,12 +411,12 @@
             <div id="integrity-placeholder" style="color: #555; font-style: italic;">Select a module to assess crossways and integrity.</div>
             <div id="integrity-editor" style="display: none;">
                 <h3 id="integ-title" style="color: #ffaa00; margin-bottom: 15px;">Module Status</h3>
-                <div class="stat-row"><button id="eye-dmg" class="eye-btn active" onclick="toggleEye('dmg')">👁</button> <span class="stat-label" style="padding-left:10px;">Damage:</span> <input type="range" id="sys-dmg" min="0" max="100" value="0" oninput="updateIntegrityData('dmg')"> <span id="sys-dmg-val" class="stat-val">0%</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('dmg')">Def</button></div>
-                <div class="stat-row" style="margin-top: 10px;"><button id="eye-pres" class="eye-btn" onclick="toggleEye('pres')">❌</button> <span class="stat-label" style="padding-left:10px;">Pressure:</span> <input type="range" id="sys-pres" min="0" max="300" value="100" oninput="updateIntegrityData('pres')"> <span id="sys-pres-val" class="stat-val">1.0b</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('pres')">Def</button></div>
-                <div class="stat-row"><button id="eye-temp" class="eye-btn" onclick="toggleEye('temp')">❌</button> <span class="stat-label" style="padding-left:10px;">Temp:</span> <input type="range" id="sys-temp" min="-50" max="150" value="21" oninput="updateIntegrityData('temp')"> <span id="sys-temp-val" class="stat-val">21°C</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('temp')">Def</button></div>
+                <div class="stat-row"><button id="eye-dmg" class="eye-btn active" onclick="toggleEye('dmg')">👁</button> <span class="stat-label" style="padding-left:10px;">Damage:</span> <input type="range" id="sys-dmg" min="0" max="100" value="0" onchange="updateIntegrityData('dmg'); saveState();" oninput="updateIntegrityData('dmg')"> <span id="sys-dmg-val" class="stat-val">0%</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('dmg')">Def</button></div>
+                <div class="stat-row" style="margin-top: 10px;"><button id="eye-pres" class="eye-btn" onclick="toggleEye('pres')">❌</button> <span class="stat-label" style="padding-left:10px;">Pressure:</span> <input type="range" id="sys-pres" min="0" max="300" value="100" onchange="updateIntegrityData('pres'); saveState();" oninput="updateIntegrityData('pres')"> <span id="sys-pres-val" class="stat-val">1.0b</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('pres')">Def</button></div>
+                <div class="stat-row"><button id="eye-temp" class="eye-btn" onclick="toggleEye('temp')">❌</button> <span class="stat-label" style="padding-left:10px;">Temp:</span> <input type="range" id="sys-temp" min="-50" max="150" value="21" onchange="updateIntegrityData('temp'); saveState();" oninput="updateIntegrityData('temp')"> <span id="sys-temp-val" class="stat-val">21°C</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('temp')">Def</button></div>
                 <div class="stat-row">
                     <button id="eye-gas" class="eye-btn" onclick="toggleEye('gas')">❌</button> <span class="stat-label" style="padding-left:10px;">Atmo:</span>
-                    <select id="sys-type" onchange="updateIntegrityData('gas')" style="flex:1; margin:0 10px 0 10px;"> <option value="O2">O2 / Standard</option> <option value="CO2">CO2 / Stale</option> <option value="Toxins">Hazardous Toxins</option> <option value="Vacuum">Vacuum</option> </select>
+                    <select id="sys-type" onchange="updateIntegrityData('gas'); saveState();" style="flex:1; margin:0 10px 0 10px;"> <option value="O2">O2 / Standard</option> <option value="CO2">CO2 / Stale</option> <option value="Toxins">Hazardous Toxins</option> <option value="Vacuum">Vacuum</option> </select>
                     <button class="toggle-btn" style="padding:6px 6px; font-size:11px;" onclick="resetStat('gas')">Def</button>
                 </div>
                 <h4 style="margin: 15px 0 5px 0; color: #00ffcc;">Crossways Network</h4>
@@ -419,6 +447,7 @@
             battery: { name: "Lithium Bank", size: 0.5, pwrCap: 50, pwrGen: 0, pwrDraw: 0 },
             diesel: { name: "Diesel Turbine", size: 1.0, pwrCap: 0, pwrGen: 20, pwrDraw: 0, heat: 5 },
             smr: { name: "Fission SMR", size: 4.0, pwrCap: 0, pwrGen: 100, pwrDraw: 0, heat: 15 },
+            o2_gen: { name: "O2 Generator", size: 1.0, pwrCap: 0, pwrGen: 0, pwrDraw: 3 },
             scrubber: { name: "CO2 Scrubber", size: 0.5, pwrCap: 0, pwrGen: 0, pwrDraw: 2 },
             hydroponics: { name: "Hydroponics Vat", size: 2.0, pwrCap: 0, pwrGen: 0, pwrDraw: 4 },
             mainframe: { name: "Mainframe Core", size: 2.0, pwrCap: 0, pwrGen: 0, pwrDraw: 15, heat: 8 },
@@ -430,20 +459,24 @@
         let state = {
             ship: { name: "Scout-Class Wedge", desc: "Short-range fast interceptor and planetary scout vessel." },
             mode: 'structure', connectorSubMode: 'door',
-            activeBuildTypeExt: 'engine', activeBuildTypeDoor: 'standard',
-            rooms: {}, doors: {}, vents: {}, exterior: {}, gridData: Array(ROWS).fill().map(() => Array(COLS).fill(null)), idCounters: { room: 0, door: 0, ext: 0, comp: 0, vent: 0 }
+            activeBuildTypeExt: 'engine', activeBuildTypeDoor: 'standard', activeBuildTypeWire: 'cable',
+            rooms: {}, doors: {}, vents: {}, fuseboxes: {}, wires: {}, exterior: {}, gridData: Array(ROWS).fill().map(() => Array(COLS).fill(null)), idCounters: { room: 0, door: 0, ext: 0, comp: 0, vent: 0, fusebox: 0, wire: 0 }
         };
 
-        let selection = { roomIds: new Set(), doorIds: new Set(), extIds: new Set(), ventIds: new Set() };
+        let selection = { roomIds: new Set(), doorIds: new Set(), extIds: new Set(), ventIds: new Set(), fuseboxIds: new Set() };
         let filters = { rooms: true, doors: true, exterior: true };
         let isDragging = false; let hasDragged = false;
-        let dragContext = { startX: 0, startY: 0, currentX: 0, currentY: 0, action: null, backupGrid: null, backupDoors: null, backupVents: null, backupExt: null };
-        let ghostItem = null; 
+        let dragContext = { startX: 0, startY: 0, currentX: 0, currentY: 0, action: null, backupGrid: null, backupDoors: null, backupVents: null, backupFuseboxes: null, backupExt: null, backupWires: null };
+        let ghostItem = null; let clipboardCluster = null;
         let visibleStats = { dmg: true, pres: false, temp: false, gas: false };
-        let simActive = false; let backupRooms = null, backupDoorsSim = null, backupVentsSim = null, backupExtSim = null;
-        let globalTelemetry = { shipPowerGen: 0, shipPowerCap: 0, shipPowerDraw: 0, totalArea: 0 };
+        let simActive = false; let backupRooms = null, backupDoorsSim = null, backupVentsSim = null, backupFuseboxesSim = null, backupExtSim = null, backupWiresSim = null;
+        let globalTelemetry = { shipPowerGen: 0, shipPowerCap: 0, shipPowerDraw: 0, totalArea: 0, shipPropellantCap: 0 };
+        
+        let roomHasPower = {};
+        let poweredWires = new Set();
 
         let isBooting = false; let bootedRooms = new Set();
+        let historyStack = []; let historyIndex = -1;
 
         const themes = {
             default: { r: 0, g: 255, b: 204, a: 0.15, border: '#00ffcc', sel: 'rgba(0, 255, 204, 0.4)' },
@@ -452,16 +485,54 @@
             medical: { r: 100, g: 200, b: 255, a: 0.15, border: '#66ccff', sel: 'rgba(100, 200, 255, 0.4)' },
             tactical: { r: 150, g: 0, b: 255, a: 0.15, border: '#9900ff', sel: 'rgba(150, 0, 255, 0.4)' },
             cargo: { r: 200, g: 200, b: 50, a: 0.15, border: '#cccc33', sel: 'rgba(200, 200, 50, 0.4)' },
-            crew: { r: 50, g: 255, b: 50, a: 0.15, border: '#33ff33', sel: 'rgba(50, 255, 50, 0.4)' }
+            crew: { r: 50, g: 255, b: 50, a: 0.15, border: '#33ff33', sel: 'rgba(50, 255, 50, 0.4)' },
+            fuel: { r: 255, g: 140, b: 0, a: 0.15, border: '#ffaa00', sel: 'rgba(255, 140, 0, 0.4)' }
         };
 
-        const DOM = { viewport: document.getElementById('viewport'), container: document.getElementById('grid-container'), grid: document.getElementById('grid'), labelsLayer: document.getElementById('labels-layer'), doorsLayer: document.getElementById('doors-layer'), ventsLayer: document.getElementById('vents-layer'), extLayer: document.getElementById('ext-layer'), draftBox: document.getElementById('draft-box'), cells: [] };
+        const DOM = { viewport: document.getElementById('viewport'), container: document.getElementById('grid-container'), grid: document.getElementById('grid'), labelsLayer: document.getElementById('labels-layer'), wiresLayer: document.getElementById('wires-layer'), doorsLayer: document.getElementById('doors-layer'), ventsLayer: document.getElementById('vents-layer'), fuseboxesLayer: document.getElementById('fuseboxes-layer'), extLayer: document.getElementById('ext-layer'), draftBox: document.getElementById('draft-box'), cells: [] };
         let camera = { zoom: 1, panX: 0, panY: 0, isPanning: false, lastX: 0, lastY: 0 };
 
         function initApp() {
             for (let y = 0; y < ROWS; y++) { DOM.cells[y] = []; for (let x = 0; x < COLS; x++) { const cell = document.createElement('div'); cell.className = 'cell'; DOM.grid.appendChild(cell); DOM.cells[y][x] = cell; } }
             const vpRect = DOM.viewport.getBoundingClientRect(); camera.panX = (vpRect.width - (COLS * CELL_SIZE)) / 2; camera.panY = (vpRect.height - (ROWS * CELL_SIZE)) / 2;
             updateCamera(); loadDefaultShip(); setupEventListeners(); triggerBoot(true);
+        }
+
+        function saveState() {
+            if(historyIndex < historyStack.length - 1) historyStack = historyStack.slice(0, historyIndex + 1);
+            historyStack.push(JSON.stringify({ rooms: state.rooms, doors: state.doors, vents: state.vents, fuseboxes: state.fuseboxes, wires: state.wires, exterior: state.exterior, gridData: state.gridData, idCounters: state.idCounters }));
+            if(historyStack.length > 20) historyStack.shift(); else historyIndex++;
+        }
+        function undo() {
+            if(historyIndex > 0) { historyIndex--; let st = JSON.parse(historyStack[historyIndex]); state.rooms = st.rooms; state.doors = st.doors; state.vents = st.vents; state.fuseboxes = st.fuseboxes || {}; state.wires = st.wires || {}; state.exterior = st.exterior; state.gridData = st.gridData; state.idCounters = st.idCounters; clearSelection(); renderLoop(); }
+        }
+        function redo() {
+            if(historyIndex < historyStack.length - 1) { historyIndex++; let st = JSON.parse(historyStack[historyIndex]); state.rooms = st.rooms; state.doors = st.doors; state.vents = st.vents; state.fuseboxes = st.fuseboxes || {}; state.wires = st.wires || {}; state.exterior = st.exterior; state.gridData = st.gridData; state.idCounters = st.idCounters; clearSelection(); renderLoop(); }
+        }
+
+        function deleteSelectedEntity() {
+            if (selection.roomIds.size > 0) {
+                selection.roomIds.forEach(id => {
+                    delete state.rooms[id];
+                    for(let y=0; y<ROWS; y++) {
+                        for(let x=0; x<COLS; x++) {
+                            if(state.gridData[y][x] === id) state.gridData[y][x] = null;
+                        }
+                    }
+                });
+            }
+            if (selection.doorIds.size > 0) selection.doorIds.forEach(id => delete state.doors[id]);
+            if (selection.ventIds.size > 0) selection.ventIds.forEach(id => delete state.vents[id]);
+            if (selection.fuseboxIds.size > 0) selection.fuseboxIds.forEach(id => delete state.fuseboxes[id]);
+            if (selection.extIds.size > 0) selection.extIds.forEach(id => delete state.exterior[id]);
+            
+            cleanUpRooms();
+            clearSelection();
+            saveState();
+            renderLoop();
+            if (state.mode !== 'structure' && state.mode !== 'power' && state.mode !== 'connectors' && state.mode !== 'exterior') {
+                setMode('select');
+            }
         }
 
         function triggerBoot(isInitial = false) {
@@ -484,7 +555,7 @@
                 const roomIds = Object.keys(state.rooms); let i = 0;
                 const interval = setInterval(() => {
                     if (i >= roomIds.length) { 
-                        clearInterval(interval); isBooting = false; renderLoop(); 
+                        clearInterval(interval); isBooting = false; renderLoop(); if(historyStack.length === 0) saveState();
                         if (isInitial) setTimeout(() => { badgeV.classList.add('badge-flicker'); badgeB.classList.add('badge-flicker'); }, 100); 
                     } 
                     else { bootedRooms.add(roomIds[i]); renderLoop(); i++; }
@@ -497,48 +568,47 @@
         function addExt(idStr, x, y, type, notes="") { let hp = type==='whipple'?100:undefined; let bp = type==='solar'?15:undefined; let mt = type==='engine'?8000:undefined; let bc = type==='radiator'?20:undefined; let tt = type==='radiator'?21:undefined; state.exterior[idStr] = {id:idStr, x,y, type, isActive:true, isBroken:false, dmg:0, notes, hp, maxHp:hp, basePower:bp, maxThrust:mt, baseCooling:bc, targetTemp:tt}; }
         function addDoor(idStr, x, y, dir, type, locked, notes="", blocks=null) { if(blocks===null) blocks = (type!=='standard'); state.doors[idStr] = {id:idStr, x,y, dir, type, isOpen:false, isLocked:locked, isBroken:false, dmg:0, notes, blocksHazards:blocks}; }
         function addVent(idStr, x, y, channel) { state.vents[idStr] = {id:idStr, x,y, type:'vent', isActive:true, isBroken:false, dmg:0, channel:channel, notes:""}; }
+        function addFusebox(idStr, x, y) { state.fuseboxes[idStr] = {id:idStr, x,y, type:'fusebox', isActive:true, isBroken:false, dmg:0, notes:""}; }
 
         function loadDefaultShip() {
             state.ship = { name: "Scout-Class Wedge", desc: "Short-range fast interceptor and planetary scout vessel." };
-            state.rooms={}; state.doors={}; state.vents={}; state.exterior={}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+            state.rooms={}; state.doors={}; state.vents={}; state.fuseboxes={}; state.wires={}; state.exterior={}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null));
             document.getElementById('ship-name').value = state.ship.name; document.getElementById('ship-desc').value = state.ship.desc;
             
             addRoom("r_bridge", "Bridge", "command", 21, 1.0, 1, [{id:"c_1", type:"mainframe", isActive:true, isBroken:false}]);
             addRoom("r_bunks", "Double Bunks", "crew", 21, 1.0, 1, []);
             addRoom("r_fresher", "Prep / Fresher", "medical", 21, 1.0, 1, [{id:"c_2", type:"scrubber", isActive:true, isBroken:false}]);
             addRoom("r_hall", "Main Hall", "default", 21, 1.0, 1, [{id:"c_3", type:"storage_m", isActive:true, isBroken:false}]);
-            addRoom("r_fuel_p", "Port Fuel", "cargo", 15, 1.0, 0, [{id:"c_4", type:"storage_l", isActive:true, isBroken:false}]);
-            addRoom("r_fuel_s", "Starboard Fuel", "cargo", 15, 1.0, 0, [{id:"c_5", type:"storage_l", isActive:true, isBroken:false}]);
-            addRoom("r_drive_p", "Port Drives", "engineering", 40, 1.0, 2, [{id:"c_6", type:"battery", isActive:true, isBroken:false}]);
-            addRoom("r_drive_s", "Starboard Drives", "engineering", 40, 1.0, 2, [{id:"c_7", type:"battery", isActive:true, isBroken:false}]);
-            state.idCounters.room = 10; state.idCounters.comp = 10;
+            addRoom("r_fuel_p", "Port Fuel", "fuel", 15, 1.0, 0, []);
+            addRoom("r_fuel_s", "Starboard Fuel", "fuel", 15, 1.0, 0, []);
+            addRoom("r_drive_p", "Port Drives", "engineering", 40, 1.0, 2, [{id:"c_6", type:"battery", isActive:true, isBroken:false}, {id:"c_8", type:"diesel", isActive:true, isBroken:false}]);
+            addRoom("r_drive_s", "Starboard Drives", "engineering", 40, 1.0, 2, [{id:"c_7", type:"battery", isActive:true, isBroken:false}, {id:"c_9", type:"diesel", isActive:true, isBroken:false}]);
+            state.idCounters.room = 10; state.idCounters.comp = 20;
 
-            applyToGrid(22, 26, 4, 7, "r_bridge");
-            applyToGrid(20, 21, 6, 9, "r_bunks");
-            applyToGrid(27, 28, 6, 9, "r_fresher");
-            applyToGrid(22, 26, 8, 22, "r_hall");
-            applyToGrid(18, 21, 10, 16, "r_fuel_p");
-            applyToGrid(27, 30, 10, 16, "r_fuel_s");
-            applyToGrid(16, 21, 17, 22, "r_drive_p");
-            applyToGrid(27, 32, 17, 22, "r_drive_s");
+            applyToGrid(22, 26, 4, 7, "r_bridge"); applyToGrid(20, 21, 6, 9, "r_bunks"); applyToGrid(27, 28, 6, 9, "r_fresher");
+            applyToGrid(22, 26, 8, 22, "r_hall"); applyToGrid(18, 21, 10, 16, "r_fuel_p"); applyToGrid(27, 30, 10, 16, "r_fuel_s");
+            applyToGrid(16, 21, 17, 22, "r_drive_p"); applyToGrid(27, 32, 17, 22, "r_drive_s");
 
-            addDoor("d_1", 24, 8, "h", "standard", false, "Bridge Access");
-            addDoor("d_2", 22, 8, "v", "standard", false, "Bunks");
-            addDoor("d_3", 27, 8, "v", "standard", false, "Fresher");
-            addDoor("d_4", 22, 13, "v", "security", true, "Fuel P");
-            addDoor("d_5", 27, 13, "v", "security", true, "Fuel S");
-            addDoor("d_6", 22, 19, "v", "security", true, "Drive P");
-            addDoor("d_7", 27, 19, "v", "security", true, "Drive S");
-            addDoor("d_8", 24, 23, "h", "airlock", false, "Aft Exit");
+            addDoor("d_1", 24, 8, "h", "standard", false, "Bridge Access"); addDoor("d_2", 22, 8, "v", "standard", false, "Bunks");
+            addDoor("d_3", 27, 8, "v", "standard", false, "Fresher"); addDoor("d_4", 22, 13, "v", "security", true, "Fuel P");
+            addDoor("d_5", 27, 13, "v", "security", true, "Fuel S"); addDoor("d_6", 22, 19, "v", "security", true, "Drive P");
+            addDoor("d_7", 27, 19, "v", "security", true, "Drive S"); addDoor("d_8", 24, 23, "h", "airlock", false, "Aft Exit");
             state.idCounters.door = 10;
 
-            addVent("v_1", 24, 6, 1); addVent("v_2", 24, 15, 1);
-            state.idCounters.vent = 10;
+            addVent("v_1", 24, 6, 1); addVent("v_2", 24, 15, 1); state.idCounters.vent = 10;
+            
+            addFusebox("fb_1", 23, 6); addFusebox("fb_2", 23, 15); addFusebox("fb_3", 21, 19); addFusebox("fb_4", 27, 19); state.idCounters.fusebox = 10;
 
-            for(let x=17; x<=19; x++) addExt(`e_eng${x}`, x, 23, "engine");
-            for(let x=29; x<=31; x++) addExt(`e_eng${x}`, x, 23, "engine");
+            for(let y=6; y<=19; y++) { let idStr = `wire_${state.idCounters.wire++}`; state.wires[idStr] = { id: idStr, x: 24, y: y }; }
+            for(let x=21; x<=27; x++) { let idStr = `wire_${state.idCounters.wire++}`; state.wires[idStr] = { id: idStr, x: x, y: 19 }; }
+            
+            let wId1 = `wire_${state.idCounters.wire++}`; state.wires[wId1] = { id: wId1, x: 23, y: 6 };
+            let wId2 = `wire_${state.idCounters.wire++}`; state.wires[wId2] = { id: wId2, x: 23, y: 15 };
+
+            for(let x=17; x<=19; x++) addExt(`e_eng${x}`, x, 23, "engine"); for(let x=29; x<=31; x++) addExt(`e_eng${x}`, x, 23, "engine");
             for(let y=18; y<=20; y++) { addExt(`e_rad1${y}`, 15, y, "radiator"); addExt(`e_rad2${y}`, 33, y, "radiator"); }
-            state.idCounters.ext = 20;
+            for(let x=22; x<=26; x++) { addExt(`e_whip${x}`, x, 3, "whipple", "Bow Armor"); }
+            addExt("e_sol1", 24, 2, "solar"); state.idCounters.ext = 35;
         }
 
         function exportShip() {
@@ -548,7 +618,7 @@
         }
         function importShip(event) {
             const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
-            reader.onload = e => { try { const imp = JSON.parse(e.target.result); if(imp.rooms && imp.gridData) { state = imp; document.getElementById('ship-name').value = state.ship.name || ""; document.getElementById('ship-desc').value = state.ship.desc || ""; clearSelection(); triggerBoot(false); } else alert("Invalid JSON."); } catch (err) { alert("Error parsing JSON file."); } };
+            reader.onload = e => { try { const imp = JSON.parse(e.target.result); if(imp.rooms && imp.gridData) { state = imp; if(!state.wires) state.wires = {}; if(!state.fuseboxes) state.fuseboxes = {}; document.getElementById('ship-name').value = state.ship.name || ""; document.getElementById('ship-desc').value = state.ship.desc || ""; clearSelection(); triggerBoot(false); } else alert("Invalid JSON."); } catch (err) { alert("Error parsing JSON file."); } };
             reader.readAsText(file); event.target.value = ''; 
         }
         function updateShipInfo() { state.ship.name = document.getElementById('ship-name').value; state.ship.desc = document.getElementById('ship-desc').value; }
@@ -557,8 +627,8 @@
             if(confirm("WARNING: This will completely delete the current ship layout. Proceed?")) { 
                 state.ship = { name: "", desc: "" };
                 document.getElementById('ship-name').value = ""; document.getElementById('ship-desc').value = "";
-                state.rooms = {}; state.doors = {}; state.vents = {}; state.exterior = {}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null)); 
-                clearSelection(); renderLoop(); 
+                state.rooms = {}; state.doors = {}; state.vents = {}; state.fuseboxes = {}; state.wires = {}; state.exterior = {}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null)); 
+                clearSelection(); renderLoop(); saveState();
             } 
         }
 
@@ -595,12 +665,78 @@
         function calculateSystems() {
             Object.values(state.rooms).forEach(r => { r.area = 0; if(r.pwrPerCell === undefined) r.pwrPerCell = 1; });
             for (let y = 0; y < ROWS; y++) { for (let x = 0; x < COLS; x++) { const rId = state.gridData[y][x]; if (rId) state.rooms[rId].area += 1; } }
-            globalTelemetry.shipPowerGen = 0; globalTelemetry.shipPowerCap = 0; globalTelemetry.shipPowerDraw = 0; globalTelemetry.totalArea = 0;
+            
+            let poweredRooms = new Set();
+            poweredWires.clear();
+            let queue = [];
+
+            let wiresByCell = {}; Object.values(state.wires).forEach(w => wiresByCell[`${w.x},${w.y}`] = w);
+            let fuseboxesByCell = {}; Object.values(state.fuseboxes).forEach(fb => { if(fb.isActive && !fb.isBroken) fuseboxesByCell[`${fb.x},${fb.y}`] = fb; });
+
+            Object.keys(state.rooms).forEach(rId => {
+                let r = state.rooms[rId];
+                let hasGen = r.components && r.components.some(c => (c.type==='diesel'||c.type==='smr'||c.type==='battery') && c.isActive && !c.isBroken);
+                let hasSolar = Object.values(state.exterior).some(e => e.type==='solar' && e.isActive && !e.isBroken && findExtRootRoom(e.id)?.roomId === rId);
+
+                if (hasGen || hasSolar) {
+                    poweredRooms.add(rId);
+                    queue.push({type: 'room', id: rId});
+                }
+            });
+
+            while(queue.length > 0) {
+                let curr = queue.shift();
+
+                if (curr.type === 'room') {
+                    Object.values(state.fuseboxes).forEach(fb => {
+                        if (fb.isActive && !fb.isBroken && state.gridData[fb.y][fb.x] === curr.id) {
+                            let w = wiresByCell[`${fb.x},${fb.y}`];
+                            if (w && !poweredWires.has(w.id)) {
+                                poweredWires.add(w.id); queue.push({type: 'wire', id: w.id});
+                            }
+                        }
+                    });
+                } else if (curr.type === 'wire') {
+                    let w = state.wires[curr.id];
+                    let adjs = [ wiresByCell[`${w.x+1},${w.y}`], wiresByCell[`${w.x-1},${w.y}`], wiresByCell[`${w.x},${w.y+1}`], wiresByCell[`${w.x},${w.y-1}`] ];
+                    adjs.forEach(nw => {
+                        if (nw && !poweredWires.has(nw.id)) {
+                            poweredWires.add(nw.id); queue.push({type: 'wire', id: nw.id});
+                        }
+                    });
+
+                    let fb = fuseboxesByCell[`${w.x},${w.y}`];
+                    if (fb) {
+                        let rId = state.gridData[fb.y][fb.x];
+                        if (rId && !poweredRooms.has(rId)) {
+                            poweredRooms.add(rId); queue.push({type: 'room', id: rId});
+                        }
+                    }
+                }
+            }
+
+            roomHasPower = {};
+            Object.keys(state.rooms).forEach(id => { roomHasPower[id] = poweredRooms.has(id); });
+
+            globalTelemetry.shipPowerGen = 0; globalTelemetry.shipPowerCap = 0; globalTelemetry.shipPowerDraw = 0; globalTelemetry.totalArea = 0; globalTelemetry.shipPropellantCap = 0;
 
             Object.values(state.rooms).forEach(r => {
+                let isPowered = roomHasPower[r.id];
                 let load = r.area * (r.pwrPerCell || 0); let cap = 0; let gen = 0; let used = 0;
-                if(r.components) {
-                    r.components.forEach(c => { let def = COMP_DICT[c.type]; if (def) { used += def.size; if (c.isActive && !c.isBroken) { cap += def.pwrCap || 0; gen += def.pwrGen || 0; load += def.pwrDraw || 0; } } });
+                
+                if (r.type === 'fuel') globalTelemetry.shipPropellantCap += r.area * 50;
+                else if(r.components) {
+                    r.components.forEach(c => { 
+                        let def = COMP_DICT[c.type]; 
+                        if (def) { 
+                            used += def.size; 
+                            if (c.isActive && !c.isBroken) { 
+                                cap += def.pwrCap || 0; 
+                                gen += def.pwrGen || 0; 
+                                if (isPowered) load += def.pwrDraw || 0; 
+                            } 
+                        } 
+                    });
                 } else r.components = [];
                 r.spaceUsed = used; globalTelemetry.shipPowerCap += cap; globalTelemetry.shipPowerGen += gen; globalTelemetry.shipPowerDraw += load; globalTelemetry.totalArea += r.area;
             });
@@ -608,13 +744,24 @@
             Object.values(state.exterior).forEach(ext => {
                 if(ext.isBroken || !ext.isActive) return;
                 let root = findExtRootRoom(ext.id);
-                if(ext.type === 'solar' && root) { let eff = (1 - (ext.dmg || 0) / 100); globalTelemetry.shipPowerGen += (ext.basePower || 10) * eff; }
+                if(ext.type === 'solar' && root) { let eff = (1 - (ext.dmg || 0) / 100); globalTelemetry.shipPowerGen += (ext.basePower || 15) * eff; }
             });
 
             const readOut = document.getElementById('power-readout');
             let drawRound = Math.round(globalTelemetry.shipPowerDraw); let genRound = Math.round(globalTelemetry.shipPowerGen); let capRound = Math.round(globalTelemetry.shipPowerCap);
-            readOut.innerText = `PWR: USED ${drawRound} / GEN ${genRound} MW | CAP ${capRound} MW`;
+            readOut.innerText = `PWR: USED ${drawRound} / GEN ${genRound} MW | CAP ${capRound} MW | FUEL: ${globalTelemetry.shipPropellantCap}`;
             if (drawRound > genRound) readOut.classList.add('telemetry-warning'); else readOut.classList.remove('telemetry-warning');
+
+            const gridStatus = document.getElementById('power-grid-status');
+            if (gridStatus) {
+                let activeGens = Object.keys(state.rooms).filter(rId => {
+                    let r = state.rooms[rId];
+                    let hasGen = r.components && r.components.some(c => (c.type==='diesel'||c.type==='smr'||c.type==='battery') && c.isActive && !c.isBroken);
+                    let hasSolar = Object.values(state.exterior).some(e => e.type==='solar' && e.isActive && !e.isBroken && findExtRootRoom(e.id)?.roomId === rId);
+                    return hasGen || hasSolar;
+                }).length;
+                gridStatus.innerHTML = `<strong>Powered Sectors:</strong> ${Object.values(roomHasPower).filter(v=>v).length} / ${Object.keys(state.rooms).length}<br><strong>Active Root Sources:</strong> ${activeGens} Cores/Turbines`;
+            }
         }
 
         function cleanUpRooms() {
@@ -667,11 +814,11 @@
         function getRoomConnections(roomId) {
             let connections = []; let myVents = [];
             Object.values(state.doors).forEach(d => {
-                let r1 = null, r2 = null; let touches = false;
+                let r1 = null, r2 = null;
                 if (d.dir === 'h') { if (d.y > 0) r1 = state.gridData[d.y - 1][d.x]; if (d.y < ROWS) r2 = state.gridData[d.y][d.x]; } 
                 else { if (d.x > 0) r1 = state.gridData[d.y][d.x - 1]; if (d.x < COLS) r2 = state.gridData[d.y][d.x]; }
-                if (r1 === roomId && r2 && r2 !== roomId) { connections.push({ targetRoom: r2, door: d }); touches = true; }
-                if (r2 === roomId && r1 && r1 !== roomId) { connections.push({ targetRoom: r1, door: d }); touches = true; }
+                if (r1 === roomId && r2 && r2 !== roomId) { connections.push({ targetRoom: r2, door: d }); }
+                if (r2 === roomId && r1 && r1 !== roomId) { connections.push({ targetRoom: r1, door: d }); }
             });
             
             Object.values(state.vents).forEach(v => { if (v.isActive && !v.isBroken && state.gridData[v.y][v.x] === roomId) myVents.push(v); });
@@ -687,8 +834,10 @@
 
         function renderLoop() {
             calculateSystems(); normalizeRooms();
-            DOM.labelsLayer.innerHTML = ''; DOM.doorsLayer.innerHTML = ''; DOM.ventsLayer.innerHTML = ''; DOM.extLayer.innerHTML = '';
+            DOM.labelsLayer.innerHTML = ''; DOM.doorsLayer.innerHTML = ''; DOM.ventsLayer.innerHTML = ''; DOM.fuseboxesLayer.innerHTML = ''; DOM.extLayer.innerHTML = ''; DOM.wiresLayer.innerHTML = '';
             
+            DOM.wiresLayer.style.display = (state.mode === 'power' || state.mode === 'integrity') ? 'block' : 'none';
+
             const roomCenters = {};
             for (let y = 0; y < ROWS; y++) {
                 for (let x = 0; x < COLS; x++) {
@@ -701,19 +850,23 @@
                         rc.cells.add(`${x},${y}`);
 
                         if (state.mode === 'integrity') cell.style.background = generateCellEnvironmentStyle(room, theme);
+                        else if (state.mode === 'power') {
+                            cell.style.background = roomHasPower[roomId] ? 'rgba(0, 255, 100, 0.25)' : 'rgba(255, 0, 50, 0.15)';
+                            cell.style.borderColor = roomHasPower[roomId] ? '#00ff66' : '#ff0033';
+                        }
                         else {
                             if (!isBooting || bootedRooms.has(roomId)) {
                                 cell.style.background = selection.roomIds.has(roomId) ? theme.sel : `rgba(${theme.r}, ${theme.g}, ${theme.b}, ${theme.a})`;
                             } else cell.style.background = 'transparent';
                         }
                         
-                        if (!isBooting || bootedRooms.has(roomId)) {
+                        if (state.mode !== 'power' && (!isBooting || bootedRooms.has(roomId))) {
                             const bStyle = `2px solid ${theme.border}`;
                             cell.style.borderTop = (y===0 || state.gridData[y-1][x]!==roomId) ? bStyle : 'none';
                             cell.style.borderBottom = (y===ROWS-1 || state.gridData[y+1][x]!==roomId) ? bStyle : 'none';
                             cell.style.borderLeft = (x===0 || state.gridData[y][x-1]!==roomId) ? bStyle : 'none';
                             cell.style.borderRight = (x===COLS-1 || state.gridData[y][x+1]!==roomId) ? bStyle : 'none';
-                        } else cell.style.border = '1px solid #1a1a1a';
+                        } else if (state.mode !== 'power') cell.style.border = '1px solid #1a1a1a';
                     } else { cell.style.background = 'transparent'; cell.style.border = '1px solid #1a1a1a'; }
                 }
             }
@@ -721,26 +874,47 @@
             Object.keys(roomCenters).forEach(id => {
                 if (isBooting && !bootedRooms.has(id)) return;
                 const data = roomCenters[id]; 
-                let cx = data.sumX / data.count; let cy = data.sumY / data.count;
-                let cxFloor = Math.floor(cx); let cyFloor = Math.floor(cy);
-                if (!data.cells.has(`${cxFloor},${cyFloor}`)) {
-                    let closest = null; let minDist = Infinity;
-                    data.cells.forEach(c => { let [px, py] = c.split(',').map(Number); let dist = Math.sqrt(Math.pow(px - cx, 2) + Math.pow(py - cy, 2)); if (dist < minDist) { minDist = dist; closest = {x: px, y: py}; } });
-                    if (closest) { cx = closest.x; cy = closest.y; }
-                }
+                let avgX = data.sumX / data.count; let avgY = data.sumY / data.count;
+                
+                let bestCell = null; let minDist = Infinity;
+                data.cells.forEach(c => {
+                    let [x,y] = c.split(',').map(Number);
+                    let d = Math.hypot(x - avgX, y - avgY);
+                    if(d < minDist) { minDist = d; bestCell = {x, y}; }
+                });
+
+                let cx = bestCell.x; let cy = bestCell.y;
+                
+                let left=0, right=0, up=0, down=0;
+                while(data.cells.has(`${cx-left-1},${cy}`)) left++;
+                while(data.cells.has(`${cx+right+1},${cy}`)) right++;
+                while(data.cells.has(`${cx},${cy-up-1}`)) up++;
+                while(data.cells.has(`${cx},${cy+down+1}`)) down++;
+
+                let wCells = left + right + 1;
+                let hCells = up + down + 1;
 
                 const label = document.createElement('div'); label.className = 'room-label';
-                label.style.left = (cx * CELL_SIZE + (CELL_SIZE/2)) + 'px'; label.style.top = (cy * CELL_SIZE + (CELL_SIZE/2)) + 'px';
+                label.style.left = (cx * CELL_SIZE + (CELL_SIZE/2)) + 'px'; 
+                label.style.top = (cy * CELL_SIZE + (CELL_SIZE/2)) + 'px';
                 
-                let wCells = data.maxX - data.minX + 1; let hCells = data.maxY - data.minY + 1;
-                label.style.maxWidth = Math.max(wCells * CELL_SIZE - 6, 20) + 'px'; label.style.maxHeight = Math.max(hCells * CELL_SIZE - 6, 20) + 'px';
-                if (hCells >= wCells * 1.5 && wCells <= 3) { label.style.writingMode = 'vertical-rl'; label.style.transform = 'translate(-50%, -50%) rotate(180deg)'; }
+                let maxW = Math.max((wCells * CELL_SIZE) - 6, 20);
+                let maxH = Math.max((hCells * CELL_SIZE) - 6, 20);
+                
+                label.style.width = maxW + 'px'; 
+                label.style.height = maxH + 'px';
+
+                if (hCells > wCells * 1.5 && wCells <= 3) { 
+                    label.style.writingMode = 'vertical-rl'; 
+                }
 
                 let text = state.rooms[id].name;
                 if (state.mode === 'integrity') {
                     if (state.rooms[id].dmg > 0) text += `\n[DMG ${state.rooms[id].dmg}%]`;
-                    text += `\n[${state.rooms[id].pres.toFixed(1)}b/${state.rooms[id].temp}°C]`;
+                    text += `\n[${state.rooms[id].pres.toFixed(1)}b/${Math.round(state.rooms[id].temp)}°C]`;
                     if (state.rooms[id].airType !== 'O2') text += `\n[${state.rooms[id].airType}]`;
+                } else if (state.mode === 'power') {
+                    text += roomHasPower[id] ? `\n[CONNECTED]` : `\n[BROWNOUT]`;
                 }
                 label.innerText = text;
                 if (selection.roomIds.has(id)) label.style.color = '#ffaa00';
@@ -773,6 +947,31 @@
                     el.style.boxShadow = `0 0 8px ${theme.border}, inset 0 0 8px ${theme.border}`; el.style.borderColor = theme.border;
                     DOM.ventsLayer.appendChild(el);
                 });
+
+                Object.values(state.fuseboxes).forEach(f => {
+                    const el = document.createElement('div'); let cName = `ext-item fusebox`;
+                    if (!f.isActive) cName += ' inactive'; if (f.isBroken) cName += ' broken'; if (selection.fuseboxIds.has(f.id)) cName += ' selected';
+                    el.className = cName; el.dataset.id = f.id; el.style.left = `${f.x * CELL_SIZE}px`; el.style.top = `${f.y * CELL_SIZE}px`;
+                    DOM.fuseboxesLayer.appendChild(el);
+                });
+
+                let wiresByCell = {}; Object.values(state.wires).forEach(w => wiresByCell[`${w.x},${w.y}`] = w);
+
+                Object.values(state.wires).forEach(w => {
+                    const el = document.createElement('div');
+                    let isWirePowered = poweredWires.has(w.id);
+                    el.className = `wire` + (isWirePowered ? ' powered' : ' unpowered');
+                    el.dataset.id = w.id; el.style.left = `${w.x * CELL_SIZE}px`; el.style.top = `${w.y * CELL_SIZE}px`;
+                    
+                    let innerHTML = `<div class="w-c"></div>`;
+                    if (wiresByCell[`${w.x},${w.y-1}`]) innerHTML += `<div class="w-n"></div>`;
+                    if (wiresByCell[`${w.x},${w.y+1}`]) innerHTML += `<div class="w-s"></div>`;
+                    if (wiresByCell[`${w.x+1},${w.y}`]) innerHTML += `<div class="w-e"></div>`;
+                    if (wiresByCell[`${w.x-1},${w.y}`]) innerHTML += `<div class="w-w"></div>`;
+                    el.innerHTML = innerHTML;
+
+                    DOM.wiresLayer.appendChild(el);
+                });
             }
 
             if (state.mode === 'exterior' && ghostItem && !isDragging) {
@@ -793,10 +992,48 @@
                     el.style.color = theme.border; el.style.backgroundColor = `rgba(${theme.r}, ${theme.g}, ${theme.b}, 0.2)`;
                     el.style.boxShadow = `0 0 8px ${theme.border}, inset 0 0 8px ${theme.border}`; el.style.borderColor = theme.border;
                     DOM.ventsLayer.appendChild(el);
+                } else if (state.connectorSubMode === 'fusebox') {
+                    const el = document.createElement('div'); el.className = `ext-item fusebox ghost`;
+                    el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; 
+                    DOM.fuseboxesLayer.appendChild(el);
                 }
             }
 
+            if (state.mode === 'power' && ghostItem && !isDragging) {
+                const el = document.createElement('div'); el.className = `wire ghost`;
+                el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`;
+                let innerHTML = `<div class="w-c"></div><div class="w-n"></div><div class="w-s"></div><div class="w-e"></div><div class="w-w"></div>`;
+                el.innerHTML = innerHTML;
+                DOM.wiresLayer.appendChild(el);
+            }
+
+            if (state.mode === 'paste' && clipboardCluster) {
+                DOM.draftBox.className = 'selection-box add'; DOM.draftBox.style.display = 'block';
+                DOM.draftBox.style.left = (dragContext.currentX * CELL_SIZE) + 'px'; DOM.draftBox.style.top = (dragContext.currentY * CELL_SIZE) + 'px';
+                DOM.draftBox.style.width = ((clipboardCluster.w + 1) * CELL_SIZE) + 'px'; DOM.draftBox.style.height = ((clipboardCluster.h + 1) * CELL_SIZE) + 'px';
+            }
+
             updateEditorUI();
+        }
+
+        function cloneSelectedCluster() {
+            if(selection.roomIds.size===0 && selection.doorIds.size===0 && selection.extIds.size===0 && selection.ventIds.size===0 && selection.fuseboxIds.size===0) return;
+            let minX = 999, minY = 999, maxX = -1, maxY = -1;
+            let rData = [];
+            selection.roomIds.forEach(id => {
+                let cells = []; for(let y=0; y<ROWS; y++) for(let x=0; x<COLS; x++) if(state.gridData[y][x] === id) { cells.push({x, y}); minX=Math.min(minX,x); maxX=Math.max(maxX,x); minY=Math.min(minY,y); maxY=Math.max(maxY,y); }
+                rData.push({ oldId: id, cells, r: JSON.parse(JSON.stringify(state.rooms[id])) });
+            });
+            let dData = []; selection.doorIds.forEach(id => { let d=state.doors[id]; dData.push(JSON.parse(JSON.stringify(d))); minX=Math.min(minX,d.x); maxX=Math.max(maxX,d.x); minY=Math.min(minY,d.y); maxY=Math.max(maxY,d.y); });
+            let vData = []; selection.ventIds.forEach(id => { let v=state.vents[id]; vData.push(JSON.parse(JSON.stringify(v))); minX=Math.min(minX,v.x); maxX=Math.max(maxX,v.x); minY=Math.min(minY,v.y); maxY=Math.max(maxY,v.y); });
+            let fbData = []; selection.fuseboxIds.forEach(id => { let f=state.fuseboxes[id]; fbData.push(JSON.parse(JSON.stringify(f))); minX=Math.min(minX,f.x); maxX=Math.max(maxX,f.x); minY=Math.min(minY,f.y); maxY=Math.max(maxY,f.y); });
+            let eData = []; selection.extIds.forEach(id => { let e=state.exterior[id]; eData.push(JSON.parse(JSON.stringify(e))); minX=Math.min(minX,e.x); maxX=Math.max(maxX,e.x); minY=Math.min(minY,e.y); maxY=Math.max(maxY,e.y); });
+
+            rData.forEach(rd => rd.cells.forEach(c => { c.rx = c.x - minX; c.ry = c.y - minY; }));
+            dData.forEach(d => { d.rx = d.x - minX; d.ry = d.y - minY; }); vData.forEach(v => { v.rx = v.x - minX; v.ry = v.y - minY; }); fbData.forEach(f => { f.rx = f.x - minX; f.ry = f.y - minY; }); eData.forEach(e => { e.rx = e.x - minX; e.ry = e.y - minY; });
+            
+            clipboardCluster = { rooms: rData, doors: dData, vents: vData, fuseboxes: fbData, exts: eData, w: maxX-minX, h: maxY-minY };
+            setMode('paste');
         }
 
         function triggerBuildAtGhost() {
@@ -804,7 +1041,9 @@
             if (state.mode === 'connectors') { 
                 if (state.connectorSubMode === 'door') { let exists = Object.values(state.doors).find(d => d.x === ghostItem.x && d.y === ghostItem.y && d.dir === ghostItem.dir); if (!exists) addDoor(`door_${state.idCounters.door++}`, ghostItem.x, ghostItem.y, ghostItem.dir, state.activeBuildTypeDoor, false); } 
                 else if (state.connectorSubMode === 'vent') { let exists = Object.values(state.vents).find(v => v.x === ghostItem.x && v.y === ghostItem.y); if (!exists) addVent(`vent_${state.idCounters.vent++}`, ghostItem.x, ghostItem.y, parseInt(document.getElementById('vent-build-channel').value)||1); }
+                else if (state.connectorSubMode === 'fusebox') { let exists = Object.values(state.fuseboxes).find(f => f.x === ghostItem.x && f.y === ghostItem.y); if (!exists) addFusebox(`fb_${state.idCounters.fusebox++}`, ghostItem.x, ghostItem.y); }
             } else if (state.mode === 'exterior') { let existing = Object.values(state.exterior).find(ex => ex.x === ghostItem.x && ex.y === ghostItem.y); if (!existing) addExt(`ext_${state.idCounters.ext++}`, ghostItem.x, ghostItem.y, state.activeBuildTypeExt); }
+            else if (state.mode === 'power') { let exists = Object.values(state.wires).find(w => w.x === ghostItem.x && w.y === ghostItem.y); if (!exists) { let idStr = `wire_${state.idCounters.wire++}`; state.wires[idStr] = { id: idStr, x: ghostItem.x, y: ghostItem.y }; } }
         }
 
         function triggerEraseAtGhost() {
@@ -812,12 +1051,15 @@
             if (state.mode === 'connectors') {
                 if (state.connectorSubMode === 'door') { let d = Object.values(state.doors).find(d => d.x === ghostItem.x && d.y === ghostItem.y && d.dir === ghostItem.dir); if (d) delete state.doors[d.id]; } 
                 else if (state.connectorSubMode === 'vent') { let v = Object.values(state.vents).find(v => v.x === ghostItem.x && v.y === ghostItem.y); if (v) delete state.vents[v.id]; }
+                else if (state.connectorSubMode === 'fusebox') { let f = Object.values(state.fuseboxes).find(f => f.x === ghostItem.x && f.y === ghostItem.y); if (f) delete state.fuseboxes[f.id]; }
             } else if (state.mode === 'exterior') { let ex = Object.values(state.exterior).find(ex => ex.x === ghostItem.x && ex.y === ghostItem.y); if (ex) delete state.exterior[ex.id]; }
+            else if (state.mode === 'power') { let w = Object.values(state.wires).find(w => w.x === ghostItem.x && w.y === ghostItem.y); if (w) delete state.wires[w.id]; }
         }
 
         function setupEventListeners() {
             DOM.viewport.addEventListener('wheel', handleZoom, { passive: false }); DOM.viewport.addEventListener('contextmenu', e => e.preventDefault());
             DOM.viewport.addEventListener('mousedown', handleMouseDown); window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp);
+            document.addEventListener('keydown', e => { if (e.ctrlKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); } if (e.ctrlKey && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); } if (e.key === 'Escape' && state.mode === 'paste') setMode('select'); });
         }
 
         function handleZoom(e) {
@@ -838,35 +1080,62 @@
             
             const coords = getGridCoords(e); dragContext.startX = coords.x; dragContext.startY = coords.y; dragContext.currentX = coords.x; dragContext.currentY = coords.y; isDragging = true; hasDragged = false;
 
+            if (state.mode === 'paste' && clipboardCluster) {
+                if(e.button === 2) { setMode('select'); return; }
+                let tx = coords.x; let ty = coords.y;
+                if (tx + clipboardCluster.w >= COLS || ty + clipboardCluster.h >= ROWS) return;
+                let collision = false; clipboardCluster.rooms.forEach(rd => rd.cells.forEach(c => { if(state.gridData[ty+c.ry][tx+c.rx]) collision = true; }));
+                if(!collision) {
+                    clipboardCluster.rooms.forEach(rd => {
+                        let nId = `room_${state.idCounters.room++}`; 
+                        let newR = JSON.parse(JSON.stringify(rd.r)); newR.id = nId;
+                        if(newR.components) newR.components.forEach(c => c.id = `comp_${state.idCounters.comp++}`);
+                        state.rooms[nId] = newR; rd.cells.forEach(c => state.gridData[ty+c.ry][tx+c.rx] = nId);
+                    });
+                    clipboardCluster.doors.forEach(d => { let nId = `door_${state.idCounters.door++}`; let newD = JSON.parse(JSON.stringify(d)); newD.id = nId; newD.x = tx+d.rx; newD.y = ty+d.ry; state.doors[nId] = newD; });
+                    clipboardCluster.vents.forEach(v => { let nId = `vent_${state.idCounters.vent++}`; let newV = JSON.parse(JSON.stringify(v)); newV.id = nId; newV.x = tx+v.rx; newV.y = ty+v.ry; state.vents[nId] = newV; });
+                    clipboardCluster.fuseboxes.forEach(f => { let nId = `fb_${state.idCounters.fusebox++}`; let newF = JSON.parse(JSON.stringify(f)); newF.id = nId; newF.x = tx+f.rx; newF.y = ty+f.ry; state.fuseboxes[nId] = newF; });
+                    clipboardCluster.exts.forEach(ex => { let nId = `ext_${state.idCounters.ext++}`; let newE = JSON.parse(JSON.stringify(ex)); newE.id = nId; newE.x = tx+ex.rx; newE.y = ty+ex.ry; state.exterior[nId] = newE; });
+                    saveState(); renderLoop();
+                } return;
+            }
+
             if (state.mode === 'structure') {
                 dragContext.action = e.button === 2 ? 'erase' : 'add';
                 if (dragContext.action === 'add') { const clickedId = state.gridData[coords.y][coords.x]; if (!clickedId || !selection.roomIds.has(clickedId)) { clearSelection(); if (clickedId) { selection.roomIds.add(clickedId); } } }
                 DOM.draftBox.className = `selection-box ${dragContext.action}`; DOM.draftBox.style.display = 'block'; updateDraftBox(coords.x, coords.y);
             } 
-            else if (state.mode === 'connectors' || state.mode === 'exterior') {
+            else if (state.mode === 'connectors' || state.mode === 'exterior' || state.mode === 'power') {
                 dragContext.action = e.button === 2 ? 'erase_item' : 'build_item';
                 if (dragContext.action === 'build_item') triggerBuildAtGhost(); else triggerEraseAtGhost(); renderLoop();
             }
             else if (state.mode === 'select') {
-                let targetEl = e.target.closest('.door, .vent, .ext-item') || e.target; let clickedRoom = state.gridData[coords.y][coords.x];
-                let clickedDoor = targetEl.classList.contains('door') ? targetEl.dataset.id : null; let clickedVent = targetEl.classList.contains('vent') ? targetEl.dataset.id : null; let clickedExt = (targetEl.classList.contains('ext-item') && !clickedVent) ? targetEl.dataset.id : null;
-                let isClickingSelected = (clickedDoor && selection.doorIds.has(clickedDoor)) || (clickedExt && selection.extIds.has(clickedExt)) || (clickedVent && selection.ventIds.has(clickedVent)) || (clickedRoom && selection.roomIds.has(clickedRoom));
+                let targetEl = e.target.closest('.door, .vent, .fusebox, .ext-item') || e.target; let clickedRoom = state.gridData[coords.y][coords.x];
+                let clickedDoor = targetEl.classList.contains('door') ? targetEl.dataset.id : null; 
+                let clickedVent = targetEl.classList.contains('vent') ? targetEl.dataset.id : null; 
+                let clickedFusebox = targetEl.classList.contains('fusebox') ? targetEl.dataset.id : null; 
+                let clickedExt = (targetEl.classList.contains('ext-item') && !clickedVent && !clickedFusebox) ? targetEl.dataset.id : null;
+                
+                let isClickingSelected = (clickedDoor && selection.doorIds.has(clickedDoor)) || (clickedExt && selection.extIds.has(clickedExt)) || (clickedVent && selection.ventIds.has(clickedVent)) || (clickedFusebox && selection.fuseboxIds.has(clickedFusebox)) || (clickedRoom && selection.roomIds.has(clickedRoom));
 
                 if (e.button === 2 && !isClickingSelected) {
-                    if (clickedDoor) { delete state.doors[clickedDoor]; renderLoop(); return; }
-                    if (clickedVent) { delete state.vents[clickedVent]; renderLoop(); return; }
-                    if (clickedExt) { delete state.exterior[clickedExt]; renderLoop(); return; }
+                    if (clickedDoor) { delete state.doors[clickedDoor]; saveState(); renderLoop(); return; }
+                    if (clickedVent) { delete state.vents[clickedVent]; saveState(); renderLoop(); return; }
+                    if (clickedFusebox) { delete state.fuseboxes[clickedFusebox]; saveState(); renderLoop(); return; }
+                    if (clickedExt) { delete state.exterior[clickedExt]; saveState(); renderLoop(); return; }
                 }
 
                 if (isClickingSelected) {
                     dragContext.action = 'move'; dragContext.backupGrid = state.gridData.map(row => [...row]);
-                    dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupVents = JSON.parse(JSON.stringify(state.vents)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior));
+                    dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupVents = JSON.parse(JSON.stringify(state.vents)); dragContext.backupFuseboxes = JSON.parse(JSON.stringify(state.fuseboxes)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior));
+                    dragContext.backupWires = JSON.parse(JSON.stringify(state.wires));
                 } else {
                     clearSelection();
                     if (filters.doors && clickedDoor) { selection.doorIds.add(clickedDoor); dragContext.action = null; }
                     else if (filters.doors && clickedVent) { selection.ventIds.add(clickedVent); dragContext.action = null; }
+                    else if (filters.doors && clickedFusebox) { selection.fuseboxIds.add(clickedFusebox); dragContext.action = null; }
                     else if (filters.exterior && clickedExt) { selection.extIds.add(clickedExt); dragContext.action = null; }
-                    else if (filters.rooms && clickedRoom) { dragContext.action = 'move'; selection.roomIds.add(clickedRoom); dragContext.backupGrid = state.gridData.map(row => [...row]); dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupVents = JSON.parse(JSON.stringify(state.vents)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior)); } 
+                    else if (filters.rooms && clickedRoom) { dragContext.action = 'move'; selection.roomIds.add(clickedRoom); dragContext.backupGrid = state.gridData.map(row => [...row]); dragContext.backupDoors = JSON.parse(JSON.stringify(state.doors)); dragContext.backupVents = JSON.parse(JSON.stringify(state.vents)); dragContext.backupFuseboxes = JSON.parse(JSON.stringify(state.fuseboxes)); dragContext.backupExt = JSON.parse(JSON.stringify(state.exterior)); dragContext.backupWires = JSON.parse(JSON.stringify(state.wires)); } 
                     else { dragContext.action = 'marquee'; DOM.draftBox.className = `selection-box marquee`; DOM.draftBox.style.display = 'block'; updateDraftBox(coords.x, coords.y); }
                 } renderLoop();
             }
@@ -878,18 +1147,22 @@
             const coords = getGridCoords(e); dragContext.currentX = coords.x; dragContext.currentY = coords.y;
             if (isDragging && (coords.x !== dragContext.startX || coords.y !== dragContext.startY)) hasDragged = true;
 
-            if (!isDragging) {
-                if (state.mode === 'connectors') {
-                    if (state.connectorSubMode === 'door') {
-                        const cellLocalX = coords.rawX % CELL_SIZE, cellLocalY = coords.rawY % CELL_SIZE; const dL = cellLocalX, dR = CELL_SIZE - cellLocalX, dT = cellLocalY, dB = CELL_SIZE - cellLocalY; const minDist = Math.min(dL, dR, dT, dB); let gX = coords.x, gY = coords.y, gDir = 'v';
-                        if (minDist === dL) gDir = 'v'; else if (minDist === dR) { gDir = 'v'; gX++; } else if (minDist === dT) gDir = 'h'; else { gDir = 'h'; gY++; }
-                        ghostItem = { x: gX, y: gY, dir: gDir };
-                    } else if (state.connectorSubMode === 'vent') { ghostItem = { x: coords.x, y: coords.y, type: 'vent' }; }
-                    renderLoop();
-                } else if (state.mode === 'exterior') { ghostItem = { x: coords.x, y: coords.y, type: state.activeBuildTypeExt }; renderLoop(); }
-            }
+            if (state.mode === 'paste' && clipboardCluster) { renderLoop(); return; }
 
-            if (!isDragging) return;
+            // Ghost updates constantly on mousemove
+            if (state.mode === 'connectors') {
+                if (state.connectorSubMode === 'door') {
+                    const cellLocalX = coords.rawX % CELL_SIZE, cellLocalY = coords.rawY % CELL_SIZE; const dL = cellLocalX, dR = CELL_SIZE - cellLocalX, dT = cellLocalY, dB = CELL_SIZE - cellLocalY; const minDist = Math.min(dL, dR, dT, dB); let gX = coords.x, gY = coords.y, gDir = 'v';
+                    if (minDist === dL) gDir = 'v'; else if (minDist === dR) { gDir = 'v'; gX++; } else if (minDist === dT) gDir = 'h'; else { gDir = 'h'; gY++; }
+                    ghostItem = { x: gX, y: gY, dir: gDir };
+                } else if (state.connectorSubMode === 'vent') { ghostItem = { x: coords.x, y: coords.y, type: 'vent' }; }
+                else if (state.connectorSubMode === 'fusebox') { ghostItem = { x: coords.x, y: coords.y, type: 'fusebox' }; }
+            } else if (state.mode === 'power') {
+                ghostItem = { x: coords.x, y: coords.y, type: 'wire' };
+            } else if (state.mode === 'exterior') { ghostItem = { x: coords.x, y: coords.y, type: state.activeBuildTypeExt }; }
+
+            if (!isDragging) { renderLoop(); return; }
+
             if (['add', 'erase', 'marquee'].includes(dragContext.action)) { updateDraftBox(dragContext.currentX, dragContext.currentY); } 
             else if (dragContext.action === 'build_item') { triggerBuildAtGhost(); renderLoop(); }
             else if (dragContext.action === 'erase_item') { triggerEraseAtGhost(); renderLoop(); }
@@ -898,6 +1171,7 @@
                 for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (selection.roomIds.has(dragContext.backupGrid[y][x])) { let nx = x + dx, ny = y + dy; if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { canMove = false; break; } let destId = dragContext.backupGrid[ny][nx]; if (destId && !selection.roomIds.has(destId)) { canMove = false; break; } }
                 selection.doorIds.forEach(id => { let d = dragContext.backupDoors[id]; let nx = d.x + dx, ny = d.y + dy; if(nx < 0 || nx > COLS || ny < 0 || ny > ROWS) canMove = false; });
                 selection.ventIds.forEach(id => { let v = dragContext.backupVents[id]; let nx = v.x + dx, ny = v.y + dy; if(nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) canMove = false; });
+                selection.fuseboxIds.forEach(id => { let f = dragContext.backupFuseboxes[id]; let nx = f.x + dx, ny = f.y + dy; if(nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) canMove = false; });
                 selection.extIds.forEach(id => { let ex = dragContext.backupExt[id]; let nx = ex.x + dx, ny = ex.y + dy; if(nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) canMove = false; });
 
                 if (canMove) {
@@ -905,7 +1179,10 @@
                     for (let y=0; y<ROWS; y++) for (let x=0; x<COLS; x++) { if (selection.roomIds.has(dragContext.backupGrid[y][x])) state.gridData[y+dy][x+dx] = dragContext.backupGrid[y][x]; }
                     state.doors = JSON.parse(JSON.stringify(dragContext.backupDoors)); selection.doorIds.forEach(id => { state.doors[id].x += dx; state.doors[id].y += dy; });
                     state.vents = JSON.parse(JSON.stringify(dragContext.backupVents)); selection.ventIds.forEach(id => { state.vents[id].x += dx; state.vents[id].y += dy; });
+                    state.fuseboxes = JSON.parse(JSON.stringify(dragContext.backupFuseboxes)); selection.fuseboxIds.forEach(id => { state.fuseboxes[id].x += dx; state.fuseboxes[id].y += dy; });
                     state.exterior = JSON.parse(JSON.stringify(dragContext.backupExt)); selection.extIds.forEach(id => { state.exterior[id].x += dx; state.exterior[id].y += dy; });
+                    
+                    state.wires = JSON.parse(JSON.stringify(dragContext.backupWires));
                     renderLoop();
                 }
             }
@@ -913,6 +1190,7 @@
 
         function handleMouseUp(e) {
             if (camera.isPanning) { camera.isPanning = false; DOM.viewport.style.cursor = (state.mode === 'select' || state.mode === 'integrity') ? 'default' : 'crosshair'; return; }
+            if (state.mode === 'paste') return; 
             if (!isDragging) return; isDragging = false; DOM.draftBox.style.display = 'none';
             const minX = Math.min(dragContext.startX, dragContext.currentX), maxX = Math.max(dragContext.startX, dragContext.currentX);
             const minY = Math.min(dragContext.startY, dragContext.currentY), maxY = Math.max(dragContext.startY, dragContext.currentY);
@@ -922,37 +1200,42 @@
                 if (!activeId) { activeId = `room_${state.idCounters.room++}`; addRoom(activeId, 'New Sector', 'default', 21, 1.0, 1); }
                 const clickedId = state.gridData[dragContext.startY][dragContext.startX];
                 if (!hasDragged && clickedId && clickedId !== activeId) { clearSelection(); selection.roomIds.add(clickedId); } 
-                else { applyToGrid(minX, maxX, minY, maxY, activeId); clearSelection(); selection.roomIds.add(activeId); splitDisconnectedRooms(); }
+                else { applyToGrid(minX, maxX, minY, maxY, activeId); clearSelection(); selection.roomIds.add(activeId); splitDisconnectedRooms(); saveState(); }
             } 
-            else if (dragContext.action === 'erase') { applyToGrid(minX, maxX, minY, maxY, null); splitDisconnectedRooms(); cleanUpRooms(); }
+            else if (dragContext.action === 'erase') { applyToGrid(minX, maxX, minY, maxY, null); splitDisconnectedRooms(); cleanUpRooms(); saveState(); }
             else if (dragContext.action === 'marquee') {
                 clearSelection();
                 if (filters.rooms) { for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) if (state.gridData[y][x]) selection.roomIds.add(state.gridData[y][x]); }
-                if (filters.doors) { Object.values(state.doors).forEach(d => { if(d.x >= minX && d.x <= maxX && d.y >= minY && d.y <= maxY) selection.doorIds.add(d.id); }); Object.values(state.vents).forEach(v => { if(v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) selection.ventIds.add(v.id); }); }
+                if (filters.doors) { 
+                    Object.values(state.doors).forEach(d => { if(d.x >= minX && d.x <= maxX && d.y >= minY && d.y <= maxY) selection.doorIds.add(d.id); }); 
+                    Object.values(state.vents).forEach(v => { if(v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) selection.ventIds.add(v.id); }); 
+                    Object.values(state.fuseboxes).forEach(f => { if(f.x >= minX && f.x <= maxX && f.y >= minY && f.y <= maxY) selection.fuseboxIds.add(f.id); }); 
+                }
                 if (filters.exterior) Object.values(state.exterior).forEach(ex => { if(ex.x >= minX && ex.x <= maxX && ex.y >= minY && ex.y <= maxY) selection.extIds.add(ex.id); });
             }
-            dragContext.action = null; dragContext.backupGrid = null; dragContext.backupDoors = null; dragContext.backupVents = null; dragContext.backupExt = null; renderLoop();
+            else if (dragContext.action === 'build_item' || dragContext.action === 'erase_item' || dragContext.action === 'move') { if (hasDragged || dragContext.action !== 'move') saveState(); }
+            
+            dragContext.action = null; dragContext.backupGrid = null; dragContext.backupDoors = null; dragContext.backupVents = null; dragContext.backupFuseboxes = null; dragContext.backupExt = null; dragContext.backupWires = null; renderLoop();
         }
 
-        // --- PALETTE UI FUNCTIONS ---
         function setBuildPalette(category, type) {
             if (category === 'ext') { state.activeBuildTypeExt = type; ['engine', 'radiator', 'solar', 'whipple'].forEach(t => document.getElementById('pal-ext-' + t).classList.remove('active')); document.getElementById('pal-ext-' + type).classList.add('active'); } 
             else if (category === 'door') { state.activeBuildTypeDoor = type; ['standard', 'security', 'airlock'].forEach(t => document.getElementById('pal-door-' + t).classList.remove('active')); document.getElementById('pal-door-' + type).classList.add('active'); }
             ghostItem = null; renderLoop();
         }
-        function editSelectedRoomType(type) { if (selection.roomIds.size === 1) { state.rooms[Array.from(selection.roomIds)[0]].type = type; renderLoop(); } }
-        function editSelectedDoorType(type) { if (selection.doorIds.size === 1) { state.doors[Array.from(selection.doorIds)[0]].type = type; renderLoop(); } }
-        function editSelectedExtType(type) { if (selection.extIds.size === 1) { state.exterior[Array.from(selection.extIds)[0]].type = type; renderLoop(); } }
+        function editSelectedRoomType(type) { if (selection.roomIds.size === 1) { state.rooms[Array.from(selection.roomIds)[0]].type = type; saveState(); renderLoop(); } }
+        function editSelectedDoorType(type) { if (selection.doorIds.size === 1) { state.doors[Array.from(selection.doorIds)[0]].type = type; saveState(); renderLoop(); } }
+        function editSelectedExtType(type) { if (selection.extIds.size === 1) { state.exterior[Array.from(selection.extIds)[0]].type = type; saveState(); renderLoop(); } }
 
         function setMode(newMode) {
-            if (simActive && (newMode === 'structure' || newMode === 'connectors' || newMode === 'exterior')) return;
+            if (simActive && (newMode === 'structure' || newMode === 'connectors' || newMode === 'exterior' || newMode === 'power')) return;
             state.mode = newMode;
             document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active')); document.getElementById('btn-' + newMode).classList.add('active');
             document.getElementById('mode-indicator').innerText = `Mode: ${newMode.toUpperCase()}`;
             document.querySelectorAll('.panel-section').forEach(el => el.classList.remove('active')); document.getElementById('inst-' + newMode) && document.getElementById('inst-' + newMode).classList.add('active');
             
             if (newMode === 'info') { document.getElementById('panel-info').classList.add('active'); document.getElementById('ship-name').value = state.ship.name || ""; document.getElementById('ship-desc').value = state.ship.desc || ""; clearSelection(); } 
-            else if (newMode === 'connectors' || newMode === 'exterior') { document.getElementById('panel-' + newMode).classList.add('active'); clearSelection(); } 
+            else if (newMode === 'connectors' || newMode === 'exterior' || newMode === 'power') { document.getElementById('panel-' + (newMode === 'power' ? 'power' : newMode)).classList.add('active'); clearSelection(); } 
             else if (newMode === 'integrity') { document.getElementById('panel-integrity').classList.add('active'); if (selection.roomIds.size > 1) clearSelection(); } 
             else { document.getElementById('panel-editor').classList.add('active'); }
             DOM.viewport.style.cursor = (newMode === 'select' || newMode === 'integrity') ? 'default' : 'crosshair'; ghostItem = null; renderLoop();
@@ -960,14 +1243,16 @@
         
         function setConnectorSubMode(subMode) {
             state.connectorSubMode = subMode;
-            document.getElementById('btn-sub-door').classList.remove('active'); document.getElementById('btn-sub-vent').classList.remove('active');
+            document.getElementById('btn-sub-door').classList.remove('active'); document.getElementById('btn-sub-vent').classList.remove('active'); document.getElementById('btn-sub-fusebox').classList.remove('active');
             document.getElementById('btn-sub-' + subMode).classList.add('active');
-            document.getElementById('door-build-settings').style.display = subMode === 'door' ? 'block' : 'none'; document.getElementById('vent-build-settings').style.display = subMode === 'vent' ? 'block' : 'none';
+            document.getElementById('door-build-settings').style.display = subMode === 'door' ? 'block' : 'none'; 
+            document.getElementById('vent-build-settings').style.display = subMode === 'vent' ? 'block' : 'none';
+            document.getElementById('fusebox-build-settings').style.display = subMode === 'fusebox' ? 'block' : 'none';
             ghostItem = null; renderLoop();
         }
 
-        function toggleFilter(type) { filters[type] = !filters[type]; const btn = document.getElementById(`btn-filter-${type === 'exterior' ? 'ext' : type}`); btn.classList.toggle('active', filters[type]); btn.innerText = `${type.charAt(0).toUpperCase() + type.slice(1)}: ${filters[type] ? 'ON' : 'OFF'}`; clearSelection(); renderLoop(); }
-        function clearSelection() { selection.roomIds.clear(); selection.doorIds.clear(); selection.extIds.clear(); selection.ventIds.clear(); }
+        function toggleFilter(type) { filters[type] = !filters[type]; const btn = document.getElementById(`btn-filter-${type === 'exterior' ? 'ext' : type}`); btn.classList.toggle('active', filters[type]); btn.innerText = `${type === 'doors' ? 'Doors/Nodes' : type.charAt(0).toUpperCase() + type.slice(1)}: ${filters[type] ? 'ON' : 'OFF'}`; clearSelection(); renderLoop(); }
+        function clearSelection() { selection.roomIds.clear(); selection.doorIds.clear(); selection.extIds.clear(); selection.ventIds.clear(); selection.fuseboxIds.clear(); }
         function updateDraftBox(cx, cy) { const minX = Math.min(dragContext.startX, cx), minY = Math.min(dragContext.startY, cy); const w = Math.abs(cx - dragContext.startX) + 1, h = Math.abs(cy - dragContext.startY) + 1; DOM.draftBox.style.left = (minX * CELL_SIZE) + 'px'; DOM.draftBox.style.top = (minY * CELL_SIZE) + 'px'; DOM.draftBox.style.width = (w * CELL_SIZE) + 'px'; DOM.draftBox.style.height = (h * CELL_SIZE) + 'px'; }
 
         function propagateHazards() {
@@ -1005,11 +1290,23 @@
 
             Object.values(state.rooms).forEach(r => {
                 if(!r.components) return;
+                let isPowered = roomHasPower[r.id];
                 r.components.forEach(c => {
                     if(!c.isActive || c.isBroken) return; let def = COMP_DICT[c.type];
-                    if (def.heat) r.temp += def.heat;
+                    
+                    if (def.heat) {
+                        if (isPowered || !['mainframe', 'processor', 'cryo'].includes(c.type)) {
+                            r.temp += def.heat;
+                        }
+                    }
+
+                    if (!isPowered && ['o2_gen', 'scrubber', 'hydroponics', 'mainframe', 'processor', 'autodoc', 'cryo'].includes(c.type)) {
+                        return;
+                    }
+
                     if (c.type === 'smr' && r.dmg > 50) r.airType = 'Toxins'; 
-                    if (c.type === 'scrubber' || c.type === 'hydroponics') { if (r.airType === 'CO2') r.airType = 'O2'; }
+                    if (c.type === 'o2_gen' && r.dmg <= 50) { if (r.pres < 1.0) r.pres = Math.min(1.0, r.pres + 0.2); if (r.airType === 'Vacuum' && r.pres > 0.2) r.airType = 'O2'; if (r.airType === 'CO2') r.airType = 'O2'; }
+                    if ((c.type === 'scrubber' || c.type === 'hydroponics') && r.airType === 'CO2') r.airType = 'O2';
                 });
             });
 
@@ -1034,14 +1331,29 @@
                         }
                     });
                 }
-            }); renderLoop();
+            });
+
+            let roomTempsSnapshot = {};
+            Object.keys(state.rooms).forEach(id => { roomTempsSnapshot[id] = state.rooms[id].temp; });
+            Object.keys(state.rooms).forEach(id => {
+                let conns = getRoomConnections(id);
+                conns.forEach(c => {
+                    let t = c.isVent ? {air:true, temp:true} : getDoorTransfer(c.door);
+                    if (t.temp) {
+                        let diff = roomTempsSnapshot[c.targetRoom] - roomTempsSnapshot[id];
+                        state.rooms[id].temp += diff * 0.05;
+                    }
+                });
+            });
+
+            renderLoop();
         }
 
         function runSimulation() {
             const roomKeys = Object.keys(state.rooms); if (roomKeys.length === 0) return alert("You must build hull modules before running a simulation.");
             if (!simActive) {
-                backupRooms = JSON.parse(JSON.stringify(state.rooms)); backupDoorsSim = JSON.parse(JSON.stringify(state.doors)); backupVentsSim = JSON.parse(JSON.stringify(state.vents)); backupExtSim = JSON.parse(JSON.stringify(state.exterior));
-                simActive = true; document.getElementById('sim-warning').style.display = 'block'; document.getElementById('btn-structure').classList.add('disabled-mode'); document.getElementById('btn-connectors').classList.add('disabled-mode'); document.getElementById('btn-exterior').classList.add('disabled-mode'); document.getElementById('sim-actions').style.display = 'flex'; setMode('integrity');
+                backupRooms = JSON.parse(JSON.stringify(state.rooms)); backupDoorsSim = JSON.parse(JSON.stringify(state.doors)); backupVentsSim = JSON.parse(JSON.stringify(state.vents)); backupFuseboxesSim = JSON.parse(JSON.stringify(state.fuseboxes)); backupExtSim = JSON.parse(JSON.stringify(state.exterior)); backupWiresSim = JSON.parse(JSON.stringify(state.wires));
+                simActive = true; document.getElementById('sim-warning').style.display = 'block'; document.getElementById('btn-structure').classList.add('disabled-mode'); document.getElementById('btn-connectors').classList.add('disabled-mode'); document.getElementById('btn-exterior').classList.add('disabled-mode'); document.getElementById('btn-power').classList.add('disabled-mode'); document.getElementById('sim-actions').style.display = 'flex'; setMode('integrity');
             }
             
             const type = document.getElementById('sim-type').value;
@@ -1073,9 +1385,9 @@
             }); renderLoop();
         }
 
-        function resetSimulation() { state.rooms = JSON.parse(JSON.stringify(backupRooms)); state.doors = JSON.parse(JSON.stringify(backupDoorsSim)); state.vents = JSON.parse(JSON.stringify(backupVentsSim)); state.exterior = JSON.parse(JSON.stringify(backupExtSim)); endSimulation(); }
+        function resetSimulation() { state.rooms = JSON.parse(JSON.stringify(backupRooms)); state.doors = JSON.parse(JSON.stringify(backupDoorsSim)); state.vents = JSON.parse(JSON.stringify(backupVentsSim)); state.fuseboxes = JSON.parse(JSON.stringify(backupFuseboxesSim)); state.exterior = JSON.parse(JSON.stringify(backupExtSim)); state.wires = JSON.parse(JSON.stringify(backupWiresSim)); endSimulation(); }
         function applySimulation() { endSimulation(); }
-        function endSimulation() { simActive = false; backupRooms = null; backupDoorsSim = null; backupVentsSim = null; backupExtSim = null; document.getElementById('sim-warning').style.display = 'none'; document.getElementById('btn-structure').classList.remove('disabled-mode'); document.getElementById('btn-connectors').classList.remove('disabled-mode'); document.getElementById('btn-exterior').classList.remove('disabled-mode'); document.getElementById('sim-actions').style.display = 'none'; renderLoop(); }
+        function endSimulation() { simActive = false; backupRooms = null; backupDoorsSim = null; backupVentsSim = null; backupFuseboxesSim = null; backupExtSim = null; backupWiresSim = null; document.getElementById('sim-warning').style.display = 'none'; document.getElementById('btn-structure').classList.remove('disabled-mode'); document.getElementById('btn-connectors').classList.remove('disabled-mode'); document.getElementById('btn-exterior').classList.remove('disabled-mode'); document.getElementById('btn-power').classList.remove('disabled-mode'); document.getElementById('sim-actions').style.display = 'none'; renderLoop(); }
 
         function toggleEye(stat) { Object.keys(visibleStats).forEach(k => visibleStats[k] = false); visibleStats[stat] = true; renderLoop(); }
         function updateIntegrityData(activeKey) {
@@ -1092,21 +1404,21 @@
             const def = COMP_DICT[type];
             if (room.spaceUsed + def.size > room.area) { alert(`Insufficient Space! Room Area: ${room.area}. Space Used: ${room.spaceUsed}. Machine Size: ${def.size}`); return; }
             if (!room.components) room.components = [];
-            room.components.push({ id: `comp_${state.idCounters.comp++}`, type: type, isActive: true, isBroken: false }); renderLoop();
+            room.components.push({ id: `comp_${state.idCounters.comp++}`, type: type, isActive: true, isBroken: false }); saveState(); renderLoop();
         }
-        function toggleComponent(compId, prop) { if (selection.roomIds.size !== 1) return; const room = state.rooms[Array.from(selection.roomIds)[0]]; const comp = room.components.find(c => c.id === compId); if (comp) { comp[prop] = !comp[prop]; renderLoop(); } }
-        function removeComponent(compId) { if (selection.roomIds.size !== 1) return; const room = state.rooms[Array.from(selection.roomIds)[0]]; room.components = room.components.filter(c => c.id !== compId); renderLoop(); }
+        function toggleComponent(compId, prop) { if (selection.roomIds.size !== 1) return; const room = state.rooms[Array.from(selection.roomIds)[0]]; const comp = room.components.find(c => c.id === compId); if (comp) { comp[prop] = !comp[prop]; saveState(); renderLoop(); } }
+        function removeComponent(compId) { if (selection.roomIds.size !== 1) return; const room = state.rooms[Array.from(selection.roomIds)[0]]; room.components = room.components.filter(c => c.id !== compId); saveState(); renderLoop(); }
 
         function updateEditorUI() {
             if (state.mode === 'info') {
-                document.getElementById('info-telemetry').innerHTML = `<strong>Total Hull Area:</strong> ${globalTelemetry.totalArea} Cells<br><strong>Power Demand:</strong> ${Math.round(globalTelemetry.shipPowerDraw)} MW<br><strong>Power Generation:</strong> ${Math.round(globalTelemetry.shipPowerGen)} MW<br><strong>Network Capacity:</strong> ${Math.round(globalTelemetry.shipPowerCap)} MW<br><strong>Active Hull Modules:</strong> ${Object.keys(state.rooms).length}<br><strong>Active Exterior Arrays:</strong> ${Object.keys(state.exterior).length}<br><strong>Connector Nodes:</strong> ${Object.keys(state.doors).length + Object.keys(state.vents).length}`; return;
+                document.getElementById('info-telemetry').innerHTML = `<strong>Total Hull Area:</strong> ${globalTelemetry.totalArea} Cells<br><strong>Power Demand:</strong> ${Math.round(globalTelemetry.shipPowerDraw)} MW<br><strong>Power Generation:</strong> ${Math.round(globalTelemetry.shipPowerGen)} MW<br><strong>Network Capacity:</strong> ${Math.round(globalTelemetry.shipPowerCap)} MW<br><strong>Active Hull Modules:</strong> ${Object.keys(state.rooms).length}<br><strong>Active Exterior Arrays:</strong> ${Object.keys(state.exterior).length}<br><strong>Connector Nodes:</strong> ${Object.keys(state.doors).length + Object.keys(state.vents).length + Object.keys(state.fuseboxes).length}<br><strong>Copper Conduit Matrix:</strong> ${Object.keys(state.wires).length} Units`; return;
             }
             if (state.mode === 'integrity') {
                 const placeholder = document.getElementById('integrity-placeholder'); const editor = document.getElementById('integrity-editor');
                 Object.keys(visibleStats).forEach(s => { const btn = document.getElementById(`eye-${s}`); if (btn) { btn.classList.toggle('active', visibleStats[s]); btn.innerText = visibleStats[s] ? "👁" : "❌"; } });
                 if (selection.roomIds.size === 1) {
                     const id = Array.from(selection.roomIds)[0]; const r = state.rooms[id];
-                    document.getElementById('integ-title').innerText = r.name; document.getElementById('sys-dmg').value = r.dmg; document.getElementById('sys-dmg-val').innerText = r.dmg + "%"; document.getElementById('sys-pres').value = Math.round(r.pres * 100); document.getElementById('sys-pres-val').innerText = r.pres.toFixed(1) + "b"; document.getElementById('sys-temp').value = r.temp; document.getElementById('sys-temp-val').innerText = r.temp + "°C"; document.getElementById('sys-type').value = r.airType;
+                    document.getElementById('integ-title').innerText = r.name; document.getElementById('sys-dmg').value = r.dmg; document.getElementById('sys-dmg-val').innerText = r.dmg + "%"; document.getElementById('sys-pres').value = Math.round(r.pres * 100); document.getElementById('sys-pres-val').innerText = r.pres.toFixed(1) + "b"; document.getElementById('sys-temp').value = Math.round(r.temp); document.getElementById('sys-temp-val').innerText = Math.round(r.temp) + "°C"; document.getElementById('sys-type').value = r.airType;
                     const list = document.getElementById('crossways-list'); list.innerHTML = ''; const conns = getRoomConnections(id);
                     if (conns.length === 0) list.innerHTML = '<div class="conn-item" style="color:#555;">No connections.</div>';
                     else conns.forEach(c => { 
@@ -1119,30 +1431,32 @@
             }
 
             const panels = { placeholder: document.getElementById('placeholder-text'), multi: document.getElementById('multi-select-panel'), room: document.getElementById('room-editor'), door: document.getElementById('door-editor'), ext: document.getElementById('ext-editor') };
-            Object.values(panels).forEach(p => p.style.display = 'none'); const totalSelected = selection.roomIds.size + selection.doorIds.size + selection.extIds.size + selection.ventIds.size;
+            Object.values(panels).forEach(p => p.style.display = 'none'); const totalSelected = selection.roomIds.size + selection.doorIds.size + selection.extIds.size + selection.ventIds.size + selection.fuseboxIds.size;
 
             if (totalSelected === 0) panels.placeholder.style.display = 'block'; else if (totalSelected > 1) panels.multi.style.display = 'block';
             else {
-                if (selection.doorIds.size === 1 || selection.ventIds.size === 1) {
+                if (selection.doorIds.size === 1 || selection.ventIds.size === 1 || selection.fuseboxIds.size === 1) {
                     const isVent = selection.ventIds.size === 1;
-                    const d = isVent ? state.vents[Array.from(selection.ventIds)[0]] : state.doors[Array.from(selection.doorIds)[0]];
+                    const isFusebox = selection.fuseboxIds.size === 1;
+                    const d = isVent ? state.vents[Array.from(selection.ventIds)[0]] : (isFusebox ? state.fuseboxes[Array.from(selection.fuseboxIds)[0]] : state.doors[Array.from(selection.doorIds)[0]]);
+                    
                     if (d) {
-                        document.getElementById('connector-title').innerText = isVent ? "Ventilation Node" : "Connector Node";
+                        document.getElementById('connector-title').innerText = isVent ? "Ventilation Node" : (isFusebox ? "Fusebox Terminal" : "Connector Node");
                         document.getElementById('door-notes').value = d.notes; document.getElementById('door-dmg').value = d.dmg || 0; document.getElementById('door-dmg-val').innerText = (d.dmg || 0) + "%";
                         
-                        document.getElementById('door-prop-wall').style.display = isVent ? 'none' : 'block';
+                        document.getElementById('door-prop-wall').style.display = (isVent || isFusebox) ? 'none' : 'block';
                         document.getElementById('door-prop-vent').style.display = isVent ? 'block' : 'none';
-                        document.getElementById('btn-vent-active').style.display = isVent ? 'block' : 'none';
-                        document.getElementById('door-type-editor').style.display = isVent ? 'none' : 'block';
+                        document.getElementById('btn-vent-active').style.display = (isVent || isFusebox) ? 'block' : 'none';
+                        document.getElementById('door-type-editor').style.display = (isVent || isFusebox) ? 'none' : 'block';
 
-                        if (!isVent) {
+                        if (!isVent && !isFusebox) {
                             ['standard', 'security', 'airlock'].forEach(t => document.getElementById('edit-door-' + t).classList.remove('active'));
                             document.getElementById('edit-door-' + d.type).classList.add('active');
                             const blocksBtn = document.getElementById('btn-door-blocks'); blocksBtn.classList.toggle('active', d.blocksHazards); blocksBtn.innerText = `Rated to Block Hazards: ${d.blocksHazards ? 'ON' : 'OFF'}`;
                             const openBtn = document.getElementById('btn-door-open'); openBtn.innerText = d.isOpen ? "State: OPEN" : "State: Closed"; openBtn.className = d.isLocked ? "toggle-btn alert active" : (d.isOpen ? "toggle-btn active" : "toggle-btn");
                             document.getElementById('btn-door-locked').classList.toggle('active', d.isLocked); 
                         } else {
-                            document.getElementById('door-vent-channel').value = d.channel || 1;
+                            if(isVent) document.getElementById('door-vent-channel').value = d.channel || 1;
                             document.getElementById('btn-vent-active').classList.toggle('active', d.isActive); document.getElementById('btn-vent-active').innerText = `Power: ${d.isActive ? 'Active' : 'Offline'}`;
                         }
                         
@@ -1168,57 +1482,36 @@
                 else if (selection.roomIds.size === 1) {
                     const r = state.rooms[Array.from(selection.roomIds)[0]];
                     if (r) {
-                        ['default', 'command', 'engineering', 'medical', 'tactical', 'cargo', 'crew'].forEach(t => document.getElementById('edit-room-' + t).classList.remove('active'));
+                        ['default', 'command', 'engineering', 'medical', 'tactical', 'cargo', 'crew', 'fuel'].forEach(t => document.getElementById('edit-room-' + t).classList.remove('active'));
                         document.getElementById('edit-room-' + r.type).classList.add('active');
 
                         document.getElementById('room-name').value = r.name; document.getElementById('room-notes').value = r.notes; document.getElementById('room-pwr').value = r.pwrPerCell; document.getElementById('room-area-stat').innerText = `Area: ${r.area} cells | Space Used: ${r.spaceUsed.toFixed(1)}`;
-                        const list = document.getElementById('comp-list'); list.innerHTML = '';
-                        if (r.components && r.components.length > 0) {
-                            r.components.forEach(c => {
-                                const def = COMP_DICT[c.type]; let cssClass = "comp-item"; if(c.isBroken) cssClass += " broken"; else if(!c.isActive) cssClass += " inactive";
-                                list.innerHTML += `<div class="${cssClass}"><span><strong>${def.name}</strong> [${def.size}s]</span><div class="comp-controls"><button onclick="toggleComponent('${c.id}', 'isActive')">${c.isActive ? 'ON' : 'OFF'}</button><button onclick="toggleComponent('${c.id}', 'isBroken')" class="red">${c.isBroken ? 'FIX' : 'BRK'}</button><button onclick="removeComponent('${c.id}')">X</button></div></div>`;
-                            });
-                        } else { list.innerHTML = `<div style="font-size:11px; color:#555; padding-bottom:10px;">No internal systems installed.</div>`; }
+                        
+                        let pwrLabel = document.getElementById('room-power-status-label');
+                        if(pwrLabel) {
+                            pwrLabel.innerText = roomHasPower[r.id] ? "Grid Link: Connected (Online)" : "Grid Link: Blackout (Offline)";
+                            pwrLabel.style.color = roomHasPower[r.id] ? "#00ffcc" : "#ff3333";
+                        }
+
+                        if (r.type === 'fuel') {
+                            document.getElementById('room-internals').style.display = 'none';
+                            document.getElementById('room-fuel-stat').style.display = 'block';
+                            document.getElementById('room-fuel-stat').innerText = `Propellant Reserve: ${r.area * 50} Units`;
+                        } else {
+                            document.getElementById('room-fuel-stat').style.display = 'none';
+                            document.getElementById('room-internals').style.display = 'block';
+                            const list = document.getElementById('comp-list'); list.innerHTML = '';
+                            if (r.components && r.components.length > 0) {
+                                r.components.forEach(c => {
+                                    const def = COMP_DICT[c.type]; let cssClass = "comp-item"; if(c.isBroken) cssClass += " broken"; else if(!c.isActive) cssClass += " inactive";
+                                    list.innerHTML += `<div class="${cssClass}"><span><strong>${def.name}</strong> [${def.size}s]</span><div class="comp-controls"><button onclick="toggleComponent('${c.id}', 'isActive')">${c.isActive ? 'ON' : 'OFF'}</button><button onclick="toggleComponent('${c.id}', 'isBroken')" class="red">${c.isBroken ? 'FIX' : 'BRK'}</button><button onclick="removeComponent('${c.id}')">X</button></div></div>`;
+                                });
+                            } else { list.innerHTML = `<div style="font-size:11px; color:#555; padding-bottom:10px;">No internal systems installed.</div>`; }
+                        }
                         panels.room.style.display = 'block';
                     }
                 }
             }
-        }
-
-        function updateEntityData() {
-            if (selection.roomIds.size === 1 && selection.doorIds.size === 0 && selection.extIds.size === 0 && selection.ventIds.size === 0) {
-                const r = state.rooms[Array.from(selection.roomIds)[0]]; r.name = document.getElementById('room-name').value; r.notes = document.getElementById('room-notes').value; r.pwrPerCell = parseFloat(document.getElementById('room-pwr').value) || 0;
-            } else if (selection.doorIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0 && selection.ventIds.size === 0) {
-                const d = state.doors[Array.from(selection.doorIds)[0]]; d.notes = document.getElementById('door-notes').value; d.dmg = parseInt(document.getElementById('door-dmg').value) || 0; if (d.dmg >= 100) { d.isBroken = true; d.isActive = false;} else { d.isBroken = false; }
-            } else if (selection.ventIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0 && selection.doorIds.size === 0) {
-                const v = state.vents[Array.from(selection.ventIds)[0]]; v.channel = parseInt(document.getElementById('door-vent-channel').value) || 1; v.notes = document.getElementById('door-notes').value; v.dmg = parseInt(document.getElementById('door-dmg').value) || 0; if (v.dmg >= 100) {v.isBroken = true; v.isActive = false;} else { v.isBroken = false; }
-            } else if (selection.extIds.size === 1 && selection.roomIds.size === 0 && selection.doorIds.size === 0 && selection.ventIds.size === 0) {
-                const e = state.exterior[Array.from(selection.extIds)[0]]; e.notes = document.getElementById('ext-notes').value; e.dmg = parseInt(document.getElementById('ext-dmg').value) || 0; if (e.dmg >= 100) {e.isBroken = true; e.isActive = false;} else { e.isBroken = false; }
-                if (e.type === 'solar') { e.basePower = parseFloat(document.getElementById('ext-solar-pwr').value) || 0; }
-                if (e.type === 'radiator') { e.targetTemp = parseFloat(document.getElementById('ext-rad-temp').value) || 21; e.baseCooling = parseFloat(document.getElementById('ext-rad-cool').value) || 0; }
-                if (e.type === 'engine') { e.maxThrust = parseFloat(document.getElementById('ext-eng-thrust').value) || 0; }
-                if (e.type === 'whipple') { e.hp = parseInt(document.getElementById('ext-whipple-hp').value) || 0; }
-            } renderLoop();
-        }
-
-        function toggleEntityState(prop) {
-            if (selection.doorIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0 && selection.ventIds.size === 0) {
-                const d = state.doors[Array.from(selection.doorIds)[0]];
-                if (prop === 'isOpen' && d.isLocked) { const btn = document.getElementById('btn-door-open'); btn.classList.add('flash-error'); setTimeout(() => btn.classList.remove('flash-error'), 1500); return; }
-                d[prop] = !d[prop]; if (prop === 'isBroken' && !d.isBroken && d.dmg >= 100) d.dmg = 0;
-            } else if (selection.ventIds.size === 1 && selection.roomIds.size === 0 && selection.extIds.size === 0 && selection.doorIds.size === 0) {
-                const v = state.vents[Array.from(selection.ventIds)[0]]; v[prop] = !v[prop]; if (prop === 'isBroken' && !v.isBroken && v.dmg >= 100) v.dmg = 0;
-            } else if (selection.extIds.size === 1 && selection.roomIds.size === 0 && selection.doorIds.size === 0 && selection.ventIds.size === 0) {
-                const e = state.exterior[Array.from(selection.extIds)[0]]; e[prop] = !e[prop]; if (prop === 'isBroken' && !e.isBroken && e.dmg >= 100) e.dmg = 0;
-            } renderLoop();
-        }
-
-        function deleteSelectedEntity() {
-            if (selection.roomIds.size > 0) { for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (selection.roomIds.has(state.gridData[y][x])) state.gridData[y][x] = null; selection.roomIds.forEach(id => delete state.rooms[id]); }
-            if (selection.doorIds.size > 0) selection.doorIds.forEach(id => delete state.doors[id]);
-            if (selection.ventIds.size > 0) selection.ventIds.forEach(id => delete state.vents[id]);
-            if (selection.extIds.size > 0) selection.extIds.forEach(id => delete state.exterior[id]);
-            clearSelection(); cleanUpRooms(); renderLoop();
         }
 
         window.addEventListener('load', initApp);
