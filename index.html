@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced TTRPG Spaceship Architect V 0.4.0</title>
+    <title>Advanced TTRPG Spaceship Architect V 0.4.1</title>
     <style>
         body { background-color: #050508; color: #00ffcc; font-family: 'Courier New', Courier, monospace; display: flex; margin: 0; height: 100vh; overflow: hidden; user-select: none; }
         #workspace { flex: 3; display: flex; flex-direction: column; background-color: #050508; position: relative; }
@@ -18,11 +18,14 @@
         #viewport { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
         #grid-container { position: absolute; width: 1200px; height: 800px; background-color: #0a0a0f; border: 2px solid #333; box-shadow: 0 0 40px rgba(0, 255, 204, 0.05); transform-origin: 0 0; }
         #grid { display: grid; grid-template-columns: repeat(48, 25px); grid-template-rows: repeat(32, 25px); width: 100%; height: 100%; position: absolute; z-index: 1; }
-        .cell { box-sizing: border-box; border: 1px solid #1a1a1a; transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease; }
-        .layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
-        #wires-layer { z-index: 2; display: none; }
-        #doors-layer { z-index: 3; } #vents-layer { z-index: 4; } #fuseboxes-layer { z-index: 4; } #ext-layer { z-index: 4; } #labels-layer { z-index: 5; } #interaction-layer { z-index: 10; pointer-events: none; }
+        .cell { box-sizing: border-box; border: 1px solid #1a1a1a; transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease; }
+        @keyframes decayCooldown { 0% { background-color: rgba(255, 50, 50, 0.6); border-color: #ff3333; box-shadow: inset 0 0 10px rgba(255,50,50,0.8); } 100% { background-color: transparent; border-color: #1a1a1a; box-shadow: none; } }
+        .decay-anim { animation: decayCooldown 0.4s ease-out forwards; }
+
+        .layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #wires-layer { z-index: 2; display: none; transition: opacity 0.3s ease; }
+        #doors-layer { z-index: 3; } #vents-layer { z-index: 4; } #fuseboxes-layer { z-index: 4; } #ext-layer { z-index: 4; } #breaches-layer { z-index: 6; } #labels-layer { z-index: 7; } #interaction-layer { z-index: 10; pointer-events: none; }
 
         .room-label { position: absolute; transform: translate(-50%, -50%); color: #fff; font-weight: bold; font-size: 13px; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000; text-align: center; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; word-break: break-word; overflow: hidden; line-height: 1.1; transition: opacity 0.4s ease; }
 
@@ -34,11 +37,9 @@
         .door.standard.open { background-color: rgba(0, 255, 204, 0.2) !important; border-style: dashed; }
         .door.security.open { background-color: rgba(255, 51, 51, 0.2) !important; border-style: dashed; }
         .door.airlock.open { background-color: rgba(255, 153, 0, 0.2) !important; border-style: dashed; }
-        
         .door.standard.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(0, 255, 204, 0.3) !important; border-style: dotted !important; }
         .door.security.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(255, 51, 51, 0.3) !important; border-style: dotted !important; }
         .door.airlock.broken { background: repeating-linear-gradient(45deg, rgba(255,204,0,0.7), rgba(0,0,0,0.7) 8px), rgba(255, 153, 0, 0.3) !important; border-style: dotted !important; }
-        
         .door.locked::after { content: ''; position: absolute; background: #ffcc00; border-radius: 2px; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 3px #000; }
         .door.dir-h.locked::after { width: 6px; height: 4px; } .door.dir-v.locked::after { width: 4px; height: 6px; }
         .door.selected { box-shadow: 0 0 8px 3px #ffaa00; border-color: #ffaa00 !important; z-index: 10; }
@@ -49,12 +50,7 @@
         .wire.powered div { background-color: #ffcc00; box-shadow: 0 0 6px #ffcc00; z-index: 5;}
         .wire.unpowered div { background-color: #554400; opacity: 0.8; }
         .wire.ghost { opacity: 0.5 !important; } .wire.ghost div { background-color: #ffcc00 !important; }
-        
-        .w-c { width: 7px; height: 7px; left: 9px; top: 9px; }
-        .w-n { width: 7px; height: 9px; left: 9px; top: 0px; }
-        .w-s { width: 7px; height: 9px; left: 9px; top: 16px; }
-        .w-w { width: 9px; height: 7px; left: 0px; top: 9px; }
-        .w-e { width: 9px; height: 7px; left: 16px; top: 9px; }
+        .w-c { width: 7px; height: 7px; left: 9px; top: 9px; } .w-n { width: 7px; height: 9px; left: 9px; top: 0px; } .w-s { width: 7px; height: 9px; left: 9px; top: 16px; } .w-w { width: 9px; height: 7px; left: 0px; top: 9px; } .w-e { width: 9px; height: 7px; left: 16px; top: 9px; }
 
         .ext-item { position: absolute; width: 25px; height: 25px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: center; align-items: center; pointer-events: auto; transition: all 0.2s;}
         .ext-item.engine { background: rgba(255, 85, 0, 0.2); border: 2px solid #ff5500; } .ext-item.engine::after { content: '♨'; color: #ff5500; font-size: 14px; }
@@ -65,6 +61,9 @@
         .ext-item.vent { background-image: linear-gradient(rgba(0,0,0,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.5) 1px, transparent 1px); background-size: 5px 5px; background-color: rgba(0, 0, 0, 0.2); border: 1px solid rgba(0, 0, 0, 0.6); box-shadow: inset 0 0 5px rgba(0,0,0,0.5); border-radius: 2px; } 
         .ext-item.fusebox { background: rgba(255, 204, 0, 0.15); border: 2px solid #ffcc00; box-shadow: inset 0 0 5px rgba(255,204,0,0.5); border-radius: 3px; z-index: 6;} .ext-item.fusebox::after { content: '⚡'; color: #ffcc00; font-size: 14px; text-shadow: 0 0 4px #000; }
         
+        .breach-icon { position: absolute; width: 25px; height: 25px; font-size: 18px; display: flex; justify-content: center; align-items: center; pointer-events: none; z-index: 6; text-shadow: 0 0 5px #f00; opacity: 0.9; }
+        .breach-icon.ghost { opacity: 0.5; filter: grayscale(50%); }
+
         .ext-item.inactive { opacity: 0.3; filter: grayscale(80%); }
         .ext-item.broken { background: repeating-linear-gradient(45deg, rgba(255,0,0,0.5), rgba(0,0,0,0.5) 8px) !important; border-style: dashed !important; opacity: 0.7;}
         .ext-item.selected { box-shadow: 0 0 8px 3px #ffaa00 !important; border-color: #ffaa00 !important; z-index: 10; }
@@ -84,24 +83,18 @@
         .mode-btn.alert.active { background: #ffaa00; color: #000 !important; border-color: #ffaa00; border-bottom: 3px solid #cc8800; }
         .mode-btn.info.active { background: #66ccff; color: #000 !important; border-color: #66ccff; border-bottom: 3px solid #0088cc; }
         .mode-btn.disabled-mode { opacity: 0.2; cursor: not-allowed; border-bottom: 1px solid #111;}
-        
         #btn-power { color: #ffcc00; font-weight: bold; border-color: #665500; border-bottom: 3px solid #443300; }
         #btn-power.active { background: #ffcc00; color: #000 !important; border-color: #ffcc00; border-bottom: 3px solid #ccaa00; }
 
         .controls-box { background-color: #111; border: 1px solid #333; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
-        .instructions { font-size: 13px; color: #aaa; line-height: 1.6; }
-        .instructions strong { color: #fff; }
-        
+        .instructions { font-size: 13px; color: #aaa; line-height: 1.6; } .instructions strong { color: #fff; }
         textarea, input[type="text"], input[type="number"], select { width: 100%; background: #000; color: #00ffcc; border: 1px solid #00ffcc; padding: 8px; font-family: inherit; margin-bottom: 10px; box-sizing: border-box; border-radius: 3px; }
         textarea { height: 80px; resize: vertical; }
         
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-        .btn-grid.two { grid-template-columns: 1fr 1fr; }
-        
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; } .btn-grid.two { grid-template-columns: 1fr 1fr; }
         .palette-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 15px;}
         .palette-btn { background: #111; color: var(--c); border: 1px solid var(--c); padding: 8px; font-size: 11px; cursor: pointer; border-radius: 4px; transition: all 0.1s; text-align: center; font-weight: bold;}
-        .palette-btn:hover { background: #222; }
-        .palette-btn.active { background: var(--c); color: #000 !important; border-color: var(--c); }
+        .palette-btn:hover { background: #222; } .palette-btn.active { background: var(--c); color: #000 !important; border-color: var(--c); }
         
         .toggle-btn { background: #111; color: #aaa; border: 1px solid #333; border-bottom: 3px solid #1a1a1a; padding: 8px; cursor: pointer; font-family: inherit; font-weight: bold; text-align: center; transition: all 0.1s; border-radius: 4px;}
         .toggle-btn:active { transform: translateY(2px); border-bottom: 1px solid #1a1a1a; }
@@ -111,12 +104,10 @@
         .toggle-btn.warn.active { background: #554400; color: #ffcc00; border-color: #ffcc00; border-bottom: 3px solid #aa8800;}
 
         .eye-btn { width: 45px; padding: 5px; background: #111; color: #ff3333; border: 1px solid #333; border-bottom: 3px solid #1a1a1a; font-family: inherit; cursor: pointer; font-weight: bold; border-radius:4px;}
-        .eye-btn:active { transform: translateY(2px); border-bottom: 1px solid #1a1a1a; }
         .eye-btn.active { color: #00ffcc; border-color: #00ffcc; background: #1a3330; border-bottom: 3px solid #008866;}
 
         .action-btn { background: #ffaa00; color: #000; border: none; border-bottom: 3px solid #cc8800; border-radius: 4px; padding: 10px; font-weight: bold; cursor: pointer; width: 100%; font-family: inherit; margin-top: 10px; transition: transform 0.1s, border-bottom 0.1s; }
         .action-btn:hover { background: #ffcc00; } .action-btn:active { transform: translateY(2px); border-bottom: 1px solid #cc8800; }
-        
         .hazard-btn { background: #cc4444; color: #fff; border-bottom: 3px solid #882222; border-radius: 4px;}
         .hazard-btn:hover { background: #dd5555; } .hazard-btn:active { transform: translateY(2px); border-bottom: 1px solid #882222; }
 
@@ -136,12 +127,10 @@
         .comp-add-btn:hover { background: #004433; }
         .comp-group-title { font-size: 10px; color: #888; margin: 10px 0 5px 0; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 2px;}
 
-        .stat-row { display: flex; align-items: center; margin-bottom: 12px; font-size: 13px; }
-        .stat-label { width: 85px; color: #aaa; }
+        .stat-row { display: flex; align-items: center; margin-bottom: 12px; font-size: 13px; } .stat-label { width: 85px; color: #aaa; }
         .stat-row input[type="range"] { flex: 1; margin: 0 10px; cursor: pointer; width: 100%; min-width: 0; -webkit-appearance: none; background: transparent; }
         .stat-row input[type="range"]::-webkit-slider-runnable-track { height: 6px; background: #222; border-radius: 3px; border: 1px solid #00ffcc; }
         .stat-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%; background: #ffaa00; margin-top: -5px; box-shadow: 0 0 5px #000; }
-        .stat-row input[type="range"]:focus { outline: none; }
         .stat-val { width: 45px; text-align: right; font-weight: bold; display: inline-block; }
         
         .connections-list { background: #000; border: 1px solid #333; padding: 10px; max-height: 120px; overflow-y: auto; font-size: 12px; margin-top: 5px; border-radius: 4px;}
@@ -161,7 +150,7 @@
 <body>
     <div id="workspace">
         <div class="header-bar pre-boot" id="ui-header">
-            <h2>Naval Architectural Blueprint <span class="beta-badge pre-boot" id="badge-version">V 0.4.0</span></h2>
+            <h2>Naval Architectural Blueprint <span class="beta-badge pre-boot" id="badge-version">V 0.4.1</span></h2>
             <span id="mode-indicator" style="color: #888; font-size: 14px;">Mode: STRUCTURE</span>
         </div>
         <div id="global-telemetry" class="pre-boot">
@@ -178,6 +167,7 @@
                 <div id="vents-layer" class="layer"></div>
                 <div id="fuseboxes-layer" class="layer"></div>
                 <div id="ext-layer" class="layer"></div>
+                <div id="breaches-layer" class="layer"></div>
                 <div id="interaction-layer" class="layer"><div id="draft-box" class="selection-box"></div></div>
             </div>
         </div>
@@ -196,7 +186,7 @@
 
         <div class="controls-box">
             <div id="inst-info" class="instructions panel-section"><strong>Vessel Documentation.</strong> Manage blueprint metadata and file architecture.</div>
-            <div id="inst-structure" class="instructions panel-section active"><strong>L-Click/Drag:</strong> Draw/Expand | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px; color: #ffaa00;">Severed rooms automatically split into sub-sectors.</span></div>
+            <div id="inst-structure" class="instructions panel-section active"><strong>L-Click/Drag:</strong> Draw/Expand | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px; color: #ffaa00;">Severed rooms automatically split into sub-sectors. Erasing invokes diagnostic cooldown decay.</span></div>
             <div id="inst-connectors" class="instructions panel-section">
                 <div class="btn-grid" style="margin-bottom: 8px;">
                     <button id="btn-sub-door" class="toggle-btn active" onclick="setConnectorSubMode('door')">Wall Door</button>
@@ -206,7 +196,7 @@
                 <strong>L-Click/Drag:</strong> Paint | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px;">Vents and Fuseboxes link local rooms to global systems.</span>
             </div>
             <div id="inst-exterior" class="instructions panel-section"><strong>L-Click/Drag:</strong> Paint | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px;">Arrays must touch the hull or chain to identical arrays.</span></div>
-            <div id="inst-power" class="instructions panel-section"><strong>L-Click/Drag:</strong> Paint Matrix Cables | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px; color:#ffcc00;">Cables form redstone-style nodes. Rooms MUST have an active Fusebox Node installed in the same cell as a cable to transfer power.</span></div>
+            <div id="inst-power" class="instructions panel-section"><strong>L-Click/Drag:</strong> Paint Matrix Cables | <strong>R-Click/Drag:</strong> Erase<br><span style="font-size: 11px; color:#ffcc00;">Cables form redstone-style nodes. Rooms MUST have an active Fusebox Node installed to transfer power. Solar Panels pull direct power.</span></div>
             <div id="inst-select" class="instructions panel-section">
                 <strong>L-Click:</strong> Select Entity | <strong>Drag:</strong> Marquee Multiple
                 <div class="btn-grid two" style="margin-top: 10px;">
@@ -216,13 +206,19 @@
                 </div>
                 <span style="font-size: 11px; color: #ffaa00;">Ctrl+Z (Undo) | Ctrl+Y (Redo)</span>
             </div>
-            <div id="inst-integrity" class="instructions panel-section"><strong style="color:#ffaa00;">SYSTEMS ACTIVE:</strong> Visualizing hazards.<br><strong>Click Module:</strong> View telemetry & crossways.</div>
+            <div id="inst-integrity" class="instructions panel-section">
+                <div class="btn-grid two" style="margin-bottom: 10px;">
+                    <button id="btn-integ-view" class="toggle-btn active" onclick="setIntegMode('view')">View Telemetry</button>
+                    <button id="btn-integ-breach" class="toggle-btn alert" onclick="setIntegMode('breach')">Paint Hull Breach</button>
+                </div>
+                <span style="font-size: 11px; color: #ffaa00;">Select telemetry to view crossways, or paint grid to simulate explosive decompression micro-meteor strikes.</span>
+            </div>
         </div>
 
         <div id="panel-info" class="panel-section">
             <h3 style="color: #66ccff; margin-top: 0;">Vessel Identity</h3>
-            <label>Ship Designation:</label> <input type="text" id="ship-name" oninput="updateShipInfo()">
-            <label>Class / Description:</label> <textarea id="ship-desc" oninput="updateShipInfo()"></textarea>
+            <label>Ship Designation:</label> <input type="text" id="ship-name" onchange="updateShipInfo(); saveState();" oninput="updateShipInfo();">
+            <label>Class / Description:</label> <textarea id="ship-desc" onchange="updateShipInfo(); saveState();" oninput="updateShipInfo();"></textarea>
             <h4 style="color: #ffaa00; margin-top: 20px;">Global Telemetry Summary</h4>
             <div id="info-telemetry" class="sub-panel" style="font-size: 13px; color: #aaa; line-height: 1.8;"></div>
             <hr style="border-color: #333; margin: 20px 0;">
@@ -262,7 +258,6 @@
 
         <div id="panel-power" class="panel-section">
             <h3 style="color: #ffcc00; margin-top: 0;">Circuit Infrastructure</h3>
-            <p style="font-size: 13px; color: #aaa; line-height: 1.5;">Paint redstone-style cables through the ship. They automatically connect. Power only enters or exits a room if the wire shares a tile with a Fusebox.</p>
             <div class="sub-panel">
                 <h4 style="color:#ffcc00; margin:0 0 5px 0;">Grid State Diagnostic</h4>
                 <div id="power-grid-status" style="font-size:12px; color:#00ffcc;">Grid Path Tracing: Standby</div>
@@ -280,7 +275,7 @@
             
             <div id="room-editor" style="display: none;">
                 <h3 style="color: #00ffcc;">Hull Module</h3>
-                <label>Designation:</label> <input type="text" id="room-name" onchange="updateEntityData(); saveState();">
+                <label>Designation:</label> <input type="text" id="room-name" onchange="updateEntityData(); saveState();" oninput="updateEntityData();">
                 
                 <label style="color:#ffaa00; font-size:12px;">Change Department:</label>
                 <div class="palette-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; margin-bottom: 10px;">
@@ -295,20 +290,19 @@
                 </div>
 
                 <div class="sub-panel">
-                    <label style="color:#ffaa00; font-size:12px;">Base Power Draw (MW per cell):</label>
-                    <input type="number" id="room-pwr" value="1" onchange="updateEntityData(); saveState();">
+                    <label style="color:#ffaa00; font-size:12px;">Base Power Draw (MW/cell):</label>
+                    <input type="number" id="room-pwr" value="1" onchange="updateEntityData(); saveState();" oninput="updateEntityData();">
                     <div style="font-size:11px; color:#aaa; margin-top:5px;" id="room-area-stat">Area: 0 cells | Space Used: 0.0</div>
                     <div style="font-size:11px; font-weight:bold; margin-top:2px;" id="room-power-status-label">Grid Link: Operational</div>
                 </div>
 
                 <div id="room-fuel-stat" class="sub-panel" style="display:none; color:#ffaa00; font-size:12px; font-weight:bold; text-align:center;">
-                    Propellant Reserve: 0 Units
+                    Propellant Reserve <span id="fuel-reserve-val" style="color:#fff;">0</span> Units
                 </div>
 
                 <div class="sub-panel" id="room-internals">
                     <h4 style="margin:0 0 10px 0; color:#ffaa00;">Installed Sub-Systems</h4>
                     <div id="comp-list"></div>
-                    
                     <h4 style="margin:15px 0 5px 0; color:#aaa; font-size:11px; border-bottom:1px solid #333;">AVAILABLE HARDWARE</h4>
                     <div style="max-height: 180px; overflow-y: auto; padding-right: 5px;" id="install-catalog">
                         <div class="comp-group-title">Storage & Logistics</div>
@@ -331,7 +325,7 @@
                     </div>
                 </div>
 
-                <label>GM Notes:</label> <textarea id="room-notes" onchange="updateEntityData(); saveState();"></textarea>
+                <label>GM Notes:</label> <textarea id="room-notes" onchange="updateEntityData(); saveState();" oninput="updateEntityData();"></textarea>
                 <button class="delete-btn" onclick="deleteSelectedEntity()">Purge Module</button>
             </div>
 
@@ -355,7 +349,7 @@
 
                 <div class="sub-panel" id="door-prop-vent" style="display:none;">
                     <label style="color:#ccc; font-size:12px;">Vent Channel (Network ID):</label>
-                    <input type="number" id="door-vent-channel" onchange="updateEntityData(); saveState();">
+                    <input type="number" id="door-vent-channel" onchange="updateEntityData(); saveState();" oninput="updateEntityData();">
                 </div>
 
                 <div id="door-prop-wall">
@@ -371,7 +365,7 @@
                     <button id="btn-door-broken" class="toggle-btn alert" style="grid-column: span 2;" onclick="toggleEntityState('isBroken')">Integrity: Broken</button>
                 </div>
                 
-                <textarea id="door-notes" placeholder="Mechanism notes..." onchange="updateEntityData(); saveState();"></textarea>
+                <textarea id="door-notes" placeholder="Mechanism notes..." onchange="updateEntityData(); saveState();" oninput="updateEntityData();"></textarea>
                 <button class="delete-btn" onclick="deleteSelectedEntity()">Remove Node</button>
             </div>
 
@@ -397,12 +391,12 @@
                 </div>
                 <div id="ext-status-text" style="font-size:11px; margin-bottom: 10px; color:#ffaa00; text-align:center;">Checking Connection...</div>
 
-                <div class="sub-panel" id="ext-prop-solar" style="display:none;"><label style="color:#7799ff; font-size:12px;">Base Power Gen (MW):</label> <input type="number" id="ext-solar-pwr" onchange="updateEntityData(); saveState();"></div>
-                <div class="sub-panel" id="ext-prop-radiator" style="display:none;"><label style="color:#00ccff; font-size:12px;">Target Temp (°C):</label> <input type="number" id="ext-rad-temp" onchange="updateEntityData(); saveState();"> <label style="color:#00ccff; font-size:12px;">Cooling Rate (per step):</label> <input type="number" id="ext-rad-cool" onchange="updateEntityData(); saveState();"></div>
-                <div class="sub-panel" id="ext-prop-engine" style="display:none;"><label style="color:#ff5500; font-size:12px;">Max Thrust (kN):</label> <input type="number" id="ext-eng-thrust" onchange="updateEntityData(); saveState();"></div>
-                <div class="sub-panel" id="ext-prop-whipple" style="display:none;"><label style="color:#fff; font-size:12px;">Armor Integrity (HP):</label> <input type="number" id="ext-whipple-hp" onchange="updateEntityData(); saveState();"></div>
+                <div class="sub-panel" id="ext-prop-solar" style="display:none;"><label style="color:#7799ff; font-size:12px;">Base Power Gen (MW):</label> <input type="number" id="ext-solar-pwr" onchange="updateEntityData(); saveState();" oninput="updateEntityData();"></div>
+                <div class="sub-panel" id="ext-prop-radiator" style="display:none;"><label style="color:#00ccff; font-size:12px;">Target Temp (°C):</label> <input type="number" id="ext-rad-temp" onchange="updateEntityData(); saveState();" oninput="updateEntityData();"> <label style="color:#00ccff; font-size:12px;">Cooling Rate (per step):</label> <input type="number" id="ext-rad-cool" onchange="updateEntityData(); saveState();" oninput="updateEntityData();"></div>
+                <div class="sub-panel" id="ext-prop-engine" style="display:none;"><label style="color:#ff5500; font-size:12px;">Max Thrust (kN):</label> <input type="number" id="ext-eng-thrust" onchange="updateEntityData(); saveState();" oninput="updateEntityData();"></div>
+                <div class="sub-panel" id="ext-prop-whipple" style="display:none;"><label style="color:#fff; font-size:12px;">Armor Integrity (HP):</label> <input type="number" id="ext-whipple-hp" onchange="updateEntityData(); saveState();" oninput="updateEntityData();"></div>
                 
-                <textarea id="ext-notes" placeholder="System notes..." onchange="updateEntityData(); saveState();"></textarea>
+                <textarea id="ext-notes" placeholder="System notes..." onchange="updateEntityData(); saveState();" oninput="updateEntityData();"></textarea>
                 <button class="delete-btn" onclick="deleteSelectedEntity()">Dismantle Array</button>
             </div>
         </div>
@@ -412,7 +406,7 @@
             <div id="integrity-editor" style="display: none;">
                 <h3 id="integ-title" style="color: #ffaa00; margin-bottom: 15px;">Module Status</h3>
                 <div class="stat-row"><button id="eye-dmg" class="eye-btn active" onclick="toggleEye('dmg')">👁</button> <span class="stat-label" style="padding-left:10px;">Damage:</span> <input type="range" id="sys-dmg" min="0" max="100" value="0" onchange="updateIntegrityData('dmg'); saveState();" oninput="updateIntegrityData('dmg')"> <span id="sys-dmg-val" class="stat-val">0%</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('dmg')">Def</button></div>
-                <div class="stat-row" style="margin-top: 10px;"><button id="eye-pres" class="eye-btn" onclick="toggleEye('pres')">❌</button> <span class="stat-label" style="padding-left:10px;">Pressure:</span> <input type="range" id="sys-pres" min="0" max="300" value="100" onchange="updateIntegrityData('pres'); saveState();" oninput="updateIntegrityData('pres')"> <span id="sys-pres-val" class="stat-val">1.0b</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('pres')">Def</button></div>
+                <div class="stat-row" style="margin-top: 10px;"><button id="eye-pres" class="eye-btn" onclick="toggleEye('pres')">❌</button> <span class="stat-label" style="padding-left:10px;">Pressure:</span> <input type="range" id="sys-pres" min="0" max="300" value="100" step="10" onchange="updateIntegrityData('pres'); saveState();" oninput="updateIntegrityData('pres')"> <span id="sys-pres-val" class="stat-val">1.0b</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('pres')">Def</button></div>
                 <div class="stat-row"><button id="eye-temp" class="eye-btn" onclick="toggleEye('temp')">❌</button> <span class="stat-label" style="padding-left:10px;">Temp:</span> <input type="range" id="sys-temp" min="-50" max="150" value="21" onchange="updateIntegrityData('temp'); saveState();" oninput="updateIntegrityData('temp')"> <span id="sys-temp-val" class="stat-val">21°C</span> <button class="toggle-btn" style="margin-left:8px; padding:4px 6px; font-size:11px;" onclick="resetStat('temp')">Def</button></div>
                 <div class="stat-row">
                     <button id="eye-gas" class="eye-btn" onclick="toggleEye('gas')">❌</button> <span class="stat-label" style="padding-left:10px;">Atmo:</span>
@@ -426,9 +420,12 @@
             <hr style="border-color: #333; margin: 15px 0;">
             <h3 style="color: #ff3333; margin-bottom: 5px;">Hazard & Damage Events</h3>
             <select id="sim-type">
-                <option value="micrometeor">Micrometeoroid Strike (Hull Breach)</option> <option value="debris">High-V Debris Cloud (Widespread Damage)</option>
-                <option value="coolant">Coolant Line Rupture (Cryo/Toxin)</option> <option value="scrubber">Life Support Scrubber Failure (CO2)</option>
+                <option value="micrometeor">Micrometeoroid Strike (Hull Breach)</option>
+                <option value="debris">High-V Debris Cloud (Widespread Damage)</option>
+                <option value="coolant">Coolant Line Rupture (Cryo/Toxin)</option>
+                <option value="scrubber">Life Support Scrubber Failure (CO2)</option>
                 <option value="reactor">Cascade Drive Overload (Heat/Rad)</option>
+                <option value="exterior">Exterior Array Strike (Chain Snap)</option>
             </select>
             <button class="action-btn hazard-btn" onclick="runSimulation()">Trigger Hazard Event</button>
             <div id="sim-actions" style="display: none; flex-direction: column; gap: 10px; margin-top: 10px;">
@@ -460,12 +457,12 @@
             ship: { name: "Scout-Class Wedge", desc: "Short-range fast interceptor and planetary scout vessel." },
             mode: 'structure', connectorSubMode: 'door',
             activeBuildTypeExt: 'engine', activeBuildTypeDoor: 'standard', activeBuildTypeWire: 'cable',
-            rooms: {}, doors: {}, vents: {}, fuseboxes: {}, wires: {}, exterior: {}, gridData: Array(ROWS).fill().map(() => Array(COLS).fill(null)), idCounters: { room: 0, door: 0, ext: 0, comp: 0, vent: 0, fusebox: 0, wire: 0 }
+            rooms: {}, doors: {}, vents: {}, fuseboxes: {}, wires: {}, exterior: {}, breaches: {}, gridData: Array(ROWS).fill().map(() => Array(COLS).fill(null)), idCounters: { room: 0, door: 0, ext: 0, comp: 0, vent: 0, fusebox: 0, wire: 0, breach: 0 }
         };
 
         let selection = { roomIds: new Set(), doorIds: new Set(), extIds: new Set(), ventIds: new Set(), fuseboxIds: new Set() };
         let filters = { rooms: true, doors: true, exterior: true };
-        let isDragging = false; let hasDragged = false;
+        let isDragging = false; let hasDragged = false; let integMode = 'view';
         let dragContext = { startX: 0, startY: 0, currentX: 0, currentY: 0, action: null, backupGrid: null, backupDoors: null, backupVents: null, backupFuseboxes: null, backupExt: null, backupWires: null };
         let ghostItem = null; let clipboardCluster = null;
         let visibleStats = { dmg: true, pres: false, temp: false, gas: false };
@@ -489,7 +486,7 @@
             fuel: { r: 255, g: 140, b: 0, a: 0.15, border: '#ffaa00', sel: 'rgba(255, 140, 0, 0.4)' }
         };
 
-        const DOM = { viewport: document.getElementById('viewport'), container: document.getElementById('grid-container'), grid: document.getElementById('grid'), labelsLayer: document.getElementById('labels-layer'), wiresLayer: document.getElementById('wires-layer'), doorsLayer: document.getElementById('doors-layer'), ventsLayer: document.getElementById('vents-layer'), fuseboxesLayer: document.getElementById('fuseboxes-layer'), extLayer: document.getElementById('ext-layer'), draftBox: document.getElementById('draft-box'), cells: [] };
+        const DOM = { viewport: document.getElementById('viewport'), container: document.getElementById('grid-container'), grid: document.getElementById('grid'), labelsLayer: document.getElementById('labels-layer'), wiresLayer: document.getElementById('wires-layer'), doorsLayer: document.getElementById('doors-layer'), ventsLayer: document.getElementById('vents-layer'), fuseboxesLayer: document.getElementById('fuseboxes-layer'), extLayer: document.getElementById('ext-layer'), breachesLayer: document.getElementById('breaches-layer'), draftBox: document.getElementById('draft-box'), cells: [] };
         let camera = { zoom: 1, panX: 0, panY: 0, isPanning: false, lastX: 0, lastY: 0 };
 
         function initApp() {
@@ -500,39 +497,200 @@
 
         function saveState() {
             if(historyIndex < historyStack.length - 1) historyStack = historyStack.slice(0, historyIndex + 1);
-            historyStack.push(JSON.stringify({ rooms: state.rooms, doors: state.doors, vents: state.vents, fuseboxes: state.fuseboxes, wires: state.wires, exterior: state.exterior, gridData: state.gridData, idCounters: state.idCounters }));
+            historyStack.push(JSON.stringify({ rooms: state.rooms, doors: state.doors, vents: state.vents, fuseboxes: state.fuseboxes, wires: state.wires, exterior: state.exterior, breaches: state.breaches, gridData: state.gridData, idCounters: state.idCounters }));
             if(historyStack.length > 20) historyStack.shift(); else historyIndex++;
         }
         function undo() {
-            if(historyIndex > 0) { historyIndex--; let st = JSON.parse(historyStack[historyIndex]); state.rooms = st.rooms; state.doors = st.doors; state.vents = st.vents; state.fuseboxes = st.fuseboxes || {}; state.wires = st.wires || {}; state.exterior = st.exterior; state.gridData = st.gridData; state.idCounters = st.idCounters; clearSelection(); renderLoop(); }
+            if(historyIndex > 0) { historyIndex--; let st = JSON.parse(historyStack[historyIndex]); state.rooms = st.rooms; state.doors = st.doors; state.vents = st.vents; state.fuseboxes = st.fuseboxes || {}; state.wires = st.wires || {}; state.exterior = st.exterior; state.breaches = st.breaches || {}; state.gridData = st.gridData; state.idCounters = st.idCounters; clearSelection(); renderLoop(); }
         }
         function redo() {
-            if(historyIndex < historyStack.length - 1) { historyIndex++; let st = JSON.parse(historyStack[historyIndex]); state.rooms = st.rooms; state.doors = st.doors; state.vents = st.vents; state.fuseboxes = st.fuseboxes || {}; state.wires = st.wires || {}; state.exterior = st.exterior; state.gridData = st.gridData; state.idCounters = st.idCounters; clearSelection(); renderLoop(); }
+            if(historyIndex < historyStack.length - 1) { historyIndex++; let st = JSON.parse(historyStack[historyIndex]); state.rooms = st.rooms; state.doors = st.doors; state.vents = st.vents; state.fuseboxes = st.fuseboxes || {}; state.wires = st.wires || {}; state.exterior = st.exterior; state.breaches = st.breaches || {}; state.gridData = st.gridData; state.idCounters = st.idCounters; clearSelection(); renderLoop(); }
         }
 
+        function toggleEntityState(prop) {
+            if (selection.doorIds.size === 1) { state.doors[Array.from(selection.doorIds)[0]][prop] = !state.doors[Array.from(selection.doorIds)[0]][prop]; }
+            else if (selection.ventIds.size === 1) { state.vents[Array.from(selection.ventIds)[0]][prop] = !state.vents[Array.from(selection.ventIds)[0]][prop]; }
+            else if (selection.fuseboxIds.size === 1) { state.fuseboxes[Array.from(selection.fuseboxIds)[0]][prop] = !state.fuseboxes[Array.from(selection.fuseboxIds)[0]][prop]; }
+            else if (selection.extIds.size === 1) { state.exterior[Array.from(selection.extIds)[0]][prop] = !state.exterior[Array.from(selection.extIds)[0]][prop]; }
+            saveState(); renderLoop();
+        }
+
+        function updateShipInfo() { 
+            state.ship.name = document.getElementById('ship-name').value; 
+            state.ship.desc = document.getElementById('ship-desc').value; 
+        }
+
+        function updateEntityData() {
+            if (selection.roomIds.size === 1) {
+                let r = state.rooms[Array.from(selection.roomIds)[0]];
+                r.name = document.getElementById('room-name').value;
+                r.pwrPerCell = parseFloat(document.getElementById('room-pwr').value);
+                r.notes = document.getElementById('room-notes').value;
+            } else if (selection.doorIds.size === 1 || selection.ventIds.size === 1 || selection.fuseboxIds.size === 1) {
+                let d = selection.ventIds.size === 1 ? state.vents[Array.from(selection.ventIds)[0]] : (selection.fuseboxIds.size === 1 ? state.fuseboxes[Array.from(selection.fuseboxIds)[0]] : state.doors[Array.from(selection.doorIds)[0]]);
+                d.notes = document.getElementById('door-notes').value;
+                d.dmg = parseInt(document.getElementById('door-dmg').value);
+                document.getElementById('door-dmg-val').innerText = d.dmg + "%";
+                if (selection.ventIds.size === 1) d.channel = parseInt(document.getElementById('door-vent-channel').value);
+            } else if (selection.extIds.size === 1) {
+                let e = state.exterior[Array.from(selection.extIds)[0]];
+                e.notes = document.getElementById('ext-notes').value;
+                e.dmg = parseInt(document.getElementById('ext-dmg').value);
+                document.getElementById('ext-dmg-val').innerText = e.dmg + "%";
+                if (e.type === 'solar') e.basePower = parseFloat(document.getElementById('ext-solar-pwr').value);
+                if (e.type === 'radiator') { e.targetTemp = parseFloat(document.getElementById('ext-rad-temp').value); e.baseCooling = parseFloat(document.getElementById('ext-rad-cool').value); }
+                if (e.type === 'engine') e.maxThrust = parseFloat(document.getElementById('ext-eng-thrust').value);
+                if (e.type === 'whipple') e.hp = parseFloat(document.getElementById('ext-whipple-hp').value);
+            }
+            renderLoop();
+        }
+
+        function updateCompDmg(roomId, compId, dmgVal) {
+            let r = state.rooms[roomId];
+            if(!r || !r.components) return;
+            let c = r.components.find(comp => comp.id === compId);
+            if(c) {
+                c.dmg = parseInt(dmgVal);
+                if(c.dmg >= 100) { c.dmg = 100; c.isBroken = true; c.isActive = false; }
+                else if (c.isBroken && c.dmg < 100) { c.isBroken = false; }
+                saveState(); renderLoop();
+            }
+        }
+
+        function applyToGrid(minX, maxX, minY, maxY, val) { 
+            for (let y=minY; y<=maxY; y++) { 
+                for(let x=minX; x<=maxX; x++) {
+                    if (val === null && state.gridData[y][x]) {
+                        DOM.cells[y][x].classList.remove('decay-anim');
+                        void DOM.cells[y][x].offsetWidth;
+                        DOM.cells[y][x].classList.add('decay-anim');
+                    }
+                    state.gridData[y][x]=val; 
+                } 
+            } 
+        }
+
+        function addRoom(idStr, name, type, temp, pres, pwr, comps=[]) { state.rooms[idStr] = {id:idStr, name, type, notes:"", dmg:0, airType:'O2', temp, pres, fuelLevel:100, pwrPerCell:pwr, area:0, components:comps}; }
+        function addExt(idStr, x, y, type, notes="") { let hp = type==='whipple'?100:undefined; let bp = type==='solar'?15:undefined; let mt = type==='engine'?8000:undefined; let bc = type==='radiator'?20:undefined; let tt = type==='radiator'?21:undefined; state.exterior[idStr] = {id:idStr, x,y, type, isActive:true, isBroken:false, dmg:0, notes, hp, maxHp:hp, basePower:bp, maxThrust:mt, baseCooling:bc, targetTemp:tt}; }
+        function addDoor(idStr, x, y, dir, type, locked, notes="", blocks=null) { if(blocks===null) blocks = (type!=='standard'); state.doors[idStr] = {id:idStr, x,y, dir, type, isOpen:false, isLocked:locked, isBroken:false, dmg:0, notes, blocksHazards:blocks}; }
+        function addVent(idStr, x, y, channel) { state.vents[idStr] = {id:idStr, x,y, type:'vent', isActive:true, isBroken:false, dmg:0, channel:channel, notes:""}; }
+        function addFusebox(idStr, x, y) { state.fuseboxes[idStr] = {id:idStr, x,y, type:'fusebox', isActive:true, isBroken:false, dmg:0, notes:""}; }
+
         function deleteSelectedEntity() {
-            if (selection.roomIds.size > 0) {
+            let deletedAnything = false;
+            if (selection.roomIds && selection.roomIds.size > 0) {
                 selection.roomIds.forEach(id => {
                     delete state.rooms[id];
                     for(let y=0; y<ROWS; y++) {
                         for(let x=0; x<COLS; x++) {
-                            if(state.gridData[y][x] === id) state.gridData[y][x] = null;
+                            if(state.gridData[y][x] === id) {
+                                DOM.cells[y][x].classList.remove('decay-anim');
+                                void DOM.cells[y][x].offsetWidth;
+                                DOM.cells[y][x].classList.add('decay-anim');
+                                state.gridData[y][x] = null;
+                                deletedAnything = true;
+                            }
                         }
                     }
                 });
             }
-            if (selection.doorIds.size > 0) selection.doorIds.forEach(id => delete state.doors[id]);
-            if (selection.ventIds.size > 0) selection.ventIds.forEach(id => delete state.vents[id]);
-            if (selection.fuseboxIds.size > 0) selection.fuseboxIds.forEach(id => delete state.fuseboxes[id]);
-            if (selection.extIds.size > 0) selection.extIds.forEach(id => delete state.exterior[id]);
+            if (selection.doorIds && selection.doorIds.size > 0) { selection.doorIds.forEach(id => delete state.doors[id]); deletedAnything = true; }
+            if (selection.ventIds && selection.ventIds.size > 0) { selection.ventIds.forEach(id => delete state.vents[id]); deletedAnything = true; }
+            if (selection.fuseboxIds && selection.fuseboxIds.size > 0) { selection.fuseboxIds.forEach(id => delete state.fuseboxes[id]); deletedAnything = true; }
+            if (selection.extIds && selection.extIds.size > 0) { selection.extIds.forEach(id => delete state.exterior[id]); deletedAnything = true; }
             
-            cleanUpRooms();
-            clearSelection();
-            saveState();
-            renderLoop();
-            if (state.mode !== 'structure' && state.mode !== 'power' && state.mode !== 'connectors' && state.mode !== 'exterior') {
-                setMode('select');
+            if(deletedAnything) {
+                splitDisconnectedRooms();
+                cleanUpRooms();
+                clearSelection();
+                saveState();
+                renderLoop();
+                if (state.mode !== 'structure' && state.mode !== 'power' && state.mode !== 'connectors' && state.mode !== 'exterior') {
+                    setMode('select');
+                }
             }
+        }
+
+        function loadDefaultShip() {
+            state.ship = { name: "Scout-Class Wedge", desc: "Short-range fast interceptor and planetary scout vessel." };
+            state.rooms={}; state.doors={}; state.vents={}; state.fuseboxes={}; state.wires={}; state.exterior={}; state.breaches={}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+            document.getElementById('ship-name').value = state.ship.name; document.getElementById('ship-desc').value = state.ship.desc;
+            
+            addRoom("r_bridge", "Bridge", "command", 21, 1.0, 1, [{id:"c_1", type:"mainframe", isActive:true, isBroken:false, dmg:0}]);
+            addRoom("r_bunks", "Double Bunks", "crew", 21, 1.0, 1, []);
+            addRoom("r_fresher", "Prep / Fresher", "medical", 21, 1.0, 1, [{id:"c_2", type:"scrubber", isActive:true, isBroken:false, dmg:0}]);
+            addRoom("r_hall", "Main Hall", "default", 21, 1.0, 1, [{id:"c_3", type:"storage_m", isActive:true, isBroken:false, dmg:0}]);
+            addRoom("r_fuel_p", "Port Fuel", "fuel", 15, 1.0, 0, []);
+            addRoom("r_fuel_s", "Starboard Fuel", "fuel", 15, 1.0, 0, []);
+            addRoom("r_drive_p", "Port Drives", "engineering", 40, 1.0, 2, [{id:"c_6", type:"battery", isActive:true, isBroken:false, dmg:0}, {id:"c_8", type:"diesel", isActive:true, isBroken:false, dmg:0}]);
+            addRoom("r_drive_s", "Starboard Drives", "engineering", 40, 1.0, 2, [{id:"c_7", type:"battery", isActive:true, isBroken:false, dmg:0}, {id:"c_9", type:"diesel", isActive:true, isBroken:false, dmg:0}]);
+            state.idCounters.room = 10; state.idCounters.comp = 20;
+
+            applyToGrid(22, 26, 4, 7, "r_bridge"); applyToGrid(20, 21, 6, 9, "r_bunks"); applyToGrid(27, 28, 6, 9, "r_fresher");
+            applyToGrid(22, 26, 8, 22, "r_hall"); applyToGrid(18, 21, 10, 16, "r_fuel_p"); applyToGrid(27, 30, 10, 16, "r_fuel_s");
+            applyToGrid(16, 21, 17, 22, "r_drive_p"); applyToGrid(27, 32, 17, 22, "r_drive_s");
+
+            addDoor("d_1", 24, 8, "h", "standard", false, "Bridge Access"); addDoor("d_2", 22, 8, "v", "standard", false, "Bunks");
+            addDoor("d_3", 27, 8, "v", "standard", false, "Fresher"); addDoor("d_4", 22, 13, "v", "security", true, "Fuel P");
+            addDoor("d_5", 27, 13, "v", "security", true, "Fuel S"); addDoor("d_6", 22, 19, "v", "security", true, "Drive P");
+            addDoor("d_7", 27, 19, "v", "security", true, "Drive S"); addDoor("d_8", 24, 23, "h", "airlock", false, "Aft Exit");
+            state.idCounters.door = 10;
+
+            addVent("v_1", 24, 6, 1); addVent("v_2", 24, 15, 1); state.idCounters.vent = 10;
+            
+            addFusebox("fb_1", 23, 6); addFusebox("fb_2", 23, 15); addFusebox("fb_3", 21, 19); addFusebox("fb_4", 27, 19); state.idCounters.fusebox = 10;
+
+            for(let y=2; y<=19; y++) { let idStr = `wire_${state.idCounters.wire++}`; state.wires[idStr] = { id: idStr, x: 24, y: y }; }
+            for(let x=21; x<=27; x++) { let idStr = `wire_${state.idCounters.wire++}`; state.wires[idStr] = { id: idStr, x: x, y: 19 }; }
+            
+            let wId1 = `wire_${state.idCounters.wire++}`; state.wires[wId1] = { id: wId1, x: 23, y: 6 };
+            let wId2 = `wire_${state.idCounters.wire++}`; state.wires[wId2] = { id: wId2, x: 23, y: 15 };
+
+            for(let x=17; x<=19; x++) addExt(`e_eng${x}`, x, 23, "engine"); for(let x=29; x<=31; x++) addExt(`e_eng${x}`, x, 23, "engine");
+            for(let y=18; y<=20; y++) { addExt(`e_rad1${y}`, 15, y, "radiator"); addExt(`e_rad2${y}`, 33, y, "radiator"); }
+            for(let x=22; x<=26; x++) { addExt(`e_whip${x}`, x, 3, "whipple", "Bow Armor"); }
+            addExt("e_sol1", 24, 2, "solar"); state.idCounters.ext = 35;
+        }
+
+        function exportShip() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const a = document.createElement('a'); a.href = dataStr; a.download = (state.ship.name || "Spaceship") + "_Blueprint.json";
+            document.body.appendChild(a); a.click(); a.remove();
+        }
+        function importShip(event) {
+            const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = e => { 
+                try { 
+                    const imp = JSON.parse(e.target.result); 
+                    if(imp.rooms && imp.gridData) { 
+                        state = imp; 
+                        if(!state.wires) state.wires = {}; 
+                        if(!state.fuseboxes) state.fuseboxes = {}; 
+                        if(!state.vents) state.vents = {}; 
+                        if(!state.exterior) state.exterior = {}; 
+                        if(!state.doors) state.doors = {}; 
+                        if(!state.breaches) state.breaches = {}; 
+                        if(!state.idCounters) state.idCounters = { room: 0, door: 0, ext: 0, comp: 0, vent: 0, fusebox: 0, wire: 0, breach: 0 }; 
+                        ['room','door','ext','comp','vent','fusebox','wire','breach'].forEach(k => { if(state.idCounters[k] === undefined) state.idCounters[k] = 1000; });
+                        
+                        Object.values(state.rooms).forEach(r => { if(r.fuelLevel === undefined) r.fuelLevel = 100; });
+
+                        document.getElementById('ship-name').value = state.ship.name || ""; 
+                        document.getElementById('ship-desc').value = state.ship.desc || ""; 
+                        clearSelection(); triggerBoot(false); 
+                    } else alert("Invalid JSON."); 
+                } catch (err) { alert("Error parsing JSON file."); } 
+            };
+            reader.readAsText(file); event.target.value = ''; 
+        }
+
+        function wipeBlueprint() { 
+            if(confirm("WARNING: This will completely delete the current ship layout. Proceed?")) { 
+                state.ship = { name: "", desc: "" };
+                document.getElementById('ship-name').value = ""; document.getElementById('ship-desc').value = "";
+                state.rooms = {}; state.doors = {}; state.vents = {}; state.fuseboxes = {}; state.wires = {}; state.exterior = {}; state.breaches = {}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null)); 
+                clearSelection(); renderLoop(); saveState();
+            } 
         }
 
         function triggerBoot(isInitial = false) {
@@ -561,75 +719,6 @@
                     else { bootedRooms.add(roomIds[i]); renderLoop(); i++; }
                 }, 120);
             }, delay);
-        }
-
-        function applyToGrid(minX, maxX, minY, maxY, val) { for (let y=minY; y<=maxY; y++) { for(let x=minX; x<=maxX; x++) state.gridData[y][x]=val; } }
-        function addRoom(idStr, name, type, temp, pres, pwr, comps=[]) { state.rooms[idStr] = {id:idStr, name, type, notes:"", dmg:0, airType:'O2', temp, pres, pwrPerCell:pwr, area:0, components:comps}; }
-        function addExt(idStr, x, y, type, notes="") { let hp = type==='whipple'?100:undefined; let bp = type==='solar'?15:undefined; let mt = type==='engine'?8000:undefined; let bc = type==='radiator'?20:undefined; let tt = type==='radiator'?21:undefined; state.exterior[idStr] = {id:idStr, x,y, type, isActive:true, isBroken:false, dmg:0, notes, hp, maxHp:hp, basePower:bp, maxThrust:mt, baseCooling:bc, targetTemp:tt}; }
-        function addDoor(idStr, x, y, dir, type, locked, notes="", blocks=null) { if(blocks===null) blocks = (type!=='standard'); state.doors[idStr] = {id:idStr, x,y, dir, type, isOpen:false, isLocked:locked, isBroken:false, dmg:0, notes, blocksHazards:blocks}; }
-        function addVent(idStr, x, y, channel) { state.vents[idStr] = {id:idStr, x,y, type:'vent', isActive:true, isBroken:false, dmg:0, channel:channel, notes:""}; }
-        function addFusebox(idStr, x, y) { state.fuseboxes[idStr] = {id:idStr, x,y, type:'fusebox', isActive:true, isBroken:false, dmg:0, notes:""}; }
-
-        function loadDefaultShip() {
-            state.ship = { name: "Scout-Class Wedge", desc: "Short-range fast interceptor and planetary scout vessel." };
-            state.rooms={}; state.doors={}; state.vents={}; state.fuseboxes={}; state.wires={}; state.exterior={}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null));
-            document.getElementById('ship-name').value = state.ship.name; document.getElementById('ship-desc').value = state.ship.desc;
-            
-            addRoom("r_bridge", "Bridge", "command", 21, 1.0, 1, [{id:"c_1", type:"mainframe", isActive:true, isBroken:false}]);
-            addRoom("r_bunks", "Double Bunks", "crew", 21, 1.0, 1, []);
-            addRoom("r_fresher", "Prep / Fresher", "medical", 21, 1.0, 1, [{id:"c_2", type:"scrubber", isActive:true, isBroken:false}]);
-            addRoom("r_hall", "Main Hall", "default", 21, 1.0, 1, [{id:"c_3", type:"storage_m", isActive:true, isBroken:false}]);
-            addRoom("r_fuel_p", "Port Fuel", "fuel", 15, 1.0, 0, []);
-            addRoom("r_fuel_s", "Starboard Fuel", "fuel", 15, 1.0, 0, []);
-            addRoom("r_drive_p", "Port Drives", "engineering", 40, 1.0, 2, [{id:"c_6", type:"battery", isActive:true, isBroken:false}, {id:"c_8", type:"diesel", isActive:true, isBroken:false}]);
-            addRoom("r_drive_s", "Starboard Drives", "engineering", 40, 1.0, 2, [{id:"c_7", type:"battery", isActive:true, isBroken:false}, {id:"c_9", type:"diesel", isActive:true, isBroken:false}]);
-            state.idCounters.room = 10; state.idCounters.comp = 20;
-
-            applyToGrid(22, 26, 4, 7, "r_bridge"); applyToGrid(20, 21, 6, 9, "r_bunks"); applyToGrid(27, 28, 6, 9, "r_fresher");
-            applyToGrid(22, 26, 8, 22, "r_hall"); applyToGrid(18, 21, 10, 16, "r_fuel_p"); applyToGrid(27, 30, 10, 16, "r_fuel_s");
-            applyToGrid(16, 21, 17, 22, "r_drive_p"); applyToGrid(27, 32, 17, 22, "r_drive_s");
-
-            addDoor("d_1", 24, 8, "h", "standard", false, "Bridge Access"); addDoor("d_2", 22, 8, "v", "standard", false, "Bunks");
-            addDoor("d_3", 27, 8, "v", "standard", false, "Fresher"); addDoor("d_4", 22, 13, "v", "security", true, "Fuel P");
-            addDoor("d_5", 27, 13, "v", "security", true, "Fuel S"); addDoor("d_6", 22, 19, "v", "security", true, "Drive P");
-            addDoor("d_7", 27, 19, "v", "security", true, "Drive S"); addDoor("d_8", 24, 23, "h", "airlock", false, "Aft Exit");
-            state.idCounters.door = 10;
-
-            addVent("v_1", 24, 6, 1); addVent("v_2", 24, 15, 1); state.idCounters.vent = 10;
-            
-            addFusebox("fb_1", 23, 6); addFusebox("fb_2", 23, 15); addFusebox("fb_3", 21, 19); addFusebox("fb_4", 27, 19); state.idCounters.fusebox = 10;
-
-            for(let y=6; y<=19; y++) { let idStr = `wire_${state.idCounters.wire++}`; state.wires[idStr] = { id: idStr, x: 24, y: y }; }
-            for(let x=21; x<=27; x++) { let idStr = `wire_${state.idCounters.wire++}`; state.wires[idStr] = { id: idStr, x: x, y: 19 }; }
-            
-            let wId1 = `wire_${state.idCounters.wire++}`; state.wires[wId1] = { id: wId1, x: 23, y: 6 };
-            let wId2 = `wire_${state.idCounters.wire++}`; state.wires[wId2] = { id: wId2, x: 23, y: 15 };
-
-            for(let x=17; x<=19; x++) addExt(`e_eng${x}`, x, 23, "engine"); for(let x=29; x<=31; x++) addExt(`e_eng${x}`, x, 23, "engine");
-            for(let y=18; y<=20; y++) { addExt(`e_rad1${y}`, 15, y, "radiator"); addExt(`e_rad2${y}`, 33, y, "radiator"); }
-            for(let x=22; x<=26; x++) { addExt(`e_whip${x}`, x, 3, "whipple", "Bow Armor"); }
-            addExt("e_sol1", 24, 2, "solar"); state.idCounters.ext = 35;
-        }
-
-        function exportShip() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-            const a = document.createElement('a'); a.href = dataStr; a.download = (state.ship.name || "Spaceship") + "_Blueprint.json";
-            document.body.appendChild(a); a.click(); a.remove();
-        }
-        function importShip(event) {
-            const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
-            reader.onload = e => { try { const imp = JSON.parse(e.target.result); if(imp.rooms && imp.gridData) { state = imp; if(!state.wires) state.wires = {}; if(!state.fuseboxes) state.fuseboxes = {}; document.getElementById('ship-name').value = state.ship.name || ""; document.getElementById('ship-desc').value = state.ship.desc || ""; clearSelection(); triggerBoot(false); } else alert("Invalid JSON."); } catch (err) { alert("Error parsing JSON file."); } };
-            reader.readAsText(file); event.target.value = ''; 
-        }
-        function updateShipInfo() { state.ship.name = document.getElementById('ship-name').value; state.ship.desc = document.getElementById('ship-desc').value; }
-
-        function wipeBlueprint() { 
-            if(confirm("WARNING: This will completely delete the current ship layout. Proceed?")) { 
-                state.ship = { name: "", desc: "" };
-                document.getElementById('ship-name').value = ""; document.getElementById('ship-desc').value = "";
-                state.rooms = {}; state.doors = {}; state.vents = {}; state.fuseboxes = {}; state.wires = {}; state.exterior = {}; state.gridData = Array(ROWS).fill().map(() => Array(COLS).fill(null)); 
-                clearSelection(); renderLoop(); saveState();
-            } 
         }
 
         function getHazardColorBlend(base, target, pct) {
@@ -673,14 +762,46 @@
             let wiresByCell = {}; Object.values(state.wires).forEach(w => wiresByCell[`${w.x},${w.y}`] = w);
             let fuseboxesByCell = {}; Object.values(state.fuseboxes).forEach(fb => { if(fb.isActive && !fb.isBroken) fuseboxesByCell[`${fb.x},${fb.y}`] = fb; });
 
+            // Seed Generators
             Object.keys(state.rooms).forEach(rId => {
                 let r = state.rooms[rId];
                 let hasGen = r.components && r.components.some(c => (c.type==='diesel'||c.type==='smr'||c.type==='battery') && c.isActive && !c.isBroken);
-                let hasSolar = Object.values(state.exterior).some(e => e.type==='solar' && e.isActive && !e.isBroken && findExtRootRoom(e.id)?.roomId === rId);
-
-                if (hasGen || hasSolar) {
+                if (hasGen) {
                     poweredRooms.add(rId);
                     queue.push({type: 'room', id: rId});
+                }
+            });
+
+            // Seed Solar Arrays
+            let solarGroups = [];
+            let visitedSolars = new Set();
+            let allSolars = Object.values(state.exterior).filter(e => e.type === 'solar' && e.isActive && !e.isBroken);
+            
+            allSolars.forEach(s => {
+                if (visitedSolars.has(s.id)) return;
+                let group = []; let q = [s]; visitedSolars.add(s.id);
+                while(q.length > 0) {
+                    let curr = q.shift(); group.push(curr);
+                    allSolars.forEach(other => {
+                        if (!visitedSolars.has(other.id)) {
+                            let dx = Math.abs(curr.x - other.x); let dy = Math.abs(curr.y - other.y);
+                            if (dx + dy === 1) { visitedSolars.add(other.id); q.push(other); }
+                        }
+                    });
+                }
+                solarGroups.push(group);
+            });
+
+            let activeSolarGroups = [];
+            solarGroups.forEach(group => {
+                let isConnected = false;
+                group.forEach(s => { if (wiresByCell[`${s.x},${s.y}`]) isConnected = true; });
+                if (isConnected) {
+                    activeSolarGroups.push(group);
+                    group.forEach(s => {
+                        let w = wiresByCell[`${s.x},${s.y}`];
+                        if (w) { poweredWires.add(w.id); queue.push({type: 'wire', id: w.id}); }
+                    });
                 }
             });
 
@@ -724,7 +845,10 @@
                 let isPowered = roomHasPower[r.id];
                 let load = r.area * (r.pwrPerCell || 0); let cap = 0; let gen = 0; let used = 0;
                 
-                if (r.type === 'fuel') globalTelemetry.shipPropellantCap += r.area * 50;
+                if (r.type === 'fuel') {
+                    if (r.fuelLevel === undefined) r.fuelLevel = 100;
+                    globalTelemetry.shipPropellantCap += (r.area * 50) * (r.fuelLevel / 100);
+                }
                 else if(r.components) {
                     r.components.forEach(c => { 
                         let def = COMP_DICT[c.type]; 
@@ -741,26 +865,26 @@
                 r.spaceUsed = used; globalTelemetry.shipPowerCap += cap; globalTelemetry.shipPowerGen += gen; globalTelemetry.shipPowerDraw += load; globalTelemetry.totalArea += r.area;
             });
 
-            Object.values(state.exterior).forEach(ext => {
-                if(ext.isBroken || !ext.isActive) return;
-                let root = findExtRootRoom(ext.id);
-                if(ext.type === 'solar' && root) { let eff = (1 - (ext.dmg || 0) / 100); globalTelemetry.shipPowerGen += (ext.basePower || 15) * eff; }
+            activeSolarGroups.forEach(g => {
+                g.forEach(s => {
+                    let eff = (1 - (s.dmg || 0) / 100);
+                    globalTelemetry.shipPowerGen += (s.basePower || 15) * eff;
+                });
             });
 
             const readOut = document.getElementById('power-readout');
             let drawRound = Math.round(globalTelemetry.shipPowerDraw); let genRound = Math.round(globalTelemetry.shipPowerGen); let capRound = Math.round(globalTelemetry.shipPowerCap);
-            readOut.innerText = `PWR: USED ${drawRound} / GEN ${genRound} MW | CAP ${capRound} MW | FUEL: ${globalTelemetry.shipPropellantCap}`;
+            let fuelRound = Math.round(globalTelemetry.shipPropellantCap);
+            readOut.innerText = `PWR: USED ${drawRound} / GEN ${genRound} MW | CAP ${capRound} MW | FUEL: ${fuelRound}`;
             if (drawRound > genRound) readOut.classList.add('telemetry-warning'); else readOut.classList.remove('telemetry-warning');
 
             const gridStatus = document.getElementById('power-grid-status');
             if (gridStatus) {
                 let activeGens = Object.keys(state.rooms).filter(rId => {
                     let r = state.rooms[rId];
-                    let hasGen = r.components && r.components.some(c => (c.type==='diesel'||c.type==='smr'||c.type==='battery') && c.isActive && !c.isBroken);
-                    let hasSolar = Object.values(state.exterior).some(e => e.type==='solar' && e.isActive && !e.isBroken && findExtRootRoom(e.id)?.roomId === rId);
-                    return hasGen || hasSolar;
+                    return r.components && r.components.some(c => (c.type==='diesel'||c.type==='smr') && c.isActive && !c.isBroken);
                 }).length;
-                gridStatus.innerHTML = `<strong>Powered Sectors:</strong> ${Object.values(roomHasPower).filter(v=>v).length} / ${Object.keys(state.rooms).length}<br><strong>Active Root Sources:</strong> ${activeGens} Cores/Turbines`;
+                gridStatus.innerHTML = `<strong>Powered Sectors:</strong> ${Object.values(roomHasPower).filter(v=>v).length} / ${Object.keys(state.rooms).length}<br><strong>Active Core Roots:</strong> ${activeGens} Cores/Turbines`;
             }
         }
 
@@ -770,7 +894,11 @@
             Object.keys(state.rooms).forEach(id => { if (!activeIds.has(id)) { delete state.rooms[id]; selection.roomIds.delete(id); } });
         }
 
-        function normalizeRooms() { Object.values(state.rooms).forEach(r => { if (r.pres <= 0) { r.airType = 'Vacuum'; r.pres = 0; } }); }
+        function normalizeRooms() { 
+            Object.values(state.rooms).forEach(r => { 
+                if (r.pres <= 0) { r.airType = 'Vacuum'; r.pres = 0; } 
+            }); 
+        }
 
         function splitDisconnectedRooms() {
             cleanUpRooms(); let newlyCreatedRooms = [];
@@ -834,15 +962,25 @@
 
         function renderLoop() {
             calculateSystems(); normalizeRooms();
-            DOM.labelsLayer.innerHTML = ''; DOM.doorsLayer.innerHTML = ''; DOM.ventsLayer.innerHTML = ''; DOM.fuseboxesLayer.innerHTML = ''; DOM.extLayer.innerHTML = ''; DOM.wiresLayer.innerHTML = '';
+            DOM.labelsLayer.innerHTML = ''; DOM.doorsLayer.innerHTML = ''; DOM.ventsLayer.innerHTML = ''; DOM.fuseboxesLayer.innerHTML = ''; DOM.extLayer.innerHTML = ''; DOM.wiresLayer.innerHTML = ''; DOM.breachesLayer.innerHTML = '';
             
-            DOM.wiresLayer.style.display = (state.mode === 'power' || state.mode === 'integrity') ? 'block' : 'none';
+            DOM.wiresLayer.style.display = (state.mode === 'power' || state.mode === 'integrity' || (state.mode === 'connectors' && state.connectorSubMode === 'fusebox')) ? 'block' : 'none';
+            DOM.wiresLayer.style.opacity = (state.mode === 'connectors' && state.connectorSubMode === 'fusebox') ? '0.6' : '1.0';
+
+            Object.keys(state.breaches).forEach(key => {
+                let [x, y] = key.split(',').map(Number);
+                const el = document.createElement('div');
+                el.className = 'breach-icon';
+                el.style.left = `${x * CELL_SIZE}px`; el.style.top = `${y * CELL_SIZE}px`; el.innerText = '💥';
+                DOM.breachesLayer.appendChild(el);
+            });
 
             const roomCenters = {};
             for (let y = 0; y < ROWS; y++) {
                 for (let x = 0; x < COLS; x++) {
                     const cell = DOM.cells[y][x]; const roomId = state.gridData[y][x];
                     if (roomId) {
+                        cell.classList.remove('decay-anim');
                         const room = state.rooms[roomId]; const theme = themes[room.type] || themes['default'];
                         if (!roomCenters[roomId]) roomCenters[roomId] = { sumX:0, sumY:0, count:0, minX:x, maxX:x, minY:y, maxY:y, cells:new Set() };
                         let rc = roomCenters[roomId]; rc.sumX+=x; rc.sumY+=y; rc.count++;
@@ -960,8 +1098,9 @@
                 Object.values(state.wires).forEach(w => {
                     const el = document.createElement('div');
                     let isWirePowered = poweredWires.has(w.id);
-                    el.className = `wire` + (isWirePowered ? ' powered' : ' unpowered');
-                    el.dataset.id = w.id; el.style.left = `${w.x * CELL_SIZE}px`; el.style.top = `${w.y * CELL_SIZE}px`;
+
+                    let cName = `wire` + (isWirePowered ? ' powered' : ' unpowered');
+                    el.className = cName; el.dataset.id = w.id; el.style.left = `${w.x * CELL_SIZE}px`; el.style.top = `${w.y * CELL_SIZE}px`;
                     
                     let innerHTML = `<div class="w-c"></div>`;
                     if (wiresByCell[`${w.x},${w.y-1}`]) innerHTML += `<div class="w-n"></div>`;
@@ -997,6 +1136,13 @@
                     el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`; 
                     DOM.fuseboxesLayer.appendChild(el);
                 }
+            }
+
+            if (state.mode === 'integrity' && integMode === 'breach' && ghostItem && !isDragging) {
+                const el = document.createElement('div'); el.className = `breach-icon ghost`;
+                el.style.left = `${ghostItem.x * CELL_SIZE}px`; el.style.top = `${ghostItem.y * CELL_SIZE}px`;
+                el.innerText = '💥';
+                DOM.breachesLayer.appendChild(el);
             }
 
             if (state.mode === 'power' && ghostItem && !isDragging) {
@@ -1055,6 +1201,16 @@
             } else if (state.mode === 'exterior') { let ex = Object.values(state.exterior).find(ex => ex.x === ghostItem.x && ex.y === ghostItem.y); if (ex) delete state.exterior[ex.id]; }
             else if (state.mode === 'power') { let w = Object.values(state.wires).find(w => w.x === ghostItem.x && w.y === ghostItem.y); if (w) delete state.wires[w.id]; }
         }
+        
+        function triggerBreachAtGhost() {
+            if (!ghostItem) return;
+            let key = `${ghostItem.x},${ghostItem.y}`;
+            if (dragContext.action === 'add_breach') {
+                if (state.gridData[ghostItem.y][ghostItem.x]) { state.breaches[key] = true; }
+            } else if (dragContext.action === 'erase_breach') {
+                delete state.breaches[key];
+            }
+        }
 
         function setupEventListeners() {
             DOM.viewport.addEventListener('wheel', handleZoom, { passive: false }); DOM.viewport.addEventListener('contextmenu', e => e.preventDefault());
@@ -1075,6 +1231,14 @@
             return { x: Math.max(0, Math.min(Math.floor(rawX / CELL_SIZE), COLS - 1)), y: Math.max(0, Math.min(Math.floor(rawY / CELL_SIZE), ROWS - 1)), rawX, rawY };
         }
 
+        function setIntegMode(mode) {
+            integMode = mode;
+            document.getElementById('btn-integ-view').classList.toggle('active', mode === 'view');
+            document.getElementById('btn-integ-breach').classList.toggle('active', mode === 'breach');
+            if (mode === 'breach') clearSelection();
+            renderLoop();
+        }
+
         function handleMouseDown(e) {
             if (e.button === 1 || e.altKey) { e.preventDefault(); camera.isPanning = true; camera.lastX = e.clientX; camera.lastY = e.clientY; DOM.viewport.style.cursor = 'grabbing'; return; }
             
@@ -1083,8 +1247,37 @@
             if (state.mode === 'paste' && clipboardCluster) {
                 if(e.button === 2) { setMode('select'); return; }
                 let tx = coords.x; let ty = coords.y;
-                if (tx + clipboardCluster.w >= COLS || ty + clipboardCluster.h >= ROWS) return;
-                let collision = false; clipboardCluster.rooms.forEach(rd => rd.cells.forEach(c => { if(state.gridData[ty+c.ry][tx+c.rx]) collision = true; }));
+                
+                let collision = false;
+                if (tx + clipboardCluster.w >= COLS || ty + clipboardCluster.h >= ROWS) collision = true;
+                
+                if(!collision) {
+                    clipboardCluster.rooms.forEach(rd => rd.cells.forEach(c => { 
+                        let nx = tx+c.rx; let ny = ty+c.ry;
+                        if(nx<0||nx>=COLS||ny<0||ny>=ROWS||state.gridData[ny][nx]) collision = true; 
+                    }));
+                    clipboardCluster.exts.forEach(ex => { 
+                        let nx = tx+ex.rx; let ny = ty+ex.ry;
+                        if(nx<0||nx>=COLS||ny<0||ny>=ROWS) { collision = true; return; }
+                        let cellHasExt = Object.values(state.exterior).some(e => e.x===nx && e.y===ny);
+                        let cellHasVent = Object.values(state.vents).some(e => e.x===nx && e.y===ny);
+                        let cellHasFuse = Object.values(state.fuseboxes).some(e => e.x===nx && e.y===ny);
+                        if(cellHasExt || cellHasVent || cellHasFuse) collision = true; 
+                    });
+                    clipboardCluster.doors.forEach(d => { 
+                        let nx = tx+d.rx; let ny = ty+d.ry;
+                        if(nx<0||nx>COLS||ny<0||ny>ROWS||Object.values(state.doors).some(e => e.x===nx && e.y===ny && e.dir===d.dir)) collision = true; 
+                    });
+                    clipboardCluster.vents.forEach(v => { 
+                        let nx = tx+v.rx; let ny = ty+v.ry;
+                        if(nx<0||nx>=COLS||ny<0||ny>=ROWS||Object.values(state.vents).some(e => e.x===nx && e.y===ny)) collision = true; 
+                    });
+                    clipboardCluster.fuseboxes.forEach(fb => { 
+                        let nx = tx+fb.rx; let ny = ty+fb.ry;
+                        if(nx<0||nx>=COLS||ny<0||ny>=ROWS||Object.values(state.fuseboxes).some(e => e.x===nx && e.y===ny)) collision = true; 
+                    });
+                }
+                
                 if(!collision) {
                     clipboardCluster.rooms.forEach(rd => {
                         let nId = `room_${state.idCounters.room++}`; 
@@ -1096,8 +1289,11 @@
                     clipboardCluster.vents.forEach(v => { let nId = `vent_${state.idCounters.vent++}`; let newV = JSON.parse(JSON.stringify(v)); newV.id = nId; newV.x = tx+v.rx; newV.y = ty+v.ry; state.vents[nId] = newV; });
                     clipboardCluster.fuseboxes.forEach(f => { let nId = `fb_${state.idCounters.fusebox++}`; let newF = JSON.parse(JSON.stringify(f)); newF.id = nId; newF.x = tx+f.rx; newF.y = ty+f.ry; state.fuseboxes[nId] = newF; });
                     clipboardCluster.exts.forEach(ex => { let nId = `ext_${state.idCounters.ext++}`; let newE = JSON.parse(JSON.stringify(ex)); newE.id = nId; newE.x = tx+ex.rx; newE.y = ty+ex.ry; state.exterior[nId] = newE; });
-                    saveState(); renderLoop();
-                } return;
+                    saveState(); 
+                    setMode('select'); 
+                } 
+                isDragging = false;
+                return;
             }
 
             if (state.mode === 'structure') {
@@ -1139,7 +1335,14 @@
                     else { dragContext.action = 'marquee'; DOM.draftBox.className = `selection-box marquee`; DOM.draftBox.style.display = 'block'; updateDraftBox(coords.x, coords.y); }
                 } renderLoop();
             }
-            else if (state.mode === 'integrity') { isDragging = false; const clickedId = state.gridData[coords.y][coords.x]; clearSelection(); if (clickedId) { selection.roomIds.add(clickedId); } renderLoop();}
+            else if (state.mode === 'integrity') { 
+                if (integMode === 'view') {
+                    isDragging = false; const clickedId = state.gridData[coords.y][coords.x]; clearSelection(); if (clickedId) { selection.roomIds.add(clickedId); } renderLoop();
+                } else if (integMode === 'breach') {
+                    dragContext.action = e.button === 2 ? 'erase_breach' : 'add_breach';
+                    triggerBreachAtGhost(); renderLoop();
+                }
+            }
         }
 
         function handleMouseMove(e) {
@@ -1158,14 +1361,19 @@
                 } else if (state.connectorSubMode === 'vent') { ghostItem = { x: coords.x, y: coords.y, type: 'vent' }; }
                 else if (state.connectorSubMode === 'fusebox') { ghostItem = { x: coords.x, y: coords.y, type: 'fusebox' }; }
             } else if (state.mode === 'power') {
-                ghostItem = { x: coords.x, y: coords.y, type: 'wire' };
-            } else if (state.mode === 'exterior') { ghostItem = { x: coords.x, y: coords.y, type: state.activeBuildTypeExt }; }
+                ghostItem = { x: coords.x, y: coords.y, type: 'wire' }; 
+            } else if (state.mode === 'exterior') { 
+                ghostItem = { x: coords.x, y: coords.y, type: state.activeBuildTypeExt }; 
+            } else if (state.mode === 'integrity' && integMode === 'breach') {
+                ghostItem = { x: coords.x, y: coords.y, type: 'breach' };
+            }
 
             if (!isDragging) { renderLoop(); return; }
 
             if (['add', 'erase', 'marquee'].includes(dragContext.action)) { updateDraftBox(dragContext.currentX, dragContext.currentY); } 
             else if (dragContext.action === 'build_item') { triggerBuildAtGhost(); renderLoop(); }
             else if (dragContext.action === 'erase_item') { triggerEraseAtGhost(); renderLoop(); }
+            else if (dragContext.action === 'add_breach' || dragContext.action === 'erase_breach') { triggerBreachAtGhost(); renderLoop(); }
             else if (dragContext.action === 'move') {
                 const dx = dragContext.currentX - dragContext.startX, dy = dragContext.currentY - dragContext.startY; let canMove = true;
                 for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (selection.roomIds.has(dragContext.backupGrid[y][x])) { let nx = x + dx, ny = y + dy; if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { canMove = false; break; } let destId = dragContext.backupGrid[ny][nx]; if (destId && !selection.roomIds.has(destId)) { canMove = false; break; } }
@@ -1213,7 +1421,7 @@
                 }
                 if (filters.exterior) Object.values(state.exterior).forEach(ex => { if(ex.x >= minX && ex.x <= maxX && ex.y >= minY && ex.y <= maxY) selection.extIds.add(ex.id); });
             }
-            else if (dragContext.action === 'build_item' || dragContext.action === 'erase_item' || dragContext.action === 'move') { if (hasDragged || dragContext.action !== 'move') saveState(); }
+            else if (dragContext.action === 'build_item' || dragContext.action === 'erase_item' || dragContext.action === 'move' || dragContext.action === 'add_breach' || dragContext.action === 'erase_breach') { if (hasDragged || dragContext.action !== 'move') saveState(); }
             
             dragContext.action = null; dragContext.backupGrid = null; dragContext.backupDoors = null; dragContext.backupVents = null; dragContext.backupFuseboxes = null; dragContext.backupExt = null; dragContext.backupWires = null; renderLoop();
         }
@@ -1289,6 +1497,23 @@
             });
 
             Object.values(state.rooms).forEach(r => {
+                let hasBreach = false;
+                for(let y=0; y<ROWS; y++) {
+                    for(let x=0; x<COLS; x++) {
+                        if(state.gridData[y][x] === r.id && state.breaches[`${x},${y}`]) {
+                            hasBreach = true;
+                        }
+                    }
+                }
+                if (hasBreach && r.pres > 0) {
+                    r.pres = Math.max(0, r.pres - 0.2);
+                    if(r.pres <= 0) r.airType = 'Vacuum';
+                }
+
+                if (r.type === 'fuel' && r.dmg > 0 && r.fuelLevel > 0) {
+                    r.fuelLevel = Math.max(0, r.fuelLevel - (r.dmg * 0.1));
+                }
+
                 if(!r.components) return;
                 let isPowered = roomHasPower[r.id];
                 r.components.forEach(c => {
@@ -1349,6 +1574,39 @@
             renderLoop();
         }
 
+        function applyExteriorDamage(extId, dmg) {
+            let ext = state.exterior[extId];
+            if (!ext || ext.isBroken) return;
+            ext.dmg += dmg;
+            if (ext.dmg >= 100) {
+                ext.dmg = 100;
+                ext.isBroken = true;
+                ext.isActive = false;
+                
+                // Outward Chain Snap
+                let adjs = [ {x: ext.x, y: ext.y-1}, {x: ext.x, y: ext.y+1}, {x: ext.x-1, y: ext.y}, {x: ext.x+1, y: ext.y} ];
+                adjs.forEach(a => {
+                    let nextExt = Object.values(state.exterior).find(e => e.x === a.x && e.y === a.y && e.type === ext.type && !e.isBroken);
+                    if (nextExt) {
+                        setTimeout(() => {
+                            applyExteriorDamage(nextExt.id, dmg * 0.5);
+                            renderLoop();
+                        }, 200); 
+                    }
+                });
+                
+                // Anchor Point Shock
+                let root = findExtRootRoom(ext.id);
+                if (root && root.chainLength === 0) { 
+                     state.rooms[root.roomId].dmg = Math.min(100, state.rooms[root.roomId].dmg + 15);
+                     // 10% chance to pop a micro-breach in the root room
+                     if (Math.random() < 0.1) {
+                        state.breaches[`${ext.x},${ext.y}`] = true;
+                     }
+                }
+            }
+        }
+
         function runSimulation() {
             const roomKeys = Object.keys(state.rooms); if (roomKeys.length === 0) return alert("You must build hull modules before running a simulation.");
             if (!simActive) {
@@ -1357,6 +1615,17 @@
             }
             
             const type = document.getElementById('sim-type').value;
+
+            if (type === 'exterior') {
+                let exts = Object.values(state.exterior).filter(e => !e.isBroken);
+                if (exts.length > 0) {
+                    let targetExt = exts[Math.floor(Math.random() * exts.length)];
+                    applyExteriorDamage(targetExt.id, 100);
+                } else alert("No intact exterior arrays found.");
+                renderLoop();
+                return;
+            }
+
             let targets = (selection.roomIds.size > 0) ? Array.from(selection.roomIds) : [roomKeys[Math.floor(Math.random() * roomKeys.length)]];
             
             targets.forEach(target => {
@@ -1368,12 +1637,22 @@
                 }
                 if (hasShield) { console.log(`Whipple shield absorbed impact on ${state.rooms[target].name}`); return; }
 
+                let roomCells = [];
+                for(let y=0; y<ROWS; y++) {
+                    for(let x=0; x<COLS; x++) {
+                        if(state.gridData[y][x] === target) roomCells.push({x, y});
+                    }
+                }
+                if(roomCells.length > 0) {
+                    let rc = roomCells[Math.floor(Math.random() * roomCells.length)];
+                    state.breaches[`${rc.x},${rc.y}`] = true;
+                }
+
                 if (type === 'micrometeor') {
                     state.rooms[target].dmg = Math.min(100, parseInt(state.rooms[target].dmg) + Math.floor(Math.random() * 30 + 20));
-                    if (state.rooms[target].dmg > 50) { state.rooms[target].airType = 'Vacuum'; state.rooms[target].pres = 0; }
                 } 
                 else if (type === 'debris') {
-                    state.rooms[target].dmg = 100; state.rooms[target].airType = 'Vacuum'; state.rooms[target].pres = 0;
+                    state.rooms[target].dmg = 100;
                     getRoomConnections(target).forEach(c => { if(c.door) c.door.isBroken = true; state.rooms[c.targetRoom].dmg = Math.min(100, parseInt(state.rooms[c.targetRoom].dmg) + 40); });
                 }
                 else if (type === 'coolant') { state.rooms[target].temp = -50; state.rooms[target].airType = 'Toxins'; }
@@ -1385,7 +1664,7 @@
             }); renderLoop();
         }
 
-        function resetSimulation() { state.rooms = JSON.parse(JSON.stringify(backupRooms)); state.doors = JSON.parse(JSON.stringify(backupDoorsSim)); state.vents = JSON.parse(JSON.stringify(backupVentsSim)); state.fuseboxes = JSON.parse(JSON.stringify(backupFuseboxesSim)); state.exterior = JSON.parse(JSON.stringify(backupExtSim)); state.wires = JSON.parse(JSON.stringify(backupWiresSim)); endSimulation(); }
+        function resetSimulation() { state.rooms = JSON.parse(JSON.stringify(backupRooms)); state.doors = JSON.parse(JSON.stringify(backupDoorsSim)); state.vents = JSON.parse(JSON.stringify(backupVentsSim)); state.fuseboxes = JSON.parse(JSON.stringify(backupFuseboxesSim)); state.exterior = JSON.parse(JSON.stringify(backupExtSim)); state.wires = JSON.parse(JSON.stringify(backupWiresSim)); state.breaches = {}; endSimulation(); }
         function applySimulation() { endSimulation(); }
         function endSimulation() { simActive = false; backupRooms = null; backupDoorsSim = null; backupVentsSim = null; backupFuseboxesSim = null; backupExtSim = null; backupWiresSim = null; document.getElementById('sim-warning').style.display = 'none'; document.getElementById('btn-structure').classList.remove('disabled-mode'); document.getElementById('btn-connectors').classList.remove('disabled-mode'); document.getElementById('btn-exterior').classList.remove('disabled-mode'); document.getElementById('btn-power').classList.remove('disabled-mode'); document.getElementById('sim-actions').style.display = 'none'; renderLoop(); }
 
@@ -1404,7 +1683,7 @@
             const def = COMP_DICT[type];
             if (room.spaceUsed + def.size > room.area) { alert(`Insufficient Space! Room Area: ${room.area}. Space Used: ${room.spaceUsed}. Machine Size: ${def.size}`); return; }
             if (!room.components) room.components = [];
-            room.components.push({ id: `comp_${state.idCounters.comp++}`, type: type, isActive: true, isBroken: false }); saveState(); renderLoop();
+            room.components.push({ id: `comp_${state.idCounters.comp++}`, type: type, isActive: true, isBroken: false, dmg: 0 }); saveState(); renderLoop();
         }
         function toggleComponent(compId, prop) { if (selection.roomIds.size !== 1) return; const room = state.rooms[Array.from(selection.roomIds)[0]]; const comp = room.components.find(c => c.id === compId); if (comp) { comp[prop] = !comp[prop]; saveState(); renderLoop(); } }
         function removeComponent(compId) { if (selection.roomIds.size !== 1) return; const room = state.rooms[Array.from(selection.roomIds)[0]]; room.components = room.components.filter(c => c.id !== compId); saveState(); renderLoop(); }
@@ -1496,7 +1775,7 @@
                         if (r.type === 'fuel') {
                             document.getElementById('room-internals').style.display = 'none';
                             document.getElementById('room-fuel-stat').style.display = 'block';
-                            document.getElementById('room-fuel-stat').innerText = `Propellant Reserve: ${r.area * 50} Units`;
+                            document.getElementById('fuel-reserve-val').innerText = Math.round((r.area * 50) * ((r.fuelLevel||100) / 100));
                         } else {
                             document.getElementById('room-fuel-stat').style.display = 'none';
                             document.getElementById('room-internals').style.display = 'block';
@@ -1504,7 +1783,11 @@
                             if (r.components && r.components.length > 0) {
                                 r.components.forEach(c => {
                                     const def = COMP_DICT[c.type]; let cssClass = "comp-item"; if(c.isBroken) cssClass += " broken"; else if(!c.isActive) cssClass += " inactive";
-                                    list.innerHTML += `<div class="${cssClass}"><span><strong>${def.name}</strong> [${def.size}s]</span><div class="comp-controls"><button onclick="toggleComponent('${c.id}', 'isActive')">${c.isActive ? 'ON' : 'OFF'}</button><button onclick="toggleComponent('${c.id}', 'isBroken')" class="red">${c.isBroken ? 'FIX' : 'BRK'}</button><button onclick="removeComponent('${c.id}')">X</button></div></div>`;
+                                    list.innerHTML += `<div class="${cssClass}">
+                                        <div style="flex:1;"><strong>${def.name}</strong> [${def.size}s]<br>
+                                        <div style="display:flex; align-items:center; margin-top:3px;"><input type="range" min="0" max="100" value="${c.dmg||0}" onchange="updateCompDmg('${r.id}', '${c.id}', this.value)" style="width:60px; height:4px; margin:0 5px 0 0;"><span style="font-size:9px; color:#aaa;">${c.dmg||0}% DMG</span></div>
+                                        </div>
+                                        <div class="comp-controls"><button onclick="toggleComponent('${c.id}', 'isActive')">${c.isActive ? 'ON' : 'OFF'}</button><button onclick="toggleComponent('${c.id}', 'isBroken')" class="red">${c.isBroken ? 'FIX' : 'BRK'}</button><button onclick="removeComponent('${c.id}')">X</button></div></div>`;
                                 });
                             } else { list.innerHTML = `<div style="font-size:11px; color:#555; padding-bottom:10px;">No internal systems installed.</div>`; }
                         }
