@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>NAVCORE • ALPHA • GRAVITY • ΔV THRUST</title>
+    <style>
+        * {
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            height: 100vh;
+            background: #050508;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
+                        linear-gradient(90deg, rgba(255,0,0,0.02), rgba(0,255,0,0.01), rgba(0,0,255,0.02));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.4;
+        }
+        .top-bar {
+            display: flex;
+            border-bottom: 1px solid #00ffcc;
+            background: #000000aa;
+            backdrop-filter: blur(2px);
+            font-size: 13px;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-left {
+            display: flex;
+        }
+        .top-item {
+            padding: 8px 16px;
+            border-right: 1px solid #00ffcc;
+        }
+        .alpha-logo {
+            background: #000000aa;
+            border-left: 2px solid #00ffcc;
+            padding: 6px 20px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 22px;
+            letter-spacing: 6px;
+            color: #00ffcc;
+            text-shadow: 0 0 5px #00ffcc, 0 0 2px #0ff;
+            box-shadow: -2px 0 8px rgba(0,255,204,0.3);
+            margin-right: 12px;
+            backdrop-filter: blur(4px);
+        }
+        .alpha-logo span {
+            font-size: 14px;
+            vertical-align: super;
+            letter-spacing: 1px;
+            background: #00ffcc22;
+            padding: 2px 4px;
+            border-radius: 3px;
+            margin-left: 6px;
+        }
+        .main-area {
+            flex: 1;
+            display: flex;
+            padding: 12px;
+            gap: 12px;
+            overflow: hidden;
+        }
+        .left-panel {
+            width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+        .panel {
+            border: 1px solid #2a4a4a;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(2px);
+        }
+        .panel-title {
+            text-align: center;
+            color: #00ffcc;
+            font-size: 12px;
+            padding: 6px;
+            border-bottom: 1px solid #2a4a4a;
+            background: #051010;
+        }
+        .planet-grid {
+            display: grid;
+            grid-template-columns: repeat(2,1fr);
+            gap: 8px;
+            padding: 10px;
+        }
+        .planet-card {
+            background: #061212;
+            border-left: 3px solid #2a4a4a;
+            padding: 6px 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            transition: 0.1s;
+        }
+        .planet-card.selected {
+            background: #0a2a2a;
+            border-left-color: #00ffcc;
+            box-shadow: 0 0 6px #00ffcc33;
+        }
+        .planet-name { font-weight: bold; }
+        .planet-dist { font-size: 10px; color: #88aaff; }
+        .moons-area {
+            border-top: 1px dashed #2a4a4a;
+            padding: 8px;
+            margin-top: 4px;
+        }
+        .moon-badge {
+            background: #0a1a1a;
+            border: 1px solid #2a6a6a;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 10px;
+            display: inline-block;
+            margin: 2px;
+        }
+        .route-details {
+            background: #010f0f;
+            padding: 8px;
+            font-size: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            border-left: 3px solid #00cc66;
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin: 8px 0;
+        }
+        .nav-btn {
+            background: transparent;
+            border: 1px solid #00ffcc;
+            color: #00ffcc;
+            padding: 6px 12px;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .nav-btn:hover {
+            background: #00ffcc;
+            color: black;
+        }
+        .thrust-panel {
+            background: #051010;
+            padding: 12px;
+            margin-top: 4px;
+        }
+        .thrust-control {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            margin: 8px 0;
+        }
+        .thrust-btn {
+            background: #1a2a2a;
+            border: 1px solid #00ffcc;
+            color: #00ffcc;
+            font-size: 18px;
+            font-weight: bold;
+            width: 56px;
+            padding: 6px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .thrust-btn.disabled {
+            opacity: 0.4;
+            border-color: #555;
+            color: #888;
+            cursor: not-allowed;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            margin: 6px 0;
+        }
+        input[type="range"] {
+            width: 100%;
+            background: #2a4a4a;
+            height: 4px;
+        }
+        .dev-badge {
+            background: #ff6600;
+            color: black;
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        .warning {
+            color: #ffaa66;
+            font-size: 10px;
+            margin-top: 6px;
+        }
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 0;
+        }
+        .canvas-container {
+            flex: 1;
+            border: 1px solid #2a4a4a;
+            background: #050508;
+            position: relative;
+        }
+        #orbitCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .footer {
+            padding: 8px;
+            background: #000000cc;
+            border-top: 1px solid #00ffcc;
+        }
+        .btn-row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: transparent;
+            border: 1px solid #2a4a4a;
+            color: #e0e0e0;
+            padding: 4px 10px;
+            font-family: monospace;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .btn.active {
+            background: #ffcc00;
+            color: black;
+        }
+        .status {
+            background: black;
+            border: 1px solid #00ffcc;
+            padding: 2px 12px;
+            font-size: 11px;
+        }
+        .overlay-text {
+            position: absolute;
+            background: #000000aa;
+            padding: 4px 6px;
+            font-size: 10px;
+            pointer-events: none;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            margin: 6px 0;
+        }
+        hr {
+            border-color: #2a4a4a;
+            margin: 8px 0;
+        }
+        .teleport-btn {
+            background: #ff6600;
+            border-color: #ffaa44;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="top-bar">
+    <div class="top-left">
+        <div class="top-item">COORD: 55°55'0"N, 37°49'0"E</div>
+        <div class="top-item">55.916667 / 37.816667</div>
+        <div class="top-item">NAVCORE • GRAVITY • ΔV THRUST</div>
+    </div>
+    <div class="alpha-logo">
+        ALPHA<span>v0.9</span>
+    </div>
+</div>
+<div class="main-area">
+    <div class="left-panel">
+        <div class="panel">
+            <div class="panel-title">🌌 PLANETARY DATABASE</div>
+            <div class="planet-grid" id="planetGrid"></div>
+            <div class="moons-area">
+                <span style="color:#ffcc00;">◈ LOCAL MOONS</span><br>
+                <div id="moonList">select a planet</div>
+            </div>
+            <div id="infoLine" style="font-size:10px; padding:6px; text-align:center; color:#88ffcc;">⚫ click a planet to target</div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">🛸 LAMBERT PREDICTIVE TRANSFER</div>
+            <div style="padding:12px;">
+                <div style="background:#051515; padding:8px; text-align:center; border:1px solid #00ffcc;">
+                    🎯 TARGET: <span id="targetName">NONE</span> &nbsp;| DIST: <span id="targetDist">---</span> AU
+                </div>
+                <div class="route-details" id="transferDetails">
+                    <span>Δv₁: ---</span> <span>Δv₂: ---</span>
+                    <span>Total Δv: ---</span> <span>ToF: --- days</span>
+                    <span>ecc: ---</span> <span>semi-major: ---</span>
+                </div>
+                <div class="btn-group">
+                    <button id="setTargetBtn" class="nav-btn">🔒 SET TARGET</button>
+                    <button id="computeTransferBtn" class="nav-btn">✈️ COMPUTE LAMBERT</button>
+                    <button id="clearTransferBtn" class="nav-btn">🗑️ CLEAR</button>
+                </div>
+                <div id="phaseMsg" class="warning">⏺ transfer window status</div>
+            </div>
+        </div>
+
+        <!-- THRUST & AUTO DECELERATION -->
+        <div class="panel">
+            <div class="panel-title">🚀 ΔV THRUST CONTROL</div>
+            <div class="thrust-panel">
+                <div class="checkbox-label">
+                    <input type="checkbox" id="manualOverrideCheckbox">
+                    <label for="manualOverrideCheckbox">🔧 MANUAL OVERRIDE (disable auto-decel)</label>
+                </div>
+                <div class="checkbox-label">
+                    <input type="checkbox" id="autoDecelCheckbox">
+                    <label for="autoDecelCheckbox">🔄 AUTO DECELERATION (match target orbit)</label>
+                </div>
+                <div class="slider-label">
+                    <span>Δv per second (DU/s²):</span>
+                    <span id="dvValue">0.8</span>
+                </div>
+                <input type="range" id="dvSlider" min="0.1" max="5.0" step="0.05" value="0.8">
+                <div class="thrust-control">
+                    <button id="thrustRetroBtn" class="thrust-btn">◀◀ RETRO</button>
+                    <button id="thrustProBtn" class="thrust-btn">PRO ▶▶</button>
+                </div>
+                <div id="thrustStatusMsg" style="font-size:10px; text-align:center; margin-top:4px;">⏳ thrust ready</div>
+                <hr>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                    <span><span class="dev-badge">DEV</span> TELEPORT</span>
+                    <button id="teleportToTargetBtn" class="nav-btn teleport-btn">🌀 TELEPORT TO TARGET</button>
+                </div>
+                <div class="warning" style="font-size:9px;">⚠️ teleport instantly moves ship to target planet (dev only)</div>
+                <div style="margin-top:8px; background:#010a0a; padding:4px; text-align:center; font-size:10px;">
+                    <span>🛸 SHIP STATE</span><br>
+                    <span id="shipState">R: -- DU | v: -- DU/TU</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="canvas-container">
+            <div class="overlay-text" style="top:8px; left:6px;">-5 -4 -3 -2 -1 T-</div>
+            <div class="overlay-text" style="bottom:8px; left:50%; transform:translateX(-50%);">-1   1   10 P</div>
+            <div class="overlay-text" id="posDisplay" style="bottom:10px; right:10px; text-align:right;">X: 0.00<br>Y: 0.00<br>target: --</div>
+            <canvas id="orbitCanvas"></canvas>
+        </div>
+    </div>
+</div>
+<div class="footer">
+    <div class="btn-row">
+        <button class="btn" id="speed-pause">PAUSE</button>
+        <button class="btn active" id="speed-1x">1x</button>
+        <button class="btn" id="speed-10x">10x</button>
+        <button class="btn" id="speed-100x">100x</button>
+        <button class="btn" id="speed-1000x">1000x</button>
+        <button class="btn" id="zoom-out">ZOOM -</button>
+        <button class="btn" id="zoom-in">ZOOM +</button>
+        <button class="btn" id="zoom-reset">RESET</button>
+        <button class="btn" id="recenter">RECENTER</button>
+    </div>
+    <div class="btn-row" style="justify-content: space-between; margin-top: 6px;">
+        <div class="status" id="zoomLabel">ZOOM: 1.00x</div>
+        <div class="status" id="speedLabel">SPEED: 1x</div>
+    </div>
+</div>
+
+<script>
+    // ----- PHYSICS CONSTANTS -----
+    const GM_SUN = 1.0;          // DU^3/TU^2
+    const TIME_SCALE_DAYS = 58.13;
+    
+    // Planets: same as before
+    const planets = [
+        { name: "Mercury", radius: 40, speed: 0.0020, color: "#b0a8a0", size: 2.0, moons: [], period: 88 },
+        { name: "Venus",   radius: 70, speed: 0.0012, color: "#e8c9a0", size: 2.5, moons: [], period: 225 },
+        { name: "Earth",   radius: 100, speed: 0.0010, color: "#3a86ff", size: 3.0, moons: ["Luna"], period: 365 },
+        { name: "Mars",    radius: 140, speed: 0.0008, color: "#e35f21", size: 2.8, moons: ["Phobos","Deimos"], period: 687 },
+        { name: "Jupiter", radius: 220, speed: 0.00045, color: "#d8a27a", size: 5.5, moons: ["Io","Europa","Ganymede","Callisto"], period: 4333 },
+        { name: "Saturn",  radius: 290, speed: 0.00033, color: "#e8cfb0", size: 4.8, moons: ["Titan","Rhea","Dione","Enceladus"], period: 10759 },
+        { name: "Uranus",  radius: 360, speed: 0.00023, color: "#b0e0e6", size: 3.8, moons: ["Titania","Oberon","Umbriel"], period: 30687 },
+        { name: "Neptune", radius: 430, speed: 0.00018, color: "#4a6a8a", size: 3.8, moons: ["Triton","Nereid"], period: 60190 }
+    ];
+    planets.forEach((p, idx) => { p.angle = (idx * 0.8) % (2*Math.PI); });
+    
+    // ----- SHIP STATE (real position/velocity, gravity integration) -----
+    let shipPos = { x: 95, y: 0 };      // start near Earth orbit
+    let shipVel = { x: 0, y: Math.sqrt(GM_SUN / 95) }; // circular orbit
+    let timeAcc = 1.0;                  // base time multiplier from UI
+    let devWarp = 1;                   // not used, teleport instead
+    let lastTimestamp = 0;
+    
+    // Thrust & auto
+    let manualOverride = false;
+    let autoDecelEnabled = false;
+    let thrustAmount = 0.8;            // DU/s²
+    let thrustingPro = false;
+    let thrustingRetro = false;
+    
+    // Targeting & transfer
+    let selectedPlanet = null;
+    let targetPlanet = null;
+    let transferSolution = null;
+    
+    // UI elements
+    const planetGrid = document.getElementById('planetGrid');
+    const moonListDiv = document.getElementById('moonList');
+    const targetNameSpan = document.getElementById('targetName');
+    const targetDistSpan = document.getElementById('targetDist');
+    const transferDetailsDiv = document.getElementById('transferDetails');
+    const phaseMsgSpan = document.getElementById('phaseMsg');
+    const posDisplay = document.getElementById('posDisplay');
+    const shipStateSpan = document.getElementById('shipState');
+    const thrustStatusMsg = document.getElementById('thrustStatusMsg');
+    const manualOverrideCheck = document.getElementById('manualOverrideCheckbox');
+    const autoDecelCheck = document.getElementById('autoDecelCheckbox');
+    const dvSlider = document.getElementById('dvSlider');
+    const dvValueSpan = document.getElementById('dvValue');
+    
+    // ----- Lambert solver (identical to previous) -----
+    function solveLambert(r1, r2, tof, mu) {
+        const r1mag = Math.hypot(r1.x, r1.y);
+        const r2mag = Math.hypot(r2.x, r2.y);
+        const c = Math.hypot(r2.x - r1.x, r2.y - r1.y);
+        const s = (r1mag + r2mag + c) / 2;
+        function tofFromA(a) {
+            if(a <= 0) return Infinity;
+            const alpha = Math.acos(Math.min(1, 1 - s / a));
+            const beta = Math.acos(Math.min(1, 1 - (s - c) / a));
+            return Math.sqrt(a*a*a / mu) * (alpha - beta - (Math.sin(alpha) - Math.sin(beta)));
+        }
+        let a1 = (r1mag + r2mag) / 2 * 0.8;
+        let a2 = (r1mag + r2mag) / 2 * 1.5;
+        let t1 = tofFromA(a1), t2 = tofFromA(a2);
+        for(let i=0; i<30; i++) {
+            if(Math.abs(t2 - t1) < 1e-12) break;
+            const a_new = a2 - (t2 - tof) * (a2 - a1) / (t2 - t1);
+            if(!isFinite(a_new) || a_new <= Math.max(r1mag, r2mag)/2) break;
+            const t_new = tofFromA(a_new);
+            a1 = a2; t1 = t2;
+            a2 = a_new; t2 = t_new;
+            if(Math.abs(t_new - tof) < 1e-5) break;
+        }
+        const a = a2;
+        if(a <= 0 || !isFinite(a)) return null;
+        const alpha = Math.acos(Math.min(1, 1 - s / a));
+        const beta = Math.acos(Math.min(1, 1 - (s - c) / a));
+        const deltaF = alpha - beta;
+        const f = 1 - (r2mag / a) * (1 - Math.cos(deltaF));
+        const g = Math.sqrt(a*a*a / mu) * (deltaF - Math.sin(deltaF));
+        const v1x = (r2.x - f * r1.x) / g;
+        const v1y = (r2.y - f * r1.y) / g;
+        const v1mag = Math.hypot(v1x, v1y);
+        const gdot = 1 - (r1mag / a) * (1 - Math.cos(deltaF));
+        const v2x = (gdot * r2.x - r1.x) / g;
+        const v2y = (gdot * r2.y - r1.y) / g;
+        const v2mag = Math.hypot(v2x, v2y);
+        const v_circ1 = Math.sqrt(mu / r1mag);
+        const deltaV1 = v1mag - v_circ1;
+        const deltaV2 = v2mag - Math.sqrt(mu / r2mag);
+        const totalDeltaV = Math.abs(deltaV1) + Math.abs(deltaV2);
+        const h = Math.abs(r1.x * v1y - r1.y * v1x);
+        const energy = v1mag*v1mag/2 - mu/r1mag;
+        const e = Math.sqrt(1 + (2*energy*h*h)/(mu*mu));
+        return { a, e, deltaV1, deltaV2, totalDeltaV, tofDays: tof * TIME_SCALE_DAYS, r1, r2 };
+    }
+    
+    function computePredictiveTransfer() {
+        if(!targetPlanet) return null;
+        let tof_tu = Math.PI * Math.sqrt(Math.pow((Math.hypot(shipPos.x, shipPos.y) + targetPlanet.radius)/2, 3) / GM_SUN);
+        let targetFutureAngle = targetPlanet.angle + targetPlanet.speed * tof_tu;
+        let targetFuturePos = { x: Math.cos(targetFutureAngle)*targetPlanet.radius, y: Math.sin(targetFutureAngle)*targetPlanet.radius };
+        for(let iter=0; iter<3; iter++) {
+            const lam = solveLambert(shipPos, targetFuturePos, tof_tu, GM_SUN);
+            if(!lam) break;
+            const newToF = lam.tofDays / TIME_SCALE_DAYS;
+            if(Math.abs(newToF - tof_tu) < 0.01) {
+                tof_tu = newToF;
+                targetFutureAngle = targetPlanet.angle + targetPlanet.speed * tof_tu;
+                targetFuturePos = { x: Math.cos(targetFutureAngle)*targetPlanet.radius, y: Math.sin(targetFutureAngle)*targetPlanet.radius };
+                return { ...lam, targetFutureAngle, targetFuturePos };
+            }
+            tof_tu = newToF;
+            targetFutureAngle = targetPlanet.angle + targetPlanet.speed * tof_tu;
+            targetFuturePos = { x: Math.cos(targetFutureAngle)*targetPlanet.radius, y: Math.sin(targetFutureAngle)*targetPlanet.radius };
+        }
+        const finalLam = solveLambert(shipPos, targetFuturePos, tof_tu, GM_SUN);
+        if(finalLam && finalLam.a > 0) return { ...finalLam, targetFutureAngle, targetFuturePos };
+        return null;
+    }
+    
+    function updateTransferUI() {
+        if(!targetPlanet) {
+            targetNameSpan.innerText = "NONE";
+            targetDistSpan.innerText = "---";
+            transferDetailsDiv.innerHTML = `<span>Δv₁: ---</span> <span>Δv₂: ---</span><span>Total Δv: ---</span><span>ToF: --- days</span><span>ecc: ---</span><span>semi-major: ---</span>`;
+            posDisplay.innerHTML = `X: ${shipPos.x.toFixed(1)}<br>Y: ${shipPos.y.toFixed(1)}<br>target: none`;
+            return;
+        }
+        const tx = Math.cos(targetPlanet.angle)*targetPlanet.radius;
+        const ty = Math.sin(targetPlanet.angle)*targetPlanet.radius;
+        const dist = Math.hypot(tx - shipPos.x, ty - shipPos.y);
+        targetDistSpan.innerText = (dist/100).toFixed(2);
+        targetNameSpan.innerText = targetPlanet.name;
+        
+        if(transferSolution && transferSolution.a > 0) {
+            const s = transferSolution;
+            transferDetailsDiv.innerHTML = `
+                <span>Δv₁: ${s.deltaV1.toFixed(3)} DU/TU</span> <span>Δv₂: ${s.deltaV2.toFixed(3)} DU/TU</span>
+                <span>Total Δv: ${s.totalDeltaV.toFixed(3)}</span> <span>ToF: ${s.tofDays.toFixed(0)} days</span>
+                <span>ecc: ${s.e.toFixed(3)}</span> <span>a: ${s.a.toFixed(1)} DU</span>
+            `;
+            const phaseDiff = Math.abs((targetPlanet.angle - Math.atan2(shipPos.y, shipPos.x)) % (2*Math.PI));
+            const phaseErrDeg = Math.min(phaseDiff, 2*Math.PI - phaseDiff) * 180/Math.PI;
+            if(phaseErrDeg < 20) phaseMsgSpan.innerHTML = "✅ TRANSFER WINDOW ACTIVE";
+            else phaseMsgSpan.innerHTML = `⏺ WINDOW CLOSED (phase error ${phaseErrDeg.toFixed(0)}°)`;
+        } else {
+            transferDetailsDiv.innerHTML = `<span>Δv₁: ---</span> <span>Δv₂: ---</span><span>Total Δv: ---</span><span>ToF: --- days</span><span>click COMPUTE</span><span></span>`;
+        }
+        const r = Math.hypot(shipPos.x, shipPos.y);
+        const v = Math.hypot(shipVel.x, shipVel.y);
+        shipStateSpan.innerHTML = `R: ${r.toFixed(1)} DU | v: ${v.toFixed(3)} DU/TU`;
+        posDisplay.innerHTML = `X: ${shipPos.x.toFixed(1)}<br>Y: ${shipPos.y.toFixed(1)}<br>🎯 ${targetPlanet.name}<br>Δ ${(dist/100).toFixed(2)} AU`;
+    }
+    
+    // ----- PHYSICS INTEGRATION (Euler) -----
+    function applyGravity(dt) {
+        const r2 = shipPos.x*shipPos.x + shipPos.y*shipPos.y;
+        const r = Math.sqrt(r2);
+        const accMag = -GM_SUN / r2;
+        const ax = accMag * shipPos.x / r;
+        const ay = accMag * shipPos.y / r;
+        shipVel.x += ax * dt;
+        shipVel.y += ay * dt;
+    }
+    
+    function applyThrust(dt, direction) { // direction: +1 prograde, -1 retrograde
+        const vmag = Math.hypot(shipVel.x, shipVel.y);
+        if(vmag < 1e-6) return;
+        const unitX = shipVel.x / vmag;
+        const unitY = shipVel.y / vmag;
+        const dv = thrustAmount * dt * direction;
+        shipVel.x += unitX * dv;
+        shipVel.y += unitY * dv;
+    }
+    
+    // Auto deceleration: compute required delta-v to match target's circular orbit at current radius
+    function autoDecelOnce(dt) {
+        if(!targetPlanet || manualOverride || !autoDecelEnabled) return;
+        const r = Math.hypot(shipPos.x, shipPos.y);
+        const targetCircularSpeed = Math.sqrt(GM_SUN / r);
+        const currentSpeed = Math.hypot(shipVel.x, shipVel.y);
+        const speedError = currentSpeed - targetCircularSpeed;
+        if(Math.abs(speedError) < 0.01) return;
+        const direction = (speedError > 0) ? -1 : 1; // retrograde if too fast
+        // Apply limited decel per frame to avoid instability
+        const maxDeltaV = thrustAmount * dt;
+        const delta = Math.min(maxDeltaV, Math.abs(speedError)) * direction;
+        const vmag = Math.hypot(shipVel.x, shipVel.y);
+        if(vmag > 1e-6) {
+            const unitX = shipVel.x / vmag;
+            const unitY = shipVel.y / vmag;
+            shipVel.x += unitX * delta;
+            shipVel.y += unitY * delta;
+        }
+    }
+    
+    // Teleport: instantly move ship to target planet's current position and match its circular orbit speed
+    function teleportToTarget() {
+        if(!targetPlanet) return;
+        const angle = targetPlanet.angle;
+        const r_target = targetPlanet.radius;
+        shipPos.x = Math.cos(angle) * r_target;
+        shipPos.y = Math.sin(angle) * r_target;
+        const circSpeed = Math.sqrt(GM_SUN / r_target);
+        shipVel.x = -Math.sin(angle) * circSpeed;
+        shipVel.y = Math.cos(angle) * circSpeed;
+        updateTransferUI();
+        thrustStatusMsg.innerText = "🌀 TELEPORTED to target planet";
+        setTimeout(() => { if(!manualOverride && !autoDecelEnabled) thrustStatusMsg.innerText = "thrust ready"; }, 1500);
+    }
+    
+    // ----- SIMULATION LOOP -----
+    let baseTimeScale = 1;
+    let simulationPaused = false;
+    let lastFrameTime = 0;
+    
+    function updateSimulation(dtRealSec) {
+        if(simulationPaused) return;
+        let dtSim = dtRealSec * baseTimeScale;
+        const MAX_DT = 0.05;
+        if(dtSim > MAX_DT) dtSim = MAX_DT;
+        // manual thrust buttons continuous
+        if(thrustingPro && !manualOverride) applyThrust(dtSim, 1);
+        if(thrustingRetro && !manualOverride) applyThrust(dtSim, -1);
+        // auto deceleration runs regardless of button state (but respects override)
+        if(autoDecelEnabled && !manualOverride) autoDecelOnce(dtSim);
+        // gravity
+        applyGravity(dtSim);
+        // update position
+        shipPos.x += shipVel.x * dtSim;
+        shipPos.y += shipVel.y * dtSim;
+        // update planet angles (only for visual)
+        planets.forEach(p => {
+            p.angle += p.speed * dtSim;
+            if(p.angle > 2*Math.PI) p.angle -= 2*Math.PI;
+        });
+        // recalc transfer if target exists
+        if(targetPlanet && transferSolution) {
+            const newSol = computePredictiveTransfer();
+            if(newSol) transferSolution = newSol;
+        }
+        updateTransferUI();
+    }
+    
+    // ----- CANVAS RENDERING -----
+    const canvas = document.getElementById('orbitCanvas');
+    let ctx = canvas.getContext('2d');
+    let width, height;
+    let zoomLevel = 1.0;
+    function resize() { width = canvas.parentElement.clientWidth; height = canvas.parentElement.clientHeight; canvas.width = width; canvas.height = height; }
+    window.addEventListener('resize', resize); resize();
+    
+    function draw() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.save();
+        ctx.translate(width/2, height/2);
+        ctx.scale(zoomLevel, zoomLevel);
+        // Sun
+        ctx.beginPath(); ctx.arc(0, 0, 12, 0, 2*Math.PI); ctx.fillStyle="#ffcc44"; ctx.fill();
+        // orbits
+        planets.forEach(p => { ctx.beginPath(); ctx.arc(0,0,p.radius,0,2*Math.PI); ctx.strokeStyle="rgba(80,180,180,0.2)"; ctx.setLineDash([3,5]); ctx.stroke(); });
+        ctx.setLineDash([]);
+        // asteroid dust
+        for(let i=0;i<180;i++) { let ang=(i/180)*2*Math.PI; let rad=185+Math.sin(i)*2; ctx.fillStyle="#777755"; ctx.fillRect(Math.cos(ang)*rad-0.6, Math.sin(ang)*rad-0.6,1,1); }
+        // planets
+        planets.forEach(p => {
+            let px = Math.cos(p.angle)*p.radius, py = Math.sin(p.angle)*p.radius;
+            ctx.beginPath(); ctx.arc(px, py, p.size, 0, 2*Math.PI); ctx.fillStyle = p.color; ctx.fill();
+            if(targetPlanet && targetPlanet.name === p.name) {
+                ctx.beginPath(); ctx.arc(px, py, p.size+3, 0, 2*Math.PI); ctx.strokeStyle="#ffaa44"; ctx.setLineDash([4,4]); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(px-6,py); ctx.lineTo(px+6,py); ctx.moveTo(px,py-6); ctx.lineTo(px,py+6); ctx.strokeStyle="#ffcc55"; ctx.stroke(); ctx.setLineDash([]);
+            }
+        });
+        // ship
+        ctx.beginPath(); ctx.moveTo(shipPos.x, shipPos.y-5); ctx.lineTo(shipPos.x-4, shipPos.y+3); ctx.lineTo(shipPos.x+4, shipPos.y+3); ctx.fillStyle="#00ffcc"; ctx.fill();
+        ctx.beginPath(); ctx.arc(shipPos.x, shipPos.y, 3, 0, 2*Math.PI); ctx.fillStyle="#88ffdd"; ctx.fill();
+        // transfer line
+        if(transferSolution && targetPlanet) {
+            const tx = transferSolution.targetFuturePos.x, ty = transferSolution.targetFuturePos.y;
+            ctx.beginPath(); ctx.moveTo(shipPos.x, shipPos.y); ctx.lineTo(tx, ty); ctx.strokeStyle="#ffaa66"; ctx.lineWidth=1.5; ctx.setLineDash([8,6]); ctx.stroke();
+            ctx.beginPath(); ctx.arc(tx, ty, 4, 0, 2*Math.PI); ctx.fillStyle="#ffaa88aa"; ctx.fill();
+            ctx.setLineDash([]);
+        }
+        // axes
+        ctx.beginPath(); ctx.moveTo(-width/zoomLevel,0); ctx.lineTo(width/zoomLevel,0); ctx.moveTo(0,-height/zoomLevel); ctx.lineTo(0,height/zoomLevel); ctx.strokeStyle="rgba(100,255,200,0.08)"; ctx.stroke();
+        ctx.restore();
+    }
+    
+    // ----- ANIMATION LOOP (time integration) -----
+    let animLastTimestamp = 0;
+    function animate(nowMs) {
+        requestAnimationFrame(animate);
+        if(!animLastTimestamp) { animLastTimestamp = nowMs; return; }
+        let dt = Math.min(0.033, (nowMs - animLastTimestamp) / 1000);
+        if(dt > 0.001) {
+            updateSimulation(dt);
+        }
+        animLastTimestamp = nowMs;
+        draw();
+    }
+    
+    // ----- UI EVENT HANDLERS -----
+    function setTarget() { if(selectedPlanet) { targetPlanet = selectedPlanet; transferSolution = null; computeTransfer(); updateTransferUI(); renderPlanetList(); } }
+    function computeTransfer() { if(targetPlanet) { const sol = computePredictiveTransfer(); if(sol) transferSolution = sol; updateTransferUI(); } }
+    function clearTransfer() { transferSolution = null; updateTransferUI(); }
+    
+    function renderPlanetList() {
+        planetGrid.innerHTML = '';
+        planets.forEach(p => {
+            const card = document.createElement('div');
+            card.className = `planet-card ${selectedPlanet === p ? 'selected' : ''}`;
+            card.innerHTML = `<span class="planet-name">${p.name}</span><span class="planet-dist">🪐 ${p.radius} Mm</span>`;
+            card.onclick = () => { selectedPlanet = p; renderPlanetList(); if(p.moons.length) moonListDiv.innerHTML = p.moons.map(m => `<span class="moon-badge">🌙 ${m}</span>`).join(''); else moonListDiv.innerHTML = '<span class="moon-badge">⛔ no major moons</span>'; document.getElementById('infoLine').innerHTML = `📡 ${p.name} | orbit radius ${p.radius} DU | period ${p.period}d`; };
+            planetGrid.appendChild(card);
+        });
+        if(!selectedPlanet && planets.length) selectedPlanet = planets[2];
+        if(selectedPlanet) { const p=selectedPlanet; if(p.moons.length) moonListDiv.innerHTML = p.moons.map(m => `<span class="moon-badge">🌙 ${m}</span>`).join(''); else moonListDiv.innerHTML = '<span class="moon-badge">⛔ no major moons</span>'; document.getElementById('infoLine').innerHTML = `📡 ${p.name} | orbit radius ${p.radius} DU | period ${p.period}d`; }
+    }
+    
+    // Controls
+    function setBaseSpeed(mult, btnId) { baseTimeScale = mult; simulationPaused = (mult===0); document.getElementById('speedLabel').innerText = `SPEED: ${mult===0?"PAUSED":mult+"x"}`; ['speed-pause','speed-1x','speed-10x','speed-100x','speed-1000x'].forEach(id=>{ let b=document.getElementById(id); if(b) b.classList.remove('active'); }); if(btnId) document.getElementById(btnId).classList.add('active'); }
+    function setZoom(delta) { let nz=zoomLevel+delta; if(nz<0.2)nz=0.2; if(nz>5)nz=5; zoomLevel=nz; document.getElementById('zoomLabel').innerText=`ZOOM: ${zoomLevel.toFixed(2)}x`; }
+    function resetZoom() { zoomLevel=1.0; document.getElementById('zoomLabel').innerText='ZOOM: 1.00x'; }
+    function recenter() { resetZoom(); }
+    
+    document.getElementById('speed-pause').onclick = () => setBaseSpeed(0,'speed-pause');
+    document.getElementById('speed-1x').onclick = () => setBaseSpeed(1,'speed-1x');
+    document.getElementById('speed-10x').onclick = () => setBaseSpeed(10,'speed-10x');
+    document.getElementById('speed-100x').onclick = () => setBaseSpeed(100,'speed-100x');
+    document.getElementById('speed-1000x').onclick = () => setBaseSpeed(1000,'speed-1000x');
+    document.getElementById('zoom-in').onclick = () => setZoom(0.2);
+    document.getElementById('zoom-out').onclick = () => setZoom(-0.2);
+    document.getElementById('zoom-reset').onclick = resetZoom;
+    document.getElementById('recenter').onclick = recenter;
+    canvas.addEventListener('wheel', e => { e.preventDefault(); setZoom(e.deltaY>0 ? -0.12 : 0.12); });
+    
+    document.getElementById('setTargetBtn').onclick = setTarget;
+    document.getElementById('computeTransferBtn').onclick = computeTransfer;
+    document.getElementById('clearTransferBtn').onclick = clearTransfer;
+    document.getElementById('teleportToTargetBtn').onclick = teleportToTarget;
+    document.getElementById('thrustProBtn').onmousedown = () => { if(!manualOverride) thrustingPro = true; thrustStatusMsg.innerText = "▶️ PROGRADE THRUSTING"; };
+    document.getElementById('thrustProBtn').onmouseup = () => { thrustingPro = false; if(!manualOverride && !thrustingRetro) thrustStatusMsg.innerText = "thrust idle"; };
+    document.getElementById('thrustProBtn').onmouseleave = () => { thrustingPro = false; };
+    document.getElementById('thrustRetroBtn').onmousedown = () => { if(!manualOverride) thrustingRetro = true; thrustStatusMsg.innerText = "◀️ RETROGRADE THRUSTING"; };
+    document.getElementById('thrustRetroBtn').onmouseup = () => { thrustingRetro = false; if(!manualOverride && !thrustingPro) thrustStatusMsg.innerText = "thrust idle"; };
+    document.getElementById('thrustRetroBtn').onmouseleave = () => { thrustingRetro = false; };
+    dvSlider.oninput = (e) => { thrustAmount = parseFloat(e.target.value); dvValueSpan.innerText = thrustAmount.toFixed(2); };
+    manualOverrideCheck.onchange = (e) => { manualOverride = e.target.checked; if(manualOverride) { thrustingPro = false; thrustingRetro = false; } };
+    autoDecelCheck.onchange = (e) => { autoDecelEnabled = e.target.checked; };
+    
+    renderPlanetList();
+    setTarget(); computeTransfer();
+    requestAnimationFrame(animate);
+</script>
+</body>
+</html>
