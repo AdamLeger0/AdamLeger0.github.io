@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EARTH-MARS CYCLER OS // MAIN</title>
+    <title>Celestial Orientation System & Mission Operating Software // C.O.S.M.O.S.</title>
     <style>
         :root {
             --bg-color: #050505;
@@ -15,6 +15,7 @@
             --accent-green: #33ff33;
             --panel-bg: #0a0a0f;
             --border-dim: #333333;
+            --versionNum: "V0.5.0";
         }
 
         body {
@@ -209,13 +210,13 @@
     <div class="flicker">
         <div class="mfd-container">
             
-            <div class="header">
-                <div class="header-left">
-                    <div class="title" id="sys-title">MAIN.DIRECTORY</div>
-                    <div style="color: var(--border-dim);" id="sys-path">ECMS_OS//DATA.DISPLAY//ROOT</div>
-                </div>
-                <div class="header-right">EARTH-MARS.CYCLER.SYSTEM_OS &nbsp;&nbsp; V0.4.1</div>
-            </div>
+    <div class="header">
+         <div class="header-left">
+            <div class="title" id="sys-title">MAIN.DIRECTORY</div>
+             <div style="color: var(--border-dim);" id="sys-path">ECMS_OS//DATA.DISPLAY//ROOT</div>
+        </div>
+        <div class="header-right">COSM-OS.CYCLER.SYSTEM_OS &nbsp;&nbsp; <span id="headerVersionValue">V0.5.0</span></div>
+    </div>
 
             <div class="main-display">
                 
@@ -285,25 +286,83 @@
         let currentPage = 1;
 
         // HARDCODED NATIVE FILES - These guarantee GitHub Pages compatibility.
-        // Add any future HTML files to this array exactly like this.
         let actualFiles = [
             { 
                 id: "AE30", 
                 title: "Spaceship Architect", 
                 subtitle: "Naval Blueprint", 
                 type: "app", 
-                link: "../mainPages/shipBuilder.html", // Correct path matching your structure
+                link: "mainPages/shipBuilder.html", // Correct path matching your structure
                 utg1: "0.99", utg2: "0.00" 
             },
 
         ];
 
-        let bootSequence = [
-            "ECMS KERNEL V0.4.1 INITIALIZING...",
-            "CHECKING FILE SYSTEM: CLEAN",
-            "LOADING UI MODULES... [██████████] 100%",
-            "ESTABLISHING COMMS LINK... TIMEOUT."
+        // --- BOOT SEQUENCE DYNAMIC GENERATION (with version and randomized percentages) ---
+        // Retrieve version number from CSS variable
+        const versionNum = getComputedStyle(document.documentElement).getPropertyValue('--versionNum').trim() || "V0.5.0";
+        
+        // Helper: generate a random number within a range [min, max] inclusive, with optional decimal places
+        function randomInRange(min, max, decimals = 2) {
+            let val = min + Math.random() * (max - min);
+            return parseFloat(val.toFixed(decimals));
+        }
+        
+        // Helper: create the loading bar string based on percentage (0-100)
+        function makeLoadingBar(percent) {
+            let blocks = Math.floor(percent / 10);
+            blocks = Math.min(10, Math.max(0, blocks));
+            let bar = '█'.repeat(blocks) + '0'.repeat(10 - blocks);
+            return `[${bar}]`;
+        }
+        
+        // Define loading steps: each step specifies the tens digit range (minPercent, maxPercent) that the original intended.
+        // The actual random percent will be constrained to that tens block, except for 100% which is fixed.
+        // Steps order: 0% (0-9.99), 20% (20-29.99), 40% (40-49.99), 60% (60-69.99), 60% (60-69.99), 
+        // 70% (70-79.99), 70% (70-79.99), 90% (90-99.99), 100% (exactly 100)
+        const loadingSteps = [
+            { min: 0, max: 9.99 },      // 0% block
+            { min: 20, max: 29.99 },    // 20s
+            { min: 40, max: 49.99 },    // 40s
+            { min: 60, max: 69.99 },    // 60s (first)
+            { min: 60, max: 69.99 },    // 60s (second)
+            { min: 70, max: 79.99 },    // 70s (first)
+            { min: 70, max: 79.99 },    // 70s (second)
+            { min: 90, max: 99.99 },    // 90s
+            { min: 100, max: 100 }      // 100% fixed
         ];
+        
+        // Build the bootSequence array dynamically
+        let bootSequence = [
+            `ECMS KERNEL ${versionNum} INITIALIZING...`,
+            "CHECKING FILE SYSTEM: CLEAN"
+        ];
+        
+        // Generate the 9 loading lines with randomized percentages within the tens digit boundaries
+        for (let i = 0; i < loadingSteps.length; i++) {
+            let step = loadingSteps[i];
+            let percent;
+            if (step.min === 100 && step.max === 100) {
+                percent = 100;
+            } else {
+                percent = randomInRange(step.min, step.max, 2);
+                // Ensure we don't accidentally cross the tens boundary due to floating rounding
+                let tensFloor = Math.floor(step.min / 10) * 10;
+                if (percent >= tensFloor + 10) percent = tensFloor + 9.99;
+                if (percent < tensFloor) percent = tensFloor;
+                percent = parseFloat(percent.toFixed(2));
+            }
+            let barString = makeLoadingBar(percent);
+            let percentString = percent % 1 === 0 ? percent.toFixed(0) : percent.toFixed(2);
+            bootSequence.push(`LOADING UI MODULES... ${barString} ${percentString}%`);
+        }
+        
+        // Append final line
+        bootSequence.push("ESTABLISHING COMMS LINK... TIMEOUT.");
+        
+        // --- END OF MODIFIED BOOT SEQUENCE ---
+
+        let bootSequenceFinal = bootSequence; // use the generated array
 
         const bootText = document.getElementById('boot-text');
         const bootScreen = document.getElementById('boot-screen');
@@ -341,7 +400,6 @@
 
                     links.forEach(a => {
                         let href = a.getAttribute('href');
-                        // Prevent duplicates if already hardcoded in actualFiles
                         if(href && href.endsWith('.html') && href !== '/' && !actualFiles.some(f => f.link.includes(href))) {
                             actualFiles.push({
                                 id: generateIdStr(),
@@ -357,7 +415,7 @@
                     });
 
                     if(foundNew) {
-                        bootSequence.push("AUTO-MOUNT SUCCESSFUL: /mainPage/");
+                        bootSequenceFinal.push("AUTO-MOUNT SUCCESSFUL: /mainPage/");
                         return true;
                     }
                 }
@@ -374,13 +432,11 @@
         });
 
         dirPicker.addEventListener('change', (event) => {
-            // Keep hardcoded files, add local selected ones
             let newFilesAdded = 0;
             const files = event.target.files;
             
             for (let i = 0; i < files.length; i++) {
                 if (files[i].name.endsWith('.html')) {
-                    // Prevent duplicates
                     if(!actualFiles.some(f => f.title === files[i].name.replace('.html', ''))) {
                         let blobUrl = URL.createObjectURL(files[i]);
                         actualFiles.push({
@@ -426,17 +482,14 @@
             let endIndex = startIndex + SLOTS_PER_PAGE;
 
             // Algorithm for corruption: Deeper pages get much higher corruption rates
-            // Page 1 = ~0% corruption. Page 9 = ~85% corruption.
             let corruptionFactor = Math.pow((pageNum - 1) / (MAX_PAGES - 1), 1.5) * 0.85;
 
             let displayData = [];
             
             for (let i = startIndex; i < endIndex; i++) {
                 if (i < actualFiles.length) {
-                    // Slot belongs to a real file
                     displayData.push(actualFiles[i]);
                 } else {
-                    // Procedural slot padding
                     let isCorrupted = Math.random() < corruptionFactor;
                     let idStr = generateIdStr();
 
@@ -481,13 +534,13 @@
         }
 
 
-        // -- BOOT SEQUENCE --
+        // -- BOOT SEQUENCE PLAYBACK --
         let bootIndex = 0;
         function playBootText() {
-            if (bootIndex < bootSequence.length) {
-                bootText.innerHTML += bootSequence[bootIndex] + "<br>";
+            if (bootIndex < bootSequenceFinal.length) {
+                bootText.innerHTML += bootSequenceFinal[bootIndex] + "<br>";
                 bootIndex++;
-                let delay = Math.random() * 200 + 50; 
+                let delay = Math.random() * 200 + 500; 
                 setTimeout(playBootText, delay);
             } else {
                 setTimeout(() => {
@@ -519,10 +572,10 @@
             // Wait to see if auto-mount finds anything extra (usually fails locally, passes on servers)
             let success = await attemptAutoMount();
             if (!success && actualFiles.length <= 1) {
-                bootSequence.push("DIRECTORY FETCH BLOCKED BY LOCAL PROTOCOL.");
-                bootSequence.push("USING PRE-ALLOCATED STATIC MEMORY.");
+                bootSequenceFinal.push("DIRECTORY FETCH BLOCKED BY LOCAL PROTOCOL.");
+                bootSequenceFinal.push("USING PRE-ALLOCATED STATIC MEMORY.");
             } else {
-                bootSequence.push("LAUNCHING MFD INTERFACE...");
+                bootSequenceFinal.push("LAUNCHING MFD INTERFACE...");
             }
             
             setTimeout(playBootText, 400);
