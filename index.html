@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Celestial Orientation System & Mission Operating Software // C.O.S.M.O.S.</title>
+    <title>C.O.S.M.O.S. // MFD Select & Reboot — ASCII Diagnostics</title>
     <style>
         :root {
             --bg-color: #050505;
@@ -15,7 +15,12 @@
             --accent-green: #33ff33;
             --panel-bg: #0a0a0f;
             --border-dim: #333333;
-            --versionNum: "V0.5.0";
+            --versionNum: "V0.9.0";
+            --selection-glow: rgba(0, 255, 204, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
@@ -31,50 +36,56 @@
             user-select: none;
         }
 
-        /* CRT Overlay Effects */
         .scanlines {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
             background-size: 100% 4px, 6px 100%;
             z-index: 1000;
             pointer-events: none;
-        }
-        
-        .flicker {
-            animation: crt-flicker 0.15s infinite;
-            width: 100%; height: 100%; display: flex; flex-direction: column;
-            padding: 10px; box-sizing: border-box;
+            opacity: 0.4;
         }
 
-        @keyframes crt-flicker {
-            0% { opacity: 0.98; } 50% { opacity: 0.95; } 100% { opacity: 0.99; }
-        }
-
-        /* Hardware Power Overlay */
         #power-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #000; z-index: 9999; display: none;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(4px);
+            z-index: 9999; display: none;
             justify-content: center; align-items: center;
+            flex-direction: column;
+            gap: 30px;
         }
         #power-overlay.active { display: flex; }
         
-        .emergency-light {
-            width: 60px; height: 60px; border-radius: 50%;
-            background: transparent; border: 2px solid #220000;
-            cursor: pointer; outline: none;
-            animation: emergencyPulse 7s infinite;
-            box-shadow: inset 0 0 10px #000;
-            transition: transform 0.1s;
+        .reboot-btn {
+            background: #111;
+            border: 2px solid #330000;
+            color: #660000;
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            padding: 16px 32px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            animation: dimPulse 3s infinite;
+            box-shadow: 0 0 10px rgba(255,0,0,0.2);
         }
-        .emergency-light:active { transform: scale(0.95); }
-
-        /* 7s loop: 2s pulse (0-28%), 5s pause (28%-100%) */
-        @keyframes emergencyPulse {
-            0%, 28%, 100% { background: #0a0000; box-shadow: inset 0 0 10px #000; border-color: #220000; }
-            14% { background: rgba(255, 0, 0, 0.15); box-shadow: 0 0 30px rgba(255, 0, 0, 0.4), inset 0 0 20px rgba(255, 0, 0, 0.8); border-color: #ff3333; }
+        .reboot-btn:hover {
+            background: #1a0000;
+            border-color: #990000;
+            color: #ff4444;
+            box-shadow: 0 0 25px rgba(255,0,0,0.4);
+        }
+        .reboot-btn:active {
+            transform: scale(0.97);
+        }
+        @keyframes dimPulse {
+            0%, 100% { opacity: 0.5; border-color: #330000; text-shadow: none; }
+            50% { opacity: 0.9; border-color: #aa0000; text-shadow: 0 0 8px rgba(255,0,0,0.5); }
         }
 
-        /* Layout Architecture */
         .mfd-container {
             width: 100%; height: 100%;
             border: 2px solid var(--border-dim);
@@ -83,7 +94,6 @@
             box-shadow: inset 0 0 100px rgba(0, 255, 204, 0.05);
         }
 
-        /* Header */
         .header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 10px 20px; border-bottom: 2px solid var(--border-dim);
@@ -91,18 +101,22 @@
             background: #000;
         }
         .header-left { color: var(--accent-cyan); display: flex; gap: 20px; }
-        .header-left .title { border: 1px solid var(--accent-cyan); padding: 2px 10px; transition: color 0.2s;}
+        .header-left .title { border: 1px solid var(--accent-cyan); padding: 2px 10px; transition: color 0.2s; min-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .header-right { color: var(--text-main); font-size: 12px; }
 
-        /* Main Display Area */
         .main-display { display: flex; flex: 1; overflow: hidden; }
 
-        /* Sidebars */
         .sidebar {
             width: 120px; display: flex; flex-direction: column; gap: 10px;
             padding: 20px 10px; background: #000; border-right: 2px solid var(--border-dim);
+            transition: opacity 0.25s ease, filter 0.25s ease;
         }
         .sidebar.right { border-right: none; border-left: 2px solid var(--border-dim); align-items: flex-end;}
+        .sidebar.boot-disabled {
+            pointer-events: none;
+            opacity: 0.45;
+            filter: grayscale(0.4);
+        }
 
         .nav-btn {
             background: transparent; color: var(--text-main);
@@ -116,71 +130,105 @@
         .nav-btn:hover { border-color: var(--text-main); background: rgba(255,255,255,0.1); }
         .nav-btn:active { background: var(--text-main); color: #000; }
         .sidebar.right .nav-btn { flex-direction: row-reverse; }
-
         .spacer { flex: 1; }
 
-        /* Center Grid & Boot Screen */
         .center-console {
-            flex: 1; position: relative; background: var(--panel-bg);
-            padding: 30px; overflow-y: auto; align-content: flex-start;
+            flex: 1;
+            position: relative;
+            background: var(--panel-bg);
+            overflow: hidden;
         }
 
-        #boot-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color); z-index: 50; display: flex; flex-direction: column;
-            padding: 40px; box-sizing: border-box; font-size: 14px; line-height: 1.5;
+        #boot-screen, #diag-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            padding: 40px;
+            box-sizing: border-box;
+            font-size: 14px;
+            line-height: 1.5;
             color: var(--accent-cyan);
+            overflow-y: auto;
+            transition: opacity 0.3s ease;
+            z-index: 45;
         }
-        
-        .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent-cyan); animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 5px;}
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        #boot-screen { z-index: 50; }
+        #diag-screen {
+            z-index: 55;
+            background: #010104;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #diag-screen.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        #boot-screen.boot-hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
 
-        #file-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; grid-auto-rows: 80px;}
+        #file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            grid-auto-rows: 80px;
+            padding: 30px;
+            height: 100%;
+            overflow-y: auto;
+            transition: opacity 0.55s ease-in-out;
+            opacity: 0;
+        }
+        #file-grid.grid-visible {
+            opacity: 1;
+        }
 
-        /* File Modules */
         .module {
-            background: #000; border: 1px solid var(--border-dim);
-            height: 100%; display: flex; cursor: pointer;
+            background: #000;
+            border: 1px solid var(--border-dim);
+            height: 100%;
+            display: flex;
+            cursor: pointer;
             transition: border-color 0.2s, transform 0.1s, box-shadow 0.2s;
-            position: relative; text-decoration: none; color: inherit;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
         }
-        .module:hover { border-color: var(--text-main); transform: scale(1.02); z-index: 10; box-shadow: 0 0 15px rgba(255,255,255,0.1);}
-        
+        .module:hover:not(.module-selected) { border-color: var(--text-main); transform: scale(1.02); z-index: 10; box-shadow: 0 0 15px rgba(255,255,255,0.1);}
+        .module-selected {
+            border: 2px solid var(--accent-cyan);
+            box-shadow: 0 0 18px var(--selection-glow);
+            transform: scale(1.02);
+            z-index: 20;
+        }
+        .module-selected .mod-led { box-shadow: 0 0 8px var(--accent-cyan); }
         .mod-status { width: 15px; height: 100%; border-right: 1px solid var(--border-dim); display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 5px 0; box-sizing: border-box;}
         .mod-status span { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 8px; color: var(--border-dim); letter-spacing: 2px;}
         .mod-led { width: 80%; height: 20px; background: var(--accent-cyan); margin-bottom: 5px; }
-        
         .mod-content { flex: 1; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;}
         .mod-title { font-weight: bold; font-size: 12px; color: var(--text-main); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .mod-data { font-size: 9px; color: var(--border-dim); display: flex; flex-direction: column; gap: 2px;}
-        
-        /* Theming for different file types */
         .module.sys .mod-led { background: var(--text-main); }
-        .module.sys .mod-title { color: var(--text-main); }
-        
         .module.app .mod-led { background: var(--accent-cyan); }
-        .module.app .mod-title { color: var(--accent-cyan); }
-        
         .module.offline { opacity: 0.5; border-style: dashed; cursor: not-allowed; }
         .module.offline .mod-led { background: var(--border-dim); }
         .module.offline .mod-title { color: #888; }
-        .module.offline:hover { transform: none; border-color: var(--border-dim); box-shadow: none;}
-
+        .module.offline:hover { transform: none; border-color: var(--border-dim); }
         .module.locked .mod-led { background: var(--accent-orange); }
         .module.locked .mod-title { color: var(--accent-orange); }
         .module.locked { cursor: not-allowed; border-color: #554400; }
-        .module.locked:hover { transform: none; box-shadow: none; border-color: var(--accent-orange); }
-
         .module.corrupted { border-color: #440000; animation: slight-glitch 2s infinite; cursor: not-allowed;}
         .module.corrupted .mod-led { background: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); animation: rapid-blink 0.1s infinite; }
-        .module.corrupted .mod-title { color: var(--accent-red); text-shadow: 0 0 5px var(--accent-red); letter-spacing: 1px; }
-        .module.corrupted .mod-data { color: #883333; }
-        .module.corrupted:hover { transform: scale(1.02) rotate(-1deg); border-color: var(--accent-red); box-shadow: 0 0 10px rgba(255,0,0,0.3);}
+        .module.corrupted .mod-title { color: var(--accent-red); text-shadow: 0 0 5px var(--accent-red); }
 
         @keyframes rapid-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
         @keyframes slight-glitch { 0%, 100% { transform: translateX(0); } 98% { transform: translateX(1px); } 99% { transform: translateX(-1px); } }
 
-        /* Footer */
         .footer {
             display: flex; gap: 10px; padding: 10px 20px; border-top: 2px solid var(--border-dim);
             background: #000; align-items: center; justify-content: center;
@@ -198,388 +246,557 @@
         .sys-status-bar { flex: 1; height: 4px; background: var(--border-dim); display: flex; margin-left: 20px;}
         .sys-status-bar .fill { width: 35%; height: 100%; background: var(--accent-cyan); border-right: 2px solid #000; transition: width 0.3s;}
         .sys-status-bar .fill.err { width: 10%; background: var(--accent-red); }
+
+        .diag-close-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            background: #111;
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 6px 12px;
+            font-family: monospace;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 60;
+        }
+        .diag-close-btn:hover {
+            background: var(--accent-cyan);
+            color: #000;
+        }
+        .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent-cyan); animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 5px;}
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
     </style>
 </head>
 <body>
-    <div class="scanlines"></div>
-    
-    <div id="power-overlay">
-        <button class="emergency-light" id="btn-restart" title="EMERGENCY RESTART"></button>
-    </div>
+<div class="scanlines"></div>
+<div id="power-overlay">
+    <button class="reboot-btn" id="btn-restart">⟳ REBOOT SYSTEM</button>
+    <div style="color:#660000; font-size:12px; letter-spacing:2px;">POWER OFF // STANDBY MODE</div>
+</div>
 
-    <div class="flicker">
-        <div class="mfd-container">
-            
+<div class="mfd-container">
     <div class="header">
-         <div class="header-left">
-            <div class="title" id="sys-title">MAIN.DIRECTORY</div>
-             <div style="color: var(--border-dim);" id="sys-path">ECMS_OS//DATA.DISPLAY//ROOT</div>
-        </div>
-        <div class="header-right">COSM-OS.CYCLER.SYSTEM_OS &nbsp;&nbsp; <span id="headerVersionValue">V0.5.0</span></div>
+        <div class="header-left"><div class="title" id="sys-title">MAIN.DIRECTORY</div><div style="color: var(--border-dim);" id="sys-path">ECMS_OS//DATA.DISPLAY//ROOT</div></div>
+        <div class="header-right">COSM-OS.CYCLER.SYSTEM_OS &nbsp;&nbsp; <span id="headerVersionValue">V0.9.0</span></div>
     </div>
+    <div class="main-display">
+        <div class="sidebar left boot-disabled" id="leftSidebar">
+            <input type="file" id="dir-picker" webkitdirectory directory multiple style="display:none;">
+            <button class="nav-btn" id="btn-mdir" title="Mount Local Folder">MDIR</button>
+            <button class="nav-btn" style="margin-bottom: 20px;" id="btn-back">BACK</button>
+            <button class="nav-btn" id="btn-sel" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">SEL</button>
+            <button class="nav-btn" id="btn-up">UP</button>
+            <button class="nav-btn" id="btn-dwn">DWN</button>
+            <button class="nav-btn" id="btn-left">LEFT</button>
+            <button class="nav-btn" id="btn-right">RIGHT</button>
+            <button class="nav-btn" id="btn-clear" style="border-color: var(--accent-red); color: var(--accent-red);">CLEAR</button>
+            <div class="spacer"></div>
+            <button class="nav-btn" id="btn-cons">CONS</button>
+            <button class="nav-btn" id="btn-sys">SYS</button>
+            <button class="nav-btn" id="btn-kbrd">KBRD</button>
+        </div>
 
-            <div class="main-display">
-                
-                <div class="sidebar left">
-                    <input type="file" id="dir-picker" webkitdirectory directory multiple style="display:none;">
-                    <button class="nav-btn" id="btn-mdir" title="Mount Local Folder (Dev Tool)">MDIR</button>
-                    <button class="nav-btn" style="margin-bottom: 20px;" onclick="sysNotify('NO PREVIOUS DIRECTORY FOUND')">BACK</button>
-                    
-                    <button class="nav-btn" onclick="sysNotify('AWAITING TARGET SELECTION')">SEL</button>
-                    <button class="nav-btn" onclick="sysNotify('JOG Y+')">UP</button>
-                    <button class="nav-btn" onclick="sysNotify('JOG Y-')">DWN</button>
-                    <button class="nav-btn" onclick="sysNotify('JOG X-')">LEFT</button>
-                    <button class="nav-btn" style="margin-bottom: 20px;" onclick="sysNotify('JOG X+')">RIGHT</button>
-                    
-                    <button class="nav-btn" onclick="sysNotify('CONSOLE LINK OFFLINE')">CONS</button>
-                    <div class="spacer"></div>
-                    <button class="nav-btn" onclick="sysNotify('ACCESSING SYSTEM METRICS...')">SYS</button>
-                    <button class="nav-btn" onclick="sysNotify('KEYBOARD INPUT DISABLED')">KBRD</button>
-                </div>
+        <div class="center-console">
+            <div id="boot-screen"><div id="boot-text"><span class="cursor"></span></div></div>
+            <div id="diag-screen"><pre id="diag-output" style="margin:0; font-family:'Courier New', monospace; white-space:pre-wrap;"></pre><button class="diag-close-btn" id="diag-close">[ EXIT ]</button></div>
+            <div id="file-grid"></div>
+        </div>
 
-                <div class="center-console">
-                    <div id="boot-screen">
-                        <div id="boot-text"></div>
-                    </div>
-                    
-                    <div id="file-grid">
-                        </div>
-                </div>
-
-                <div class="sidebar right">
-                    <button class="nav-btn" onclick="sysNotify('DISPLAY SETTINGS LOCKED')">DISP</button>
-                    <button class="nav-btn" onclick="sysNotify('NO TARGET ACQUIRED')">TGT</button>
-                    <button class="nav-btn" style="margin-bottom: 20px;" onclick="sysNotify('NUM PAD ENGAGED')">NUM</button>
-                    <button class="nav-btn" onclick="sysNotify('CYCLING ACTIVE DATA ARRAYS')">CYCL</button>
-                    <div class="spacer"></div>
-                    <button class="nav-btn" onclick="changePageOffset(1)">PG +</button>
-                    <button class="nav-btn" style="margin-bottom: 20px;" onclick="changePageOffset(-1)">PG -</button>
-                    <button class="nav-btn" onclick="sysNotify('DIAGNOSTIC TRACE... CLEAR')">DIAG</button>
-                    <button class="nav-btn" onclick="sysNotify('INITIATING LOCAL TEST')">TEST</button>
-                    <button class="nav-btn" id="btn-pwr" style="color: var(--accent-red); border-color: var(--accent-red);">PWR</button>
-                </div>
-
-            </div>
-
-            <div class="footer">
-                <button class="num-btn" onclick="generatePage(1)">1</button>
-                <button class="num-btn" onclick="generatePage(2)">2</button>
-                <button class="num-btn" onclick="generatePage(3)">3</button>
-                <button class="num-btn" onclick="generatePage(4)">4</button>
-                <button class="num-btn" onclick="generatePage(5)">5</button>
-                <button class="num-btn" onclick="generatePage(6)">6</button>
-                <button class="num-btn" onclick="generatePage(7)">7</button>
-                <button class="num-btn" onclick="generatePage(8)">8</button>
-                <button class="num-btn" onclick="generatePage(9)">9</button>
-                <div class="sys-status-bar">
-                    <div class="fill" id="mem-fill"></div>
-                    <div class="fill err" id="err-fill"></div>
-                </div>
-            </div>
+        <div class="sidebar right boot-disabled" id="rightSidebar">
+            <button class="nav-btn" id="btn-disp">DISP</button>
+            <button class="nav-btn" id="btn-tgt">TGT</button>
+            <button class="nav-btn" style="margin-bottom: 20px;" id="btn-num">NUM</button>
+            <button class="nav-btn" id="btn-cycl">CYCL</button>
+            <div class="spacer"></div>
+            <button class="nav-btn" id="pgUpBtn">PG +</button>
+            <button class="nav-btn" style="margin-bottom: 20px;" id="pgDownBtn">PG -</button>
+            <button class="nav-btn" id="btn-diag" style="color: var(--accent-green); border-color: var(--accent-green);">DIAG</button>
+            <button class="nav-btn" id="btn-test" style="color: #555; border-color: #444; opacity:0.5;" disabled>TEST</button>
+            <button class="nav-btn" id="btn-pwr" style="color: var(--accent-red); border-color: var(--accent-red);">PWR</button>
         </div>
     </div>
+    <div class="footer">
+        <button class="num-btn" data-page="1">1</button><button class="num-btn" data-page="2">2</button>
+        <button class="num-btn" data-page="3">3</button><button class="num-btn" data-page="4">4</button>
+        <button class="num-btn" data-page="5">5</button><button class="num-btn" data-page="6">6</button>
+        <button class="num-btn" data-page="7">7</button><button class="num-btn" data-page="8">8</button>
+        <button class="num-btn" data-page="9">9</button>
+        <div class="sys-status-bar"><div class="fill" id="mem-fill"></div><div class="fill err" id="err-fill"></div></div>
+    </div>
+</div>
 
-    <script>
-        // System Data
-        const MAX_PAGES = 9;
-        const SLOTS_PER_PAGE = 24;
-        let currentPage = 1;
-
-        // HARDCODED NATIVE FILES - These guarantee GitHub Pages compatibility.
-        let actualFiles = [
-            { 
-                id: "AE30", 
-                title: "Spaceship Architect", 
-                subtitle: "Naval Blueprint", 
-                type: "app", 
-                link: "mainPages/shipBuilder.html", // Correct path matching your structure
-                utg1: "0.99", utg2: "0.00" 
-            },
-
-        ];
-
-        // --- BOOT SEQUENCE DYNAMIC GENERATION (with version and randomized percentages) ---
-        // Retrieve version number from CSS variable
-        const versionNum = getComputedStyle(document.documentElement).getPropertyValue('--versionNum').trim() || "V0.5.0";
-        
-        // Helper: generate a random number within a range [min, max] inclusive, with optional decimal places
-        function randomInRange(min, max, decimals = 2) {
-            let val = min + Math.random() * (max - min);
-            return parseFloat(val.toFixed(decimals));
-        }
-        
-        // Helper: create the loading bar string based on percentage (0-100)
-        function makeLoadingBar(percent) {
-            let blocks = Math.floor(percent / 10);
-            blocks = Math.min(10, Math.max(0, blocks));
-            let bar = '█'.repeat(blocks) + '0'.repeat(10 - blocks);
-            return `[${bar}]`;
-        }
-        
-        // Define loading steps: each step specifies the tens digit range (minPercent, maxPercent) that the original intended.
-        // The actual random percent will be constrained to that tens block, except for 100% which is fixed.
-        // Steps order: 0% (0-9.99), 20% (20-29.99), 40% (40-49.99), 60% (60-69.99), 60% (60-69.99), 
-        // 70% (70-79.99), 70% (70-79.99), 90% (90-99.99), 100% (exactly 100)
-        const loadingSteps = [
-            { min: 0, max: 9.99 },      // 0% block
-            { min: 20, max: 29.99 },    // 20s
-            { min: 40, max: 49.99 },    // 40s
-            { min: 60, max: 69.99 },    // 60s (first)
-            { min: 60, max: 69.99 },    // 60s (second)
-            { min: 70, max: 79.99 },    // 70s (first)
-            { min: 70, max: 79.99 },    // 70s (second)
-            { min: 90, max: 99.99 },    // 90s
-            { min: 100, max: 100 }      // 100% fixed
-        ];
-        
-        // Build the bootSequence array dynamically
-        let bootSequence = [
-            `ECMS KERNEL ${versionNum} INITIALIZING...`,
-            "CHECKING FILE SYSTEM: CLEAN"
-        ];
-        
-        // Generate the 9 loading lines with randomized percentages within the tens digit boundaries
-        for (let i = 0; i < loadingSteps.length; i++) {
-            let step = loadingSteps[i];
-            let percent;
-            if (step.min === 100 && step.max === 100) {
-                percent = 100;
-            } else {
-                percent = randomInRange(step.min, step.max, 2);
-                // Ensure we don't accidentally cross the tens boundary due to floating rounding
-                let tensFloor = Math.floor(step.min / 10) * 10;
-                if (percent >= tensFloor + 10) percent = tensFloor + 9.99;
-                if (percent < tensFloor) percent = tensFloor;
-                percent = parseFloat(percent.toFixed(2));
-            }
-            let barString = makeLoadingBar(percent);
-            let percentString = percent % 1 === 0 ? percent.toFixed(0) : percent.toFixed(2);
-            bootSequence.push(`LOADING UI MODULES... ${barString} ${percentString}%`);
-        }
-        
-        // Append final line
-        bootSequence.push("ESTABLISHING COMMS LINK... TIMEOUT.");
-        
-        // --- END OF MODIFIED BOOT SEQUENCE ---
-
-        let bootSequenceFinal = bootSequence; // use the generated array
-
-        const bootText = document.getElementById('boot-text');
-        const bootScreen = document.getElementById('boot-screen');
-        const fileGrid = document.getElementById('file-grid');
-        const pwrOverlay = document.getElementById('power-overlay');
-        const sysTitle = document.getElementById('sys-title');
-
-        // -- UTILITY FUNCTIONS --
-        function sysNotify(msg) {
-            sysTitle.innerText = msg;
-            sysTitle.style.color = 'var(--accent-orange)';
+<script>
+(function(){
+    // ---------- SYSTEM CONFIG ----------
+    const MAX_PAGES = 9;
+    const SLOTS_PER_PAGE = 24;
+    const TOTAL_SLOTS = MAX_PAGES * SLOTS_PER_PAGE;
+    
+    const BASE_FILES = [
+        { id: "AE30", title: "Spaceship Architect", subtitle: "Naval Blueprint", type: "app", link: "mainPages/shipBuilder.html", utg1: "0.99", utg2: "0.00" },
+        { id: "NAV01", title: "Navigation Core", subtitle: "Vector Comp.", type: "app", link: "mainPages/navCore.html", utg1: "2.34", utg2: "0.12" },
+        { id: "SYS_CORE", title: "ECMS Kernel", subtitle: "System RT", type: "sys", link: "#", utg1: "4.56", utg2: "0.01" }
+    ];
+    
+    let actualFiles = [];
+    let fileSlots = new Array(TOTAL_SLOTS);
+    let currentPage = 1;
+    let bootSeed = 0;
+    let bootCompleted = false;
+    let selectedIndex = -1;
+    let currentGridModules = [];
+    let diagActive = false;
+    
+    window.sysNotify = function(msg) {
+        const titleEl = document.getElementById('sys-title');
+        if(titleEl) {
+            titleEl.innerText = msg;
+            titleEl.style.color = 'var(--accent-orange)';
             setTimeout(() => {
-                sysTitle.innerText = "MAIN.DIRECTORY";
-                sysTitle.style.color = 'var(--accent-cyan)';
-            }, 2000);
+                if(document.getElementById('sys-title')) {
+                    document.getElementById('sys-title').innerText = "MAIN.DIRECTORY";
+                    document.getElementById('sys-title').style.color = 'var(--accent-cyan)';
+                }
+            }, 4000);
         }
-
-        // Generate a deterministic but random-looking hex ID
-        function generateIdStr() {
-            return Math.random().toString(36).substr(2, 4).toUpperCase();
+    };
+    
+    function seededRandom(seed, idx) {
+        let s = seed + idx * 131071;
+        let t = (s ^ (s >>> 15)) * 0x85ebca6b;
+        t = (t ^ (t >>> 13)) * 0xc2b2ae35;
+        return ((t ^ (t >>> 16)) >>> 0) / 4294967296;
+    }
+    
+    function rebuildFileSlots() {
+        for(let i=0; i<TOTAL_SLOTS; i++) fileSlots[i] = null;
+        for(let i=0; i<actualFiles.length && i<TOTAL_SLOTS; i++) fileSlots[i] = { ...actualFiles[i] };
+        for(let i=actualFiles.length; i<TOTAL_SLOTS; i++) {
+            const pageNum = Math.floor(i / SLOTS_PER_PAGE) + 1;
+            let depthFactor = (pageNum - 1) / (MAX_PAGES - 1);
+            if(MAX_PAGES === 1) depthFactor = 0;
+            let corruptionProb = Math.pow(depthFactor, 1.5) * 0.85;
+            corruptionProb = Math.min(0.85, corruptionProb);
+            let lockProb = 0.3;
+            if(corruptionProb + lockProb > 0.98) lockProb = 0.98 - corruptionProb;
+            const r = seededRandom(bootSeed, i);
+            let type, title, subtitle, utg1, utg2;
+            if(r < corruptionProb) {
+                type = "corrupted";
+                title = "CORRUPTED";
+                subtitle = "ERR_DATA_LOSS";
+                utg1 = (seededRandom(bootSeed, i+777) * 9.99).toFixed(2);
+                utg2 = "NaN";
+            } else if(r < corruptionProb + lockProb) {
+                type = "locked";
+                title = "UNAUTHORIZED";
+                subtitle = "CLEARANCE_REQ";
+                utg1 = "---";
+                utg2 = "---";
+            } else {
+                type = "offline";
+                title = "UNALLOCATED";
+                subtitle = "EMPTY_SECTOR";
+                utg1 = "0.00";
+                utg2 = "0.00";
+            }
+            const idHex = (seededRandom(bootSeed, i+5000)*10000).toString(16).substr(0,4).toUpperCase();
+            fileSlots[i] = { id: idHex, title, subtitle, type, link: "#", utg1, utg2 };
         }
-
-        // -- DIRECTORY MOUNTING (HYBRID APPROACH) --
+    }
+    
+    function addMountedFiles(newFilesArray) {
+        let added = 0;
+        for(let f of newFilesArray) {
+            if(!actualFiles.some(ex => ex.title === f.title)) {
+                actualFiles.push(f);
+                added++;
+            }
+        }
+        if(added > 0) {
+            rebuildFileSlots();
+            if(bootCompleted && !diagActive) {
+                generatePage(currentPage);
+                if(selectedIndex !== -1 && selectedIndex < TOTAL_SLOTS && fileSlots[selectedIndex]) highlightSelection();
+                else clearSelection();
+            }
+            window.sysNotify(`MOUNTED ${added} NEW FILE(S)`);
+        }
+        return added;
+    }
+    
+    function highlightSelection() {
+        if(currentGridModules) currentGridModules.forEach(mod => mod.classList.remove('module-selected'));
+        if(selectedIndex === -1) return;
+        const startIdx = (currentPage-1) * SLOTS_PER_PAGE;
+        if(selectedIndex >= startIdx && selectedIndex < startIdx + SLOTS_PER_PAGE) {
+            const relIdx = selectedIndex - startIdx;
+            if(currentGridModules && currentGridModules[relIdx]) {
+                currentGridModules[relIdx].classList.add('module-selected');
+                currentGridModules[relIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+    }
+    
+    function clearSelection() {
+        selectedIndex = -1;
+        if(currentGridModules) currentGridModules.forEach(mod => mod.classList.remove('module-selected'));
+        window.sysNotify("SELECTION CLEARED");
+    }
+    
+    function moveSelection(dx, dy) {
+        if(!bootCompleted || diagActive) return;
+        const startIdx = (currentPage-1) * SLOTS_PER_PAGE;
+        const endIdx = Math.min(startIdx + SLOTS_PER_PAGE, TOTAL_SLOTS);
+        const slotsOnPage = endIdx - startIdx;
+        if(slotsOnPage === 0) return;
+        const gridEl = document.getElementById('file-grid');
+        let columns = 1;
+        const gridStyle = window.getComputedStyle(gridEl);
+        const gridTemplateColumns = gridStyle.getPropertyValue('grid-template-columns');
+        if(gridTemplateColumns && gridTemplateColumns !== 'none') {
+            columns = gridTemplateColumns.split(' ').length;
+        } else {
+            columns = Math.max(1, Math.floor(gridEl.clientWidth / 150));
+        }
+        let currentRel = (selectedIndex !== -1 && selectedIndex >= startIdx && selectedIndex < endIdx) ? selectedIndex - startIdx : 0;
+        let newRel = currentRel;
+        if(dy !== 0) newRel += dy * columns;
+        if(dx !== 0) newRel += dx;
+        newRel = Math.min(slotsOnPage-1, Math.max(0, newRel));
+        const newGlobal = startIdx + newRel;
+        if(newGlobal >=0 && newGlobal < TOTAL_SLOTS && fileSlots[newGlobal]) {
+            selectedIndex = newGlobal;
+            highlightSelection();
+            const slot = fileSlots[selectedIndex];
+            window.sysNotify(`SELECTED: ${slot.title} (${slot.subtitle})`);
+        }
+    }
+    
+    function activateModuleBySlot(slot) {
+        if(!bootCompleted || diagActive) { window.sysNotify("SYSTEM BUSY"); return false; }
+        if(!slot) return false;
+        if(slot.type === 'corrupted') window.sysNotify("ERROR: DATA CORRUPTED - UNABLE TO ACCESS");
+        else if(slot.type === 'locked') window.sysNotify("ACCESS DENIED: CLEARANCE LEVEL INSUFFICIENT");
+        else if(slot.type === 'offline') window.sysNotify("SECTOR UNALLOCATED: NO DATA PRESENT");
+        else if(slot.type === 'app' || slot.type === 'sys') {
+            if(slot.link && slot.link !== '#') {
+                window.sysNotify(`LAUNCHING: ${slot.title}...`);
+                setTimeout(() => { window.open(slot.link, '_blank'); }, 100);
+            } else window.sysNotify(`MODULE ${slot.title} (SIMULATED)`);
+            return true;
+        } else window.sysNotify(`UNKNOWN MODULE TYPE`);
+        return false;
+    }
+    
+    function activateSelectedModule() {
+        if(!bootCompleted || selectedIndex === -1 || diagActive) { window.sysNotify("NO ACTIVE SELECTION"); return; }
+        activateModuleBySlot(fileSlots[selectedIndex]);
+    }
+    
+    function generatePage(pageNum) {
+        if(!bootCompleted || diagActive) return;
+        currentPage = Math.min(MAX_PAGES, Math.max(1, pageNum));
+        const grid = document.getElementById('file-grid');
+        if(!grid) return;
+        grid.innerHTML = '';
+        document.querySelectorAll('.num-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if(parseInt(btn.getAttribute('data-page')) === currentPage) btn.classList.add('active');
+        });
+        const totalReal = actualFiles.length;
+        const memPercent = Math.min(100, (totalReal / TOTAL_SLOTS) * 100);
+        const corruptedCount = fileSlots.filter(s => s && s.type === 'corrupted').length;
+        const errPercent = Math.min(80, (corruptedCount / TOTAL_SLOTS) * 100);
+        document.getElementById('mem-fill').style.width = `${memPercent}%`;
+        document.getElementById('err-fill').style.width = `${errPercent}%`;
         
-        // Method 1: Auto-Mount (Server Environment Fallback)
-        async function attemptAutoMount() {
-            try {
-                let res = await fetch('mainPage/');
-                if (res.ok) {
-                    let text = await res.text();
-                    let parser = new DOMParser();
-                    let doc = parser.parseFromString(text, 'text/html');
-                    let links = doc.querySelectorAll('a');
-                    let foundNew = false;
-
-                    links.forEach(a => {
-                        let href = a.getAttribute('href');
-                        if(href && href.endsWith('.html') && href !== '/' && !actualFiles.some(f => f.link.includes(href))) {
-                            actualFiles.push({
-                                id: generateIdStr(),
-                                title: decodeURIComponent(href).replace('.html', '').replace(/[-_]/g, ' '),
-                                subtitle: "Mounted File",
-                                type: "app",
-                                link: "mainPage/" + href,
-                                utg1: (Math.random() * 10).toFixed(2),
-                                utg2: "0.00"
-                            });
-                            foundNew = true;
-                        }
-                    });
-
-                    if(foundNew) {
-                        bootSequenceFinal.push("AUTO-MOUNT SUCCESSFUL: /mainPage/");
-                        return true;
-                    }
-                }
-            } catch(e) {
-                // Fails silently in local file:/// due to CORS, which is expected.
-            }
-            return false;
-        }
-
-        // Method 2: Manual Mount (For double-clicked local files testing)
-        const dirPicker = document.getElementById('dir-picker');
-        document.getElementById('btn-mdir').addEventListener('click', () => {
-            dirPicker.click();
-        });
-
-        dirPicker.addEventListener('change', (event) => {
-            let newFilesAdded = 0;
-            const files = event.target.files;
-            
-            for (let i = 0; i < files.length; i++) {
-                if (files[i].name.endsWith('.html')) {
-                    if(!actualFiles.some(f => f.title === files[i].name.replace('.html', ''))) {
-                        let blobUrl = URL.createObjectURL(files[i]);
-                        actualFiles.push({
-                            id: generateIdStr(),
-                            title: files[i].name.replace('.html', '').replace(/[-_]/g, ' '),
-                            subtitle: "Local Memory",
-                            type: "app",
-                            link: blobUrl,
-                            utg1: (Math.random() * 10).toFixed(2),
-                            utg2: "0.00"
-                        });
-                        newFilesAdded++;
-                    }
-                }
-            }
-            sysNotify(`MOUNTED ${newFilesAdded} NEW FILES`);
-            generatePage(1);
-        });
-
-
-        // -- PAGINATION & RENDERING --
-        function changePageOffset(offset) {
-            let target = currentPage + offset;
-            if (target >= 1 && target <= MAX_PAGES) generatePage(target);
-        }
-
-        function generatePage(pageNum) {
-            currentPage = pageNum;
-            fileGrid.style.display = 'grid';
-            fileGrid.innerHTML = '';
-            
-            // Update Footer UI
-            document.querySelectorAll('.num-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if(parseInt(btn.innerText) === pageNum) btn.classList.add('active');
+        const startIdx = (currentPage-1) * SLOTS_PER_PAGE;
+        const endIdx = Math.min(startIdx + SLOTS_PER_PAGE, TOTAL_SLOTS);
+        const modules = [];
+        for(let i=startIdx; i<endIdx; i++) {
+            const slot = fileSlots[i];
+            if(!slot) continue;
+            const isLink = (slot.type === 'app' || slot.type === 'sys');
+            const el = isLink ? document.createElement('a') : document.createElement('div');
+            if(isLink && slot.link && slot.link !== '#') el.href = slot.link;
+            el.className = `module ${slot.type}`;
+            el.innerHTML = `<div class="mod-status"><div class="mod-led"></div><span>${slot.type === 'corrupted' ? 'ERR' : 'NML'}</span></div>
+                <div class="mod-content"><div class="mod-title">${escapeHtml(slot.title)}</div>
+                <div class="mod-data" style="color:#fff; margin-bottom:5px;">${escapeHtml(slot.subtitle)}</div>
+                <div class="mod-data"><span>UTG1: ${slot.utg1}</span><span>UTG2: ${slot.utg2}</span></div></div>`;
+            const globalIdx = i;
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                if(!bootCompleted || diagActive) return;
+                selectedIndex = globalIdx;
+                highlightSelection();
+                window.sysNotify(`SELECTED: ${fileSlots[globalIdx].title}`);
             });
-
-            // Calculate Grid Padding Memory Bars
-            document.getElementById('mem-fill').style.width = `${(pageNum / MAX_PAGES) * 80}%`;
-            document.getElementById('err-fill').style.width = `${Math.pow(pageNum / MAX_PAGES, 2) * 20}%`;
-
-            let startIndex = (pageNum - 1) * SLOTS_PER_PAGE;
-            let endIndex = startIndex + SLOTS_PER_PAGE;
-
-            // Algorithm for corruption: Deeper pages get much higher corruption rates
-            let corruptionFactor = Math.pow((pageNum - 1) / (MAX_PAGES - 1), 1.5) * 0.85;
-
-            let displayData = [];
-            
-            for (let i = startIndex; i < endIndex; i++) {
-                if (i < actualFiles.length) {
-                    displayData.push(actualFiles[i]);
-                } else {
-                    let isCorrupted = Math.random() < corruptionFactor;
-                    let idStr = generateIdStr();
-
-                    if (isCorrupted) {
-                        displayData.push({ id: idStr, title: "CORRUPTED", subtitle: "ERR_DATA_LOSS", type: "corrupted", link: "#", utg1: "NaN", utg2: "NaN" });
-                    } else {
-                        if (Math.random() > 0.4) {
-                            displayData.push({ id: idStr, title: "UNALLOCATED", subtitle: "EMPTY_SECTOR", type: "offline", link: "#", utg1: "0.00", utg2: "0.00" });
-                        } else {
-                            displayData.push({ id: idStr, title: "UNAUTHORIZED", subtitle: "CLEARANCE_REQ", type: "locked", link: "#", utg1: "---", utg2: "---" });
-                        }
-                    }
-                }
-            }
-
-            // Render to DOM
-            displayData.forEach(file => {
-                let isLink = (file.type === 'app' || file.type === 'doc' || file.type === 'sys');
-                const el = document.createElement(isLink ? 'a' : 'div');
-                
-                if (isLink) el.href = file.link;
-                el.className = `module ${file.type}`;
-                
-                let randomData1 = file.utg1 === "NaN" ? (Math.random() * 10).toFixed(2) : file.utg1;
-                
-                el.innerHTML = `
-                    <div class="mod-status">
-                        <div class="mod-led"></div>
-                        <span>NML</span>
-                    </div>
-                    <div class="mod-content">
-                        <div class="mod-title">${file.title}</div>
-                        <div class="mod-data" style="color: #fff; margin-bottom: 5px;">${file.subtitle}</div>
-                        <div class="mod-data">
-                            <span>UTG1: ${file.type === 'corrupted' ? randomData1 : file.utg1}</span>
-                            <span>UTG2: ${file.utg2}</span>
-                        </div>
-                    </div>
-                `;
-                fileGrid.appendChild(el);
+            el.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                if(!bootCompleted || diagActive) return;
+                activateModuleBySlot(fileSlots[globalIdx]);
             });
+            grid.appendChild(el);
+            modules.push(el);
         }
-
-
-        // -- BOOT SEQUENCE PLAYBACK --
-        let bootIndex = 0;
-        function playBootText() {
-            if (bootIndex < bootSequenceFinal.length) {
-                bootText.innerHTML += bootSequenceFinal[bootIndex] + "<br>";
-                bootIndex++;
-                let delay = Math.random() * 200 + 500; 
-                setTimeout(playBootText, delay);
-            } else {
-                setTimeout(() => {
-                    bootScreen.style.display = 'none';
-                    generatePage(1);
-                }, 300);
-            }
-        }
-
-        // Hardware Controls
-        document.getElementById('btn-pwr').addEventListener('click', () => {
-            pwrOverlay.classList.add('active');
-        });
-
-        document.getElementById('btn-restart').addEventListener('click', () => {
-            // "Reboot" the system
-            pwrOverlay.classList.remove('active');
-            fileGrid.style.display = 'none';
-            bootScreen.style.display = 'flex';
-            bootText.innerHTML = "<span class='cursor'></span>";
-            bootIndex = 0;
-            setTimeout(playBootText, 500);
-        });
-
-        // Initialize App
-        window.onload = async () => {
-            bootText.innerHTML += "<span class='cursor'></span>";
-            
-            // Wait to see if auto-mount finds anything extra (usually fails locally, passes on servers)
-            let success = await attemptAutoMount();
-            if (!success && actualFiles.length <= 1) {
-                bootSequenceFinal.push("DIRECTORY FETCH BLOCKED BY LOCAL PROTOCOL.");
-                bootSequenceFinal.push("USING PRE-ALLOCATED STATIC MEMORY.");
-            } else {
-                bootSequenceFinal.push("LAUNCHING MFD INTERFACE...");
-            }
-            
-            setTimeout(playBootText, 400);
+        currentGridModules = modules;
+        if(selectedIndex !== -1 && selectedIndex >= startIdx && selectedIndex < endIdx) highlightSelection();
+        else if(currentGridModules) currentGridModules.forEach(m => m.classList.remove('module-selected'));
+    }
+    
+    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    
+    function changePageOffset(delta) {
+        if(!bootCompleted || diagActive) return;
+        const newPage = currentPage + delta;
+        if(newPage>=1 && newPage<=MAX_PAGES) generatePage(newPage);
+        else window.sysNotify("PAGE LIMIT REACHED");
+    }
+    
+    // ---------- ASCII DIAGNOSTICS (NO EMOJIS, replaces RCS with POWER) ----------
+    async function runAsciiDiagnostic() {
+        const diagScreen = document.getElementById('diag-screen');
+        const outputPre = document.getElementById('diag-output');
+        if(!diagScreen || !outputPre) return;
+        diagScreen.classList.add('active');
+        diagActive = true;
+        outputPre.textContent = "";
+        const corrupted = fileSlots.filter(s => s?.type === 'corrupted').length;
+        const health = ((TOTAL_SLOTS - corrupted) / TOTAL_SLOTS) * 100;
+        const tests = [
+            "MEMORY CONTROLLER",
+            "FILE SYSTEM INTEGRITY",
+            "COMM BUS LATENCY",
+            "POWER DISTRIBUTION",
+            "RADIATION SENSOR",
+            "NAVIGATION ARRAY"
+        ];
+        let results = [];
+        const appendLine = (line) => {
+            outputPre.textContent += line + "\n";
+            outputPre.scrollTop = outputPre.scrollHeight;
         };
-    </script>
+        appendLine(">>> ECMS DIAGNOSTIC SUITE v2.5 <<<");
+        appendLine("--- SYSTEM INTEGRITY VERIFICATION ---\n");
+        
+        for(let i=0; i<tests.length; i++) {
+            appendLine(`[TEST ${i+1}/${tests.length}] ${tests[i]}...`);
+            await new Promise(r => setTimeout(r, 300 + Math.random()*180));
+            let pass = true, detail = "";
+            switch(tests[i]) {
+                case "MEMORY CONTROLLER":
+                    detail = `TOTAL SLOTS:${TOTAL_SLOTS} CORRUPT SECTORS:${corrupted} HEALTH:${health.toFixed(1)}%`;
+                    pass = corrupted < TOTAL_SLOTS * 0.5;
+                    break;
+                case "FILE SYSTEM INTEGRITY":
+                    detail = `MOUNTED FILES:${actualFiles.length} CORRUPTION RATE:${((corrupted/TOTAL_SLOTS)*100).toFixed(1)}%`;
+                    pass = corrupted < TOTAL_SLOTS * 0.6;
+                    break;
+                case "COMM BUS LATENCY": {
+                    let lat = (Math.random() * 12 + 1).toFixed(1);
+                    detail = `ROUND TRIP TIME: ${lat} ms`;
+                    pass = parseFloat(lat) < 15;
+                    break;
+                }
+                case "POWER DISTRIBUTION": {
+                    let voltage = (26.0 + Math.random() * 4).toFixed(1);
+                    detail = `MAIN BUS: ${voltage} V`;
+                    pass = voltage > 24.5 && voltage < 30;
+                    break;
+                }
+                case "RADIATION SENSOR": {
+                    let rad = (Math.random() * 5.5).toFixed(2);
+                    detail = `FLUX DENSITY: ${rad} uSv/h`;
+                    pass = rad < 4.2;
+                    break;
+                }
+                case "NAVIGATION ARRAY": {
+                    let lockStatus = Math.random() > 0.2;
+                    detail = `STAR TRACKER: ${lockStatus ? "LOCKED" : "DRIFT MODE"}`;
+                    pass = lockStatus;
+                    break;
+                }
+            }
+            let status = pass ? "[ OK ]" : "[WARN]";
+            appendLine(`${status} ${tests[i]}: ${detail}`);
+            appendLine("");
+        }
+        appendLine("=== DIAGNOSTIC COMPLETE ===");
+        appendLine(`>>> SYSTEM HEALTH: ${health.toFixed(1)}% (${health > 70 ? "NOMINAL" : "MAINTENANCE RECOMMENDED"})`);
+        appendLine(">>> PRESS [EXIT] TO RETURN TO FILE MANAGER");
+    }
+    
+    function closeDiagnostic() {
+        const diagScreen = document.getElementById('diag-screen');
+        if(diagScreen) {
+            diagScreen.classList.remove('active');
+            diagActive = false;
+            if(bootCompleted) generatePage(currentPage);
+        }
+    }
+    
+    // ---------- BOOT SEQUENCE ----------
+    let bootTextEl, bootScreenEl, fileGridEl;
+    let bootMsgIndex = 0;
+    let bootMessages = [];
+    
+    function enableSidePanels(enable) {
+        const left = document.getElementById('leftSidebar');
+        const right = document.getElementById('rightSidebar');
+        if(enable) {
+            left.classList.remove('boot-disabled');
+            right.classList.remove('boot-disabled');
+        } else {
+            left.classList.add('boot-disabled');
+            right.classList.add('boot-disabled');
+        }
+    }
+    
+    function buildLongBootMessages() {
+        let msgs = [
+            ">>> POWER CYCLING <<<",
+            "ECMS HARD RESET SEQUENCE INITIATED",
+            "KERNEL V0.9.0 LOADING...",
+            `BOOT SEED: ${bootSeed.toString().slice(-8)}`,
+            "MEMORY CONTROLLER: SELF TEST",
+            "SCANNING STORAGE BANKS..."
+        ];
+        for(let i=0; i<12; i++) {
+            let p = 5 + i*7 + (Math.random()*8-4);
+            p = Math.min(99, Math.max(5, p));
+            const bar = '█'.repeat(Math.floor(p/10)) + '0'.repeat(10-Math.floor(p/10));
+            msgs.push(`LOADING MEMORY MAP... [${bar}] ${p.toFixed(1)}%`);
+        }
+        msgs.push("ESTABLISHING COMMS LINK... ASYNC MODE.");
+        msgs.push("MFD INTERFACE READY. SELECTION CONTROLS ACTIVE.");
+        return msgs;
+    }
+    
+    function playBootStep() {
+        if(!bootTextEl) return;
+        if(bootMsgIndex < bootMessages.length) {
+            bootTextEl.innerHTML += bootMessages[bootMsgIndex] + "<br>";
+            bootMsgIndex++;
+            setTimeout(playBootStep, 380 + Math.random() * 220);
+        } else {
+            finalizeBoot();
+        }
+    }
+    
+    function finalizeBoot() {
+        bootCompleted = true;
+        generatePage(1);
+        bootScreenEl.classList.add('boot-hidden');
+        fileGridEl.classList.add('grid-visible');
+        setTimeout(() => { if(bootScreenEl) bootScreenEl.style.display = 'none'; }, 600);
+        enableSidePanels(true);
+        window.sysNotify("SYSTEM ONLINE. INTERFACE ACTIVE.");
+        if(fileSlots[0] && currentGridModules.length) {
+            selectedIndex = 0;
+            highlightSelection();
+        }
+    }
+    
+    function startBoot() {
+        bootSeed = Date.now() + Math.random() * 100000;
+        actualFiles = JSON.parse(JSON.stringify(BASE_FILES));
+        rebuildFileSlots();
+        bootMessages = buildLongBootMessages();
+        bootTextEl = document.getElementById('boot-text');
+        bootScreenEl = document.getElementById('boot-screen');
+        fileGridEl = document.getElementById('file-grid');
+        if(bootTextEl) bootTextEl.innerHTML = "";
+        bootMsgIndex = 0;
+        bootCompleted = false;
+        selectedIndex = -1;
+        bootScreenEl.style.display = 'flex';
+        bootScreenEl.classList.remove('boot-hidden');
+        fileGridEl.classList.remove('grid-visible');
+        enableSidePanels(false);
+        playBootStep();
+    }
+    
+    // ----- MOUNT & AUTO-MOUNT -----
+    async function attemptAutoMount() { 
+        try { 
+            const res = await fetch('mainPage/'); 
+            if(res.ok) { 
+                const text = await res.text(); 
+                const parser = new DOMParser(); 
+                const doc = parser.parseFromString(text, 'text/html'); 
+                const links = doc.querySelectorAll('a'); 
+                const newFiles = []; 
+                links.forEach(a => { 
+                    let href = a.getAttribute('href'); 
+                    if(href && href.endsWith('.html') && href !== '/' && !actualFiles.some(f => f.link === "mainPage/" + href)) { 
+                        newFiles.push({ 
+                            id: (Math.random()*1e6).toString(16).substr(0,4).toUpperCase(), 
+                            title: decodeURIComponent(href).replace('.html', '').replace(/[-_]/g, ' '), 
+                            subtitle: "Mounted File", 
+                            type: "app", 
+                            link: "mainPage/" + href, 
+                            utg1: (Math.random()*10).toFixed(2), 
+                            utg2: "0.00" 
+                        }); 
+                    } 
+                }); 
+                if(newFiles.length) addMountedFiles(newFiles); 
+            } 
+        } catch(e) { /* ignore */ } 
+    }
+    
+    // ----- EVENT LISTENERS -----
+    window.onload = async () => {
+        startBoot();
+        setTimeout(() => { attemptAutoMount(); }, 2000);
+        document.querySelectorAll('.num-btn').forEach(btn => btn.addEventListener('click', () => generatePage(parseInt(btn.getAttribute('data-page')))));
+        document.getElementById('pgUpBtn')?.addEventListener('click', () => changePageOffset(1));
+        document.getElementById('pgDownBtn')?.addEventListener('click', () => changePageOffset(-1));
+        document.getElementById('btn-diag')?.addEventListener('click', () => {
+            if(!bootCompleted) { window.sysNotify("SYSTEM BOOTING"); return; }
+            if(diagActive) closeDiagnostic();
+            else runAsciiDiagnostic();
+        });
+        document.getElementById('diag-close')?.addEventListener('click', closeDiagnostic);
+        document.getElementById('btn-pwr')?.addEventListener('click', () => document.getElementById('power-overlay').classList.add('active'));
+        document.getElementById('btn-restart')?.addEventListener('click', () => {
+            document.getElementById('power-overlay').classList.remove('active');
+            startBoot();
+        });
+        document.getElementById('btn-sel')?.addEventListener('click', activateSelectedModule);
+        document.getElementById('btn-up')?.addEventListener('click', () => moveSelection(0, -1));
+        document.getElementById('btn-dwn')?.addEventListener('click', () => moveSelection(0, 1));
+        document.getElementById('btn-left')?.addEventListener('click', () => moveSelection(-1, 0));
+        document.getElementById('btn-right')?.addEventListener('click', () => moveSelection(1, 0));
+        document.getElementById('btn-clear')?.addEventListener('click', clearSelection);
+        const dirPicker = document.getElementById('dir-picker');
+        document.getElementById('btn-mdir')?.addEventListener('click', () => dirPicker.click());
+        dirPicker?.addEventListener('change', (e) => {
+            const newFiles = [];
+            const files = Array.from(e.target.files);
+            for(let file of files) {
+                if(file.name.endsWith('.html') && !actualFiles.some(f => f.title === file.name.replace('.html',''))) {
+                    const blobUrl = URL.createObjectURL(file);
+                    newFiles.push({ 
+                        id: (Math.random()*1e6).toString(16).substr(0,4).toUpperCase(), 
+                        title: file.name.replace('.html', '').replace(/[-_]/g, ' '), 
+                        subtitle: "Local Memory", 
+                        type: "app", 
+                        link: blobUrl, 
+                        utg1: (Math.random()*10).toFixed(2), 
+                        utg2: "0.00" 
+                    });
+                }
+            }
+            if(newFiles.length) addMountedFiles(newFiles);
+        });
+        const notifBtns = ['btn-back', 'btn-cons', 'btn-sys', 'btn-kbrd', 'btn-disp', 'btn-tgt', 'btn-num', 'btn-cycl'];
+        notifBtns.forEach(id => { const btn = document.getElementById(id); if(btn) btn.addEventListener('click', () => window.sysNotify('FUNCTION PENDING // ECMS CORE')); });
+    };
+})();
+</script>
 </body>
 </html>
