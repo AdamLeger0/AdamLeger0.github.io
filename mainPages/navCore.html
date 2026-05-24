@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NAVCORE • ALPHA • GRAVITY • ΔV THRUST</title>
+    <title>NAVCORE • IMPORT/EXPORT STAR SYSTEMS • JSON</title>
     <style>
         * {
             user-select: none;
@@ -12,9 +12,9 @@
         body {
             margin: 0;
             height: 100vh;
-            background: #050508;
+            background: #050505;
             color: #e0e0e0;
-            font-family: 'Courier New', monospace;
+            font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -23,8 +23,8 @@
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
-            background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
-                        linear-gradient(90deg, rgba(255,0,0,0.02), rgba(0,255,0,0.01), rgba(0,0,255,0.02));
+            background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.2) 50%),
+                        linear-gradient(90deg, rgba(255,0,0,0.03), rgba(0,255,0,0.01), rgba(0,0,255,0.03));
             background-size: 100% 4px, 6px 100%;
             pointer-events: none;
             z-index: 1000;
@@ -32,15 +32,17 @@
         }
         .top-bar {
             display: flex;
-            border-bottom: 1px solid #00ffcc;
+            border-bottom: 2px solid #00ffcc;
             background: #000000aa;
             backdrop-filter: blur(2px);
             font-size: 13px;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
         .top-left {
             display: flex;
+            flex-wrap: wrap;
         }
         .top-item {
             padding: 8px 16px;
@@ -77,15 +79,18 @@
             overflow: hidden;
         }
         .left-panel {
-            width: 500px;
+            width: 440px;
             display: flex;
             flex-direction: column;
             gap: 12px;
             overflow-y: auto;
+            background: #050505;
+            border-right: 1px solid #2a4a4a;
+            padding-right: 8px;
         }
         .panel {
             border: 1px solid #2a4a4a;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.6);
             backdrop-filter: blur(2px);
         }
         .panel-title {
@@ -95,124 +100,100 @@
             padding: 6px;
             border-bottom: 1px solid #2a4a4a;
             background: #051010;
+            letter-spacing: 2px;
         }
-        .planet-grid {
-            display: grid;
-            grid-template-columns: repeat(2,1fr);
-            gap: 8px;
-            padding: 10px;
-        }
-        .planet-card {
-            background: #061212;
-            border-left: 3px solid #2a4a4a;
-            padding: 6px 8px;
-            cursor: pointer;
+        .system-selector {
             display: flex;
-            justify-content: space-between;
-            transition: 0.1s;
+            gap: 8px;
+            justify-content: center;
+            margin: 6px 0;
+            padding: 4px;
+            flex-wrap: wrap;
         }
-        .planet-card.selected {
-            background: #0a2a2a;
-            border-left-color: #00ffcc;
-            box-shadow: 0 0 6px #00ffcc33;
-        }
-        .planet-name { font-weight: bold; }
-        .planet-dist { font-size: 10px; color: #88aaff; }
-        .moons-area {
-            border-top: 1px dashed #2a4a4a;
-            padding: 8px;
-            margin-top: 4px;
-        }
-        .moon-badge {
+        .sys-btn {
             background: #0a1a1a;
             border: 1px solid #2a6a6a;
-            border-radius: 12px;
-            padding: 2px 8px;
-            font-size: 10px;
-            display: inline-block;
-            margin: 2px;
+            color: #88ffcc;
+            font-size: 11px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-family: monospace;
+            text-transform: uppercase;
         }
-        .route-details {
-            background: #010f0f;
-            padding: 8px;
-            font-size: 10px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            border-left: 3px solid #00cc66;
+        .sys-btn.active {
+            background: #00aa55;
+            color: black;
+            border-color: #00ffcc;
         }
-        .btn-group {
+        .import-export {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             justify-content: center;
-            margin: 8px 0;
+            margin: 4px 0 8px 0;
+        }
+        .ie-btn {
+            background: #1a2a2a;
+            border: 1px solid #2a6a6a;
+            color: #aaffcc;
+            font-size: 10px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        .ie-btn:hover {
+            background: #00ffcc22;
+            border-color: #00ffcc;
         }
         .nav-btn {
             background: transparent;
-            border: 1px solid #00ffcc;
-            color: #00ffcc;
-            padding: 6px 12px;
-            font-family: monospace;
-            font-size: 11px;
+            color: #e0e0e0;
+            border: 1px solid #333;
+            padding: 8px 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
             font-weight: bold;
+            letter-spacing: 1px;
             cursor: pointer;
+            text-align: left;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.1s;
+            margin: 2px 0;
+        }
+        .nav-btn::before {
+            content: '[■]';
+            font-size: 8px;
+            color: #555;
+            margin-right: 4px;
+        }
+        .nav-btn.star::before {
+            content: '[★]';
+            color: #ffaa44;
+        }
+        .nav-btn.planet::before {
+            content: '[●]';
+            color: #55aaff;
+        }
+        .nav-btn.moon::before {
+            content: '[~]';
+            color: #88cc88;
         }
         .nav-btn:hover {
-            background: #00ffcc;
-            color: black;
+            border-color: #e0e0e0;
+            background: rgba(255,255,255,0.08);
         }
-        .thrust-panel {
-            background: #051010;
-            padding: 12px;
-            margin-top: 4px;
-        }
-        .thrust-control {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            justify-content: center;
-            margin: 8px 0;
-        }
-        .thrust-btn {
-            background: #1a2a2a;
-            border: 1px solid #00ffcc;
+        .nav-btn.selected {
+            border-color: #00ffcc;
             color: #00ffcc;
-            font-size: 18px;
-            font-weight: bold;
-            width: 56px;
-            padding: 6px;
-            cursor: pointer;
-            text-align: center;
+            box-shadow: 0 0 8px rgba(0,255,204,0.3);
         }
-        .thrust-btn.disabled {
-            opacity: 0.4;
-            border-color: #555;
-            color: #888;
-            cursor: not-allowed;
-        }
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            margin: 6px 0;
-        }
-        input[type="range"] {
-            width: 100%;
-            background: #2a4a4a;
-            height: 4px;
-        }
-        .dev-badge {
-            background: #ff6600;
-            color: black;
-            font-size: 9px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            display: inline-block;
-        }
-        .warning {
-            color: #ffaa66;
-            font-size: 10px;
-            margin-top: 6px;
+        .sub-nav {
+            margin-left: 28px;
+            border-left: 1px dashed #2a6a6a;
+            padding-left: 8px;
+            display: block;
         }
         .right-panel {
             flex: 1;
@@ -226,21 +207,55 @@
             border: 1px solid #2a4a4a;
             background: #050508;
             position: relative;
+            border-radius: 4px;
+            overflow: hidden;
         }
         #orbitCanvas {
             width: 100%;
             height: 100%;
             display: block;
         }
+        .info-card {
+            background: #010a0a;
+            border-left: 3px solid #00ffcc;
+            padding: 12px;
+            font-size: 11px;
+        }
+        .body-name-large {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00ffcc;
+            margin-bottom: 8px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #1a3a3a;
+        }
+        .info-label {
+            color: #88aaff;
+        }
+        .fact-box {
+            margin-top: 10px;
+            background: #051515;
+            padding: 6px;
+            border-left: 2px solid #ffaa44;
+            font-size: 10px;
+        }
         .footer {
-            padding: 8px;
+            padding: 6px;
             background: #000000cc;
             border-top: 1px solid #00ffcc;
+            text-align: center;
+            font-size: 9px;
+            color: #668888;
         }
         .btn-row {
             display: flex;
-            gap: 6px;
+            gap: 8px;
             justify-content: center;
+            margin-top: 6px;
             flex-wrap: wrap;
         }
         .btn {
@@ -251,10 +266,16 @@
             font-family: monospace;
             font-size: 11px;
             cursor: pointer;
+            transition: 0.1s;
+        }
+        .btn:hover {
+            border-color: #00ffcc;
+            color: #00ffcc;
         }
         .btn.active {
             background: #ffcc00;
             color: black;
+            border-color: #ffcc00;
         }
         .status {
             background: black;
@@ -262,28 +283,67 @@
             padding: 2px 12px;
             font-size: 11px;
         }
-        .overlay-text {
-            position: absolute;
-            background: #000000aa;
-            padding: 4px 6px;
-            font-size: 10px;
-            pointer-events: none;
-        }
-        .checkbox-label {
+        .controls {
             display: flex;
+            justify-content: space-between;
             align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pan-buttons {
+            display: flex;
+            gap: 4px;
+            background: #010a0a;
+            padding: 4px;
+            border-radius: 4px;
+            flex-wrap: wrap;
+        }
+        .pan-btn {
+            background: #0a1a1a;
+            border: 1px solid #2a6a6a;
+            color: #88ffcc;
             font-size: 11px;
-            margin: 6px 0;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-family: monospace;
         }
-        hr {
-            border-color: #2a4a4a;
-            margin: 8px 0;
+        .pan-btn:hover {
+            background: #00ffcc22;
+            border-color: #00ffcc;
         }
-        .teleport-btn {
-            background: #ff6600;
-            border-color: #ffaa44;
-            color: white;
+        .track-active {
+            background: #00aa55;
+            color: black;
+            border-color: #00ffcc;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; background: #33ff88; }
+        }
+        .notify {
+            position: fixed;
+            bottom: 60px;
+            right: 20px;
+            background: #000000cc;
+            border-left: 3px solid #00ffcc;
+            padding: 6px 12px;
+            font-size: 10px;
+            font-family: monospace;
+            z-index: 2000;
+            color: #aaffdd;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #051010;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00ffcc44;
         }
     </style>
 </head>
@@ -292,463 +352,609 @@
 <div class="top-bar">
     <div class="top-left">
         <div class="top-item">COORD: 55°55'0"N, 37°49'0"E</div>
-        <div class="top-item">55.916667 / 37.816667</div>
-        <div class="top-item">NAVCORE • GRAVITY • ΔV THRUST</div>
+        <div class="top-item">NAVCORE :: IMPORT/EXPORT</div>
+        <div class="top-item">JSON STAR SYSTEMS</div>
     </div>
     <div class="alpha-logo">
-        ALPHA<span>v0.9</span>
+        ALPHA<span>v3.3</span>
     </div>
 </div>
 <div class="main-area">
     <div class="left-panel">
         <div class="panel">
-            <div class="panel-title">🌌 PLANETARY DATABASE</div>
-            <div class="planet-grid" id="planetGrid"></div>
-            <div class="moons-area">
-                <span style="color:#ffcc00;">◈ LOCAL MOONS</span><br>
-                <div id="moonList">select a planet</div>
+            <div class="panel-title">[STAR SYSTEMS]</div>
+            <div class="system-selector" id="systemSelector"></div>
+            <div class="import-export">
+                <button class="ie-btn" id="exportBtn">[EXPORT SYSTEM]</button>
+                <button class="ie-btn" id="importBtn">[IMPORT SYSTEM]</button>
+                <input type="file" id="importFileInput" accept=".json" style="display:none;">
             </div>
-            <div id="infoLine" style="font-size:10px; padding:6px; text-align:center; color:#88ffcc;">⚫ click a planet to target</div>
+            <div class="panel-title" style="border-top:1px solid #2a4a4a;">[CELESTIAL REGISTRY]</div>
+            <div id="planetTree" style="padding: 8px; overflow-y: auto; max-height: 45vh;"></div>
         </div>
-        <div class="panel">
-            <div class="panel-title">🛸 LAMBERT PREDICTIVE TRANSFER</div>
-            <div style="padding:12px;">
-                <div style="background:#051515; padding:8px; text-align:center; border:1px solid #00ffcc;">
-                    🎯 TARGET: <span id="targetName">NONE</span> &nbsp;| DIST: <span id="targetDist">---</span> AU
-                </div>
-                <div class="route-details" id="transferDetails">
-                    <span>Δv₁: ---</span> <span>Δv₂: ---</span>
-                    <span>Total Δv: ---</span> <span>ToF: --- days</span>
-                    <span>ecc: ---</span> <span>semi-major: ---</span>
-                </div>
-                <div class="btn-group">
-                    <button id="setTargetBtn" class="nav-btn">🔒 SET TARGET</button>
-                    <button id="computeTransferBtn" class="nav-btn">✈️ COMPUTE LAMBERT</button>
-                    <button id="clearTransferBtn" class="nav-btn">🗑️ CLEAR</button>
-                </div>
-                <div id="phaseMsg" class="warning">⏺ transfer window status</div>
-            </div>
-        </div>
-
-        <!-- THRUST & AUTO DECELERATION -->
-        <div class="panel">
-            <div class="panel-title">🚀 ΔV THRUST CONTROL</div>
-            <div class="thrust-panel">
-                <div class="checkbox-label">
-                    <input type="checkbox" id="manualOverrideCheckbox">
-                    <label for="manualOverrideCheckbox">🔧 MANUAL OVERRIDE (disable auto-decel)</label>
-                </div>
-                <div class="checkbox-label">
-                    <input type="checkbox" id="autoDecelCheckbox">
-                    <label for="autoDecelCheckbox">🔄 AUTO DECELERATION (match target orbit)</label>
-                </div>
-                <div class="slider-label">
-                    <span>Δv per second (DU/s²):</span>
-                    <span id="dvValue">0.8</span>
-                </div>
-                <input type="range" id="dvSlider" min="0.1" max="5.0" step="0.05" value="0.8">
-                <div class="thrust-control">
-                    <button id="thrustRetroBtn" class="thrust-btn">◀◀ RETRO</button>
-                    <button id="thrustProBtn" class="thrust-btn">PRO ▶▶</button>
-                </div>
-                <div id="thrustStatusMsg" style="font-size:10px; text-align:center; margin-top:4px;">⏳ thrust ready</div>
-                <hr>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                    <span><span class="dev-badge">DEV</span> TELEPORT</span>
-                    <button id="teleportToTargetBtn" class="nav-btn teleport-btn">🌀 TELEPORT TO TARGET</button>
-                </div>
-                <div class="warning" style="font-size:9px;">⚠️ teleport instantly moves ship to target planet (dev only)</div>
-                <div style="margin-top:8px; background:#010a0a; padding:4px; text-align:center; font-size:10px;">
-                    <span>🛸 SHIP STATE</span><br>
-                    <span id="shipState">R: -- DU | v: -- DU/TU</span>
-                </div>
+        <div class="panel" style="flex:1;">
+            <div class="panel-title">[TELEMETRY]</div>
+            <div id="infoPanel" style="padding: 8px;">
+                <div style="text-align:center; color:#668888;">select a star, planet or moon</div>
             </div>
         </div>
     </div>
 
     <div class="right-panel">
         <div class="canvas-container">
-            <div class="overlay-text" style="top:8px; left:6px;">-5 -4 -3 -2 -1 T-</div>
-            <div class="overlay-text" style="bottom:8px; left:50%; transform:translateX(-50%);">-1   1   10 P</div>
-            <div class="overlay-text" id="posDisplay" style="bottom:10px; right:10px; text-align:right;">X: 0.00<br>Y: 0.00<br>target: --</div>
             <canvas id="orbitCanvas"></canvas>
+        </div>
+        <div class="controls">
+            <div class="btn-row">
+                <button class="btn" id="zoom-out">ZOOM -</button>
+                <button class="btn" id="zoom-in">ZOOM +</button>
+                <button class="btn" id="zoom-reset">RESET ZOOM</button>
+            </div>
+            <div class="pan-buttons">
+                <button class="pan-btn" id="pan-up">^ UP</button>
+                <button class="pan-btn" id="pan-left"><- LEFT</button>
+                <button class="pan-btn" id="pan-right">RIGHT -></button>
+                <button class="pan-btn" id="pan-down">DOWN v</button>
+                <button class="pan-btn" id="center-star">[STAR]</button>
+                <button class="pan-btn" id="center-system">[SYS CTR]</button>
+                <button class="pan-btn" id="center-selected">[CENTER]</button>
+                <button class="pan-btn" id="reset-pan">[RESET]</button>
+                <button class="pan-btn" id="track-toggle">[TRACK]</button>
+            </div>
+            <div class="btn-row">
+                <button class="btn" id="speed-pause">PAUSE</button>
+                <button class="btn active" id="speed-1x">1x</button>
+                <button class="btn" id="speed-5x">5x</button>
+                <button class="btn" id="speed-10x">10x</button>
+                <button class="btn" id="speed-20x">20x</button>
+            </div>
+            <div class="status" id="speedLabel">SPEED: 1x</div>
+            <div class="status" id="zoomLabel">ZOOM: 1.00x</div>
+            <div class="status" id="trackStatus">TRACK: OFF</div>
         </div>
     </div>
 </div>
 <div class="footer">
-    <div class="btn-row">
-        <button class="btn" id="speed-pause">PAUSE</button>
-        <button class="btn active" id="speed-1x">1x</button>
-        <button class="btn" id="speed-10x">10x</button>
-        <button class="btn" id="speed-100x">100x</button>
-        <button class="btn" id="speed-1000x">1000x</button>
-        <button class="btn" id="zoom-out">ZOOM -</button>
-        <button class="btn" id="zoom-in">ZOOM +</button>
-        <button class="btn" id="zoom-reset">RESET</button>
-        <button class="btn" id="recenter">RECENTER</button>
-    </div>
-    <div class="btn-row" style="justify-content: space-between; margin-top: 6px;">
-        <div class="status" id="zoomLabel">ZOOM: 1.00x</div>
-        <div class="status" id="speedLabel">SPEED: 1x</div>
-    </div>
+    <span>NAVCORE :: EXPORT/IMPORT SYSTEMS AS JSON | SYSTEM DATA PERSISTENT</span>
 </div>
+<div id="notifyMsg" class="notify"></div>
 
 <script>
-    // ----- PHYSICS CONSTANTS -----
-    const GM_SUN = 1.0;          // DU^3/TU^2
-    const TIME_SCALE_DAYS = 58.13;
-    
-    // Planets: same as before
-    const planets = [
-        { name: "Mercury", radius: 40, speed: 0.0020, color: "#b0a8a0", size: 2.0, moons: [], period: 88 },
-        { name: "Venus",   radius: 70, speed: 0.0012, color: "#e8c9a0", size: 2.5, moons: [], period: 225 },
-        { name: "Earth",   radius: 100, speed: 0.0010, color: "#3a86ff", size: 3.0, moons: ["Luna"], period: 365 },
-        { name: "Mars",    radius: 140, speed: 0.0008, color: "#e35f21", size: 2.8, moons: ["Phobos","Deimos"], period: 687 },
-        { name: "Jupiter", radius: 220, speed: 0.00045, color: "#d8a27a", size: 5.5, moons: ["Io","Europa","Ganymede","Callisto"], period: 4333 },
-        { name: "Saturn",  radius: 290, speed: 0.00033, color: "#e8cfb0", size: 4.8, moons: ["Titan","Rhea","Dione","Enceladus"], period: 10759 },
-        { name: "Uranus",  radius: 360, speed: 0.00023, color: "#b0e0e6", size: 3.8, moons: ["Titania","Oberon","Umbriel"], period: 30687 },
-        { name: "Neptune", radius: 430, speed: 0.00018, color: "#4a6a8a", size: 3.8, moons: ["Triton","Nereid"], period: 60190 }
-    ];
-    planets.forEach((p, idx) => { p.angle = (idx * 0.8) % (2*Math.PI); });
-    
-    // ----- SHIP STATE (real position/velocity, gravity integration) -----
-    let shipPos = { x: 95, y: 0 };      // start near Earth orbit
-    let shipVel = { x: 0, y: Math.sqrt(GM_SUN / 95) }; // circular orbit
-    let timeAcc = 1.0;                  // base time multiplier from UI
-    let devWarp = 1;                   // not used, teleport instead
-    let lastTimestamp = 0;
-    
-    // Thrust & auto
-    let manualOverride = false;
-    let autoDecelEnabled = false;
-    let thrustAmount = 0.8;            // DU/s²
-    let thrustingPro = false;
-    let thrustingRetro = false;
-    
-    // Targeting & transfer
-    let selectedPlanet = null;
-    let targetPlanet = null;
-    let transferSolution = null;
-    
-    // UI elements
-    const planetGrid = document.getElementById('planetGrid');
-    const moonListDiv = document.getElementById('moonList');
-    const targetNameSpan = document.getElementById('targetName');
-    const targetDistSpan = document.getElementById('targetDist');
-    const transferDetailsDiv = document.getElementById('transferDetails');
-    const phaseMsgSpan = document.getElementById('phaseMsg');
-    const posDisplay = document.getElementById('posDisplay');
-    const shipStateSpan = document.getElementById('shipState');
-    const thrustStatusMsg = document.getElementById('thrustStatusMsg');
-    const manualOverrideCheck = document.getElementById('manualOverrideCheckbox');
-    const autoDecelCheck = document.getElementById('autoDecelCheckbox');
-    const dvSlider = document.getElementById('dvSlider');
-    const dvValueSpan = document.getElementById('dvValue');
-    
-    // ----- Lambert solver (identical to previous) -----
-    function solveLambert(r1, r2, tof, mu) {
-        const r1mag = Math.hypot(r1.x, r1.y);
-        const r2mag = Math.hypot(r2.x, r2.y);
-        const c = Math.hypot(r2.x - r1.x, r2.y - r1.y);
-        const s = (r1mag + r2mag + c) / 2;
-        function tofFromA(a) {
-            if(a <= 0) return Infinity;
-            const alpha = Math.acos(Math.min(1, 1 - s / a));
-            const beta = Math.acos(Math.min(1, 1 - (s - c) / a));
-            return Math.sqrt(a*a*a / mu) * (alpha - beta - (Math.sin(alpha) - Math.sin(beta)));
+    // --------------------------------------------------------------
+    // STAR SYSTEMS DATA (built-in + imported will be added)
+    // --------------------------------------------------------------
+    const defaultStarSystems = {
+        "Sol": {
+            name: "Sol System",
+            stars: [
+                {
+                    name: "Sol",
+                    type: "G2V Yellow Dwarf",
+                    mass: "1.0 M☉",
+                    temperature: "5778 K",
+                    radius: 14,
+                    color: "#ffcc44",
+                    isPrimary: true,
+                    orbitalRadius: 0,
+                    orbitalSpeed: 0,
+                    planets: [
+                        { name: "Mercury", visualRadius: 45, speed: 0.0210, color: "#b0a8a0", size: 3.0, moons: [], periodDays: 88,
+                          gravity: "3.7 m/s²", atmosphere: "negligible", temperature: "167C / -93C", dayLength: "58.6d", fact: "Fastest orbit." },
+                        { name: "Venus",   visualRadius: 70, speed: 0.0125, color: "#e8c9a0", size: 3.5, moons: [], periodDays: 225,
+                          gravity: "8.87 m/s²", atmosphere: "thick CO2", temperature: "462C", dayLength: "243d", fact: "Runaway greenhouse." },
+                        { name: "Earth",   visualRadius: 100, speed: 0.0100, color: "#3a86ff", size: 4.0, moons: [{name:"Luna", desc:"Large satellite"}], periodDays: 365,
+                          gravity: "9.81 m/s²", atmosphere: "N2, O2", temperature: "14C", dayLength: "24h", fact: "Our home." },
+                        { name: "Mars",    visualRadius: 140, speed: 0.0080, color: "#e35f21", size: 3.8, moons: [{name:"Phobos", desc:"Irregular"},{name:"Deimos", desc:"Small"}], periodDays: 687,
+                          gravity: "3.71 m/s²", atmosphere: "thin CO2", temperature: "-65C to 20C", dayLength: "24h 37m", fact: "Olympus Mons." },
+                        { name: "Jupiter", visualRadius: 260, speed: 0.0042, color: "#d8a27a", size: 7.5, moons: [{name:"Io", desc:"Volcanic"},{name:"Europa", desc:"Ocean"},{name:"Ganymede", desc:"Largest"},{name:"Callisto", desc:"Cratered"}], periodDays: 4333,
+                          gravity: "24.79 m/s²", atmosphere: "H2, He", temperature: "-110C", dayLength: "9h 56m", fact: "Great Red Spot." },
+                        { name: "Saturn",  visualRadius: 360, speed: 0.0030, color: "#e8cfb0", size: 6.8, moons: [{name:"Titan", desc:"Methane lakes"},{name:"Rhea", desc:"Icy"},{name:"Dione", desc:"Ice crust"},{name:"Enceladus", desc:"Plumes"}], periodDays: 10759,
+                          gravity: "10.44 m/s²", atmosphere: "H2, He", temperature: "-178C", dayLength: "10h 33m", fact: "Ring system." },
+                        { name: "Uranus",  visualRadius: 460, speed: 0.0021, color: "#b0e0e6", size: 5.5, moons: [{name:"Titania", desc:"Largest"},{name:"Oberon", desc:"Cratered"},{name:"Umbriel", desc:"Dark"}], periodDays: 30687,
+                          gravity: "8.69 m/s²", atmosphere: "H2, He, CH4", temperature: "-224C", dayLength: "17h 14m", fact: "Sideways rotation." },
+                        { name: "Neptune", visualRadius: 550, speed: 0.0017, color: "#4a6a8a", size: 5.5, moons: [{name:"Triton", desc:"Geysers"},{name:"Nereid", desc:"Eccentric"}], periodDays: 60190,
+                          gravity: "11.15 m/s²", atmosphere: "H2, He, CH4", temperature: "-214C", dayLength: "16h 6m", fact: "Strongest winds." }
+                    ]
+                }
+            ],
+            asteroidBelt: true
+        },
+        "Alpha Centauri": {
+            name: "Alpha Centauri System",
+            stars: [
+                {
+                    name: "Alpha Centauri A",
+                    type: "G2V Yellow Dwarf",
+                    mass: "1.1 M☉",
+                    temperature: "5790 K",
+                    radius: 16,
+                    color: "#ffcc88",
+                    isPrimary: true,
+                    orbitalRadius: 0,
+                    orbitalSpeed: 0,
+                    planets: [
+                        { name: "Aether", visualRadius: 85, speed: 0.011, color: "#aa8866", size: 3.8, moons: [], periodDays: 310,
+                          gravity: "8.9 m/s²", atmosphere: "thin N2", temperature: "22C", dayLength: "28h", fact: "Potentially habitable." }
+                    ]
+                },
+                {
+                    name: "Alpha Centauri B",
+                    type: "K1V Orange Dwarf",
+                    mass: "0.9 M☉",
+                    temperature: "5260 K",
+                    radius: 13,
+                    color: "#ffaa66",
+                    isPrimary: false,
+                    orbitalRadius: 220,
+                    orbitalSpeed: 0.0035,
+                    planets: [
+                        { name: "Vulcan", visualRadius: 140, speed: 0.0075, color: "#cc6644", size: 4.5, moons: [{name:"Pyros", desc:"Volcanic"}], periodDays: 890,
+                          gravity: "12.1 m/s²", atmosphere: "dense CO2", temperature: "340C", dayLength: "14h", fact: "Extreme greenhouse." }
+                    ]
+                },
+                {
+                    name: "Proxima Centauri",
+                    type: "M5.5Ve Red Dwarf",
+                    mass: "0.12 M☉",
+                    temperature: "3040 K",
+                    radius: 9,
+                    color: "#ff8866",
+                    isPrimary: false,
+                    orbitalRadius: 380,
+                    orbitalSpeed: 0.0022,
+                    planets: [
+                        { name: "Proxima b", visualRadius: 65, speed: 0.014, color: "#aa8866", size: 2.5, moons: [], periodDays: 11,
+                          gravity: "7.5 m/s²", atmosphere: "unknown", temperature: "-39C", dayLength: "?h", fact: "Earth-sized, in habitable zone." }
+                    ]
+                }
+            ],
+            asteroidBelt: false
         }
-        let a1 = (r1mag + r2mag) / 2 * 0.8;
-        let a2 = (r1mag + r2mag) / 2 * 1.5;
-        let t1 = tofFromA(a1), t2 = tofFromA(a2);
-        for(let i=0; i<30; i++) {
-            if(Math.abs(t2 - t1) < 1e-12) break;
-            const a_new = a2 - (t2 - tof) * (a2 - a1) / (t2 - t1);
-            if(!isFinite(a_new) || a_new <= Math.max(r1mag, r2mag)/2) break;
-            const t_new = tofFromA(a_new);
-            a1 = a2; t1 = t2;
-            a2 = a_new; t2 = t_new;
-            if(Math.abs(t_new - tof) < 1e-5) break;
-        }
-        const a = a2;
-        if(a <= 0 || !isFinite(a)) return null;
-        const alpha = Math.acos(Math.min(1, 1 - s / a));
-        const beta = Math.acos(Math.min(1, 1 - (s - c) / a));
-        const deltaF = alpha - beta;
-        const f = 1 - (r2mag / a) * (1 - Math.cos(deltaF));
-        const g = Math.sqrt(a*a*a / mu) * (deltaF - Math.sin(deltaF));
-        const v1x = (r2.x - f * r1.x) / g;
-        const v1y = (r2.y - f * r1.y) / g;
-        const v1mag = Math.hypot(v1x, v1y);
-        const gdot = 1 - (r1mag / a) * (1 - Math.cos(deltaF));
-        const v2x = (gdot * r2.x - r1.x) / g;
-        const v2y = (gdot * r2.y - r1.y) / g;
-        const v2mag = Math.hypot(v2x, v2y);
-        const v_circ1 = Math.sqrt(mu / r1mag);
-        const deltaV1 = v1mag - v_circ1;
-        const deltaV2 = v2mag - Math.sqrt(mu / r2mag);
-        const totalDeltaV = Math.abs(deltaV1) + Math.abs(deltaV2);
-        const h = Math.abs(r1.x * v1y - r1.y * v1x);
-        const energy = v1mag*v1mag/2 - mu/r1mag;
-        const e = Math.sqrt(1 + (2*energy*h*h)/(mu*mu));
-        return { a, e, deltaV1, deltaV2, totalDeltaV, tofDays: tof * TIME_SCALE_DAYS, r1, r2 };
+    };
+    
+    let starSystems = JSON.parse(JSON.stringify(defaultStarSystems));  // mutable copy
+    let currentSystemId = "Sol";
+    let currentSystem = starSystems[currentSystemId];
+    let currentStars = currentSystem.stars;
+    let selectedBody = null;
+    
+    // Helper: show notification
+    function showNotify(msg, isError = false) {
+        const notify = document.getElementById('notifyMsg');
+        notify.style.backgroundColor = isError ? "#330000" : "#000000cc";
+        notify.style.borderLeftColor = isError ? "#ff6666" : "#00ffcc";
+        notify.style.color = isError ? "#ffaaaa" : "#aaffdd";
+        notify.innerText = msg;
+        notify.style.opacity = "1";
+        setTimeout(() => { notify.style.opacity = "0"; }, 3000);
     }
     
-    function computePredictiveTransfer() {
-        if(!targetPlanet) return null;
-        let tof_tu = Math.PI * Math.sqrt(Math.pow((Math.hypot(shipPos.x, shipPos.y) + targetPlanet.radius)/2, 3) / GM_SUN);
-        let targetFutureAngle = targetPlanet.angle + targetPlanet.speed * tof_tu;
-        let targetFuturePos = { x: Math.cos(targetFutureAngle)*targetPlanet.radius, y: Math.sin(targetFutureAngle)*targetPlanet.radius };
-        for(let iter=0; iter<3; iter++) {
-            const lam = solveLambert(shipPos, targetFuturePos, tof_tu, GM_SUN);
-            if(!lam) break;
-            const newToF = lam.tofDays / TIME_SCALE_DAYS;
-            if(Math.abs(newToF - tof_tu) < 0.01) {
-                tof_tu = newToF;
-                targetFutureAngle = targetPlanet.angle + targetPlanet.speed * tof_tu;
-                targetFuturePos = { x: Math.cos(targetFutureAngle)*targetPlanet.radius, y: Math.sin(targetFutureAngle)*targetPlanet.radius };
-                return { ...lam, targetFutureAngle, targetFuturePos };
+    // Initialize angles
+    function initAngles() {
+        for (let star of currentStars) {
+            if (!star.isPrimary) star.angle = Math.random() * 2 * Math.PI;
+            for (let planet of star.planets) {
+                planet.angle = Math.random() * 2 * Math.PI;
+                for (let moon of (planet.moons || [])) {
+                    moon.angle = Math.random() * 2 * Math.PI;
+                }
             }
-            tof_tu = newToF;
-            targetFutureAngle = targetPlanet.angle + targetPlanet.speed * tof_tu;
-            targetFuturePos = { x: Math.cos(targetFutureAngle)*targetPlanet.radius, y: Math.sin(targetFutureAngle)*targetPlanet.radius };
         }
-        const finalLam = solveLambert(shipPos, targetFuturePos, tof_tu, GM_SUN);
-        if(finalLam && finalLam.a > 0) return { ...finalLam, targetFutureAngle, targetFuturePos };
-        return null;
     }
     
-    function updateTransferUI() {
-        if(!targetPlanet) {
-            targetNameSpan.innerText = "NONE";
-            targetDistSpan.innerText = "---";
-            transferDetailsDiv.innerHTML = `<span>Δv₁: ---</span> <span>Δv₂: ---</span><span>Total Δv: ---</span><span>ToF: --- days</span><span>ecc: ---</span><span>semi-major: ---</span>`;
-            posDisplay.innerHTML = `X: ${shipPos.x.toFixed(1)}<br>Y: ${shipPos.y.toFixed(1)}<br>target: none`;
+    // Asteroid belt
+    let asteroids = [];
+    function generateAsteroidBelt() {
+        if (!currentSystem.asteroidBelt) {
+            asteroids = [];
             return;
         }
-        const tx = Math.cos(targetPlanet.angle)*targetPlanet.radius;
-        const ty = Math.sin(targetPlanet.angle)*targetPlanet.radius;
-        const dist = Math.hypot(tx - shipPos.x, ty - shipPos.y);
-        targetDistSpan.innerText = (dist/100).toFixed(2);
-        targetNameSpan.innerText = targetPlanet.name;
-        
-        if(transferSolution && transferSolution.a > 0) {
-            const s = transferSolution;
-            transferDetailsDiv.innerHTML = `
-                <span>Δv₁: ${s.deltaV1.toFixed(3)} DU/TU</span> <span>Δv₂: ${s.deltaV2.toFixed(3)} DU/TU</span>
-                <span>Total Δv: ${s.totalDeltaV.toFixed(3)}</span> <span>ToF: ${s.tofDays.toFixed(0)} days</span>
-                <span>ecc: ${s.e.toFixed(3)}</span> <span>a: ${s.a.toFixed(1)} DU</span>
-            `;
-            const phaseDiff = Math.abs((targetPlanet.angle - Math.atan2(shipPos.y, shipPos.x)) % (2*Math.PI));
-            const phaseErrDeg = Math.min(phaseDiff, 2*Math.PI - phaseDiff) * 180/Math.PI;
-            if(phaseErrDeg < 20) phaseMsgSpan.innerHTML = "✅ TRANSFER WINDOW ACTIVE";
-            else phaseMsgSpan.innerHTML = `⏺ WINDOW CLOSED (phase error ${phaseErrDeg.toFixed(0)}°)`;
-        } else {
-            transferDetailsDiv.innerHTML = `<span>Δv₁: ---</span> <span>Δv₂: ---</span><span>Total Δv: ---</span><span>ToF: --- days</span><span>click COMPUTE</span><span></span>`;
-        }
-        const r = Math.hypot(shipPos.x, shipPos.y);
-        const v = Math.hypot(shipVel.x, shipVel.y);
-        shipStateSpan.innerHTML = `R: ${r.toFixed(1)} DU | v: ${v.toFixed(3)} DU/TU`;
-        posDisplay.innerHTML = `X: ${shipPos.x.toFixed(1)}<br>Y: ${shipPos.y.toFixed(1)}<br>🎯 ${targetPlanet.name}<br>Δ ${(dist/100).toFixed(2)} AU`;
-    }
-    
-    // ----- PHYSICS INTEGRATION (Euler) -----
-    function applyGravity(dt) {
-        const r2 = shipPos.x*shipPos.x + shipPos.y*shipPos.y;
-        const r = Math.sqrt(r2);
-        const accMag = -GM_SUN / r2;
-        const ax = accMag * shipPos.x / r;
-        const ay = accMag * shipPos.y / r;
-        shipVel.x += ax * dt;
-        shipVel.y += ay * dt;
-    }
-    
-    function applyThrust(dt, direction) { // direction: +1 prograde, -1 retrograde
-        const vmag = Math.hypot(shipVel.x, shipVel.y);
-        if(vmag < 1e-6) return;
-        const unitX = shipVel.x / vmag;
-        const unitY = shipVel.y / vmag;
-        const dv = thrustAmount * dt * direction;
-        shipVel.x += unitX * dv;
-        shipVel.y += unitY * dv;
-    }
-    
-    // Auto deceleration: compute required delta-v to match target's circular orbit at current radius
-    function autoDecelOnce(dt) {
-        if(!targetPlanet || manualOverride || !autoDecelEnabled) return;
-        const r = Math.hypot(shipPos.x, shipPos.y);
-        const targetCircularSpeed = Math.sqrt(GM_SUN / r);
-        const currentSpeed = Math.hypot(shipVel.x, shipVel.y);
-        const speedError = currentSpeed - targetCircularSpeed;
-        if(Math.abs(speedError) < 0.01) return;
-        const direction = (speedError > 0) ? -1 : 1; // retrograde if too fast
-        // Apply limited decel per frame to avoid instability
-        const maxDeltaV = thrustAmount * dt;
-        const delta = Math.min(maxDeltaV, Math.abs(speedError)) * direction;
-        const vmag = Math.hypot(shipVel.x, shipVel.y);
-        if(vmag > 1e-6) {
-            const unitX = shipVel.x / vmag;
-            const unitY = shipVel.y / vmag;
-            shipVel.x += unitX * delta;
-            shipVel.y += unitY * delta;
+        const ASTEROID_COUNT = 1500;
+        const BELT_INNER = 175;
+        const BELT_OUTER = 210;
+        const BELT_ANGULAR_SPEED = 0.0022;
+        asteroids = [];
+        for (let i = 0; i < ASTEROID_COUNT; i++) {
+            const radius = BELT_INNER + Math.random() * (BELT_OUTER - BELT_INNER);
+            const angle = Math.random() * 2 * Math.PI;
+            const size = 1.0 + Math.random() * 1.5;
+            const speedVar = 0.0002 * (Math.random() - 0.5);
+            asteroids.push({ radius, angle, size, speed: BELT_ANGULAR_SPEED + speedVar });
         }
     }
     
-    // Teleport: instantly move ship to target planet's current position and match its circular orbit speed
-    function teleportToTarget() {
-        if(!targetPlanet) return;
-        const angle = targetPlanet.angle;
-        const r_target = targetPlanet.radius;
-        shipPos.x = Math.cos(angle) * r_target;
-        shipPos.y = Math.sin(angle) * r_target;
-        const circSpeed = Math.sqrt(GM_SUN / r_target);
-        shipVel.x = -Math.sin(angle) * circSpeed;
-        shipVel.y = Math.cos(angle) * circSpeed;
-        updateTransferUI();
-        thrustStatusMsg.innerText = "🌀 TELEPORTED to target planet";
-        setTimeout(() => { if(!manualOverride && !autoDecelEnabled) thrustStatusMsg.innerText = "thrust ready"; }, 1500);
+    function updateOrbits(dt) {
+        if (simulationPaused) return;
+        for (let star of currentStars) {
+            if (!star.isPrimary && star.orbitalSpeed) {
+                star.angle = (star.angle || 0) + star.orbitalSpeed * dt;
+                while (star.angle > 2*Math.PI) star.angle -= 2*Math.PI;
+            }
+            for (let planet of star.planets) {
+                planet.angle = (planet.angle || 0) + planet.speed * dt;
+                while (planet.angle > 2*Math.PI) planet.angle -= 2*Math.PI;
+                for (let moon of (planet.moons || [])) {
+                    moon.angle = (moon.angle || 0) + (planet.speed * 1.5) * dt;
+                    while (moon.angle > 2*Math.PI) moon.angle -= 2*Math.PI;
+                }
+            }
+        }
+        if (currentSystem.asteroidBelt) {
+            for (let a of asteroids) {
+                a.angle += a.speed * dt;
+                while (a.angle > 2*Math.PI) a.angle -= 2*Math.PI;
+            }
+        }
     }
     
-    // ----- SIMULATION LOOP -----
-    let baseTimeScale = 1;
+    // Drawing and navigation (same as before, with barycenter)
+    let ctx, width, height;
+    let zoomLevel = 1.0, panX = 0, panY = 0;
+    let trackingMode = false;
     let simulationPaused = false;
-    let lastFrameTime = 0;
+    let timeScale = 1.0;
+    let lastFrame = 0;
     
-    function updateSimulation(dtRealSec) {
-        if(simulationPaused) return;
-        let dtSim = dtRealSec * baseTimeScale;
-        const MAX_DT = 0.05;
-        if(dtSim > MAX_DT) dtSim = MAX_DT;
-        // manual thrust buttons continuous
-        if(thrustingPro && !manualOverride) applyThrust(dtSim, 1);
-        if(thrustingRetro && !manualOverride) applyThrust(dtSim, -1);
-        // auto deceleration runs regardless of button state (but respects override)
-        if(autoDecelEnabled && !manualOverride) autoDecelOnce(dtSim);
-        // gravity
-        applyGravity(dtSim);
-        // update position
-        shipPos.x += shipVel.x * dtSim;
-        shipPos.y += shipVel.y * dtSim;
-        // update planet angles (only for visual)
-        planets.forEach(p => {
-            p.angle += p.speed * dtSim;
-            if(p.angle > 2*Math.PI) p.angle -= 2*Math.PI;
-        });
-        // recalc transfer if target exists
-        if(targetPlanet && transferSolution) {
-            const newSol = computePredictiveTransfer();
-            if(newSol) transferSolution = newSol;
-        }
-        updateTransferUI();
+    function getStarWorldPosition(star) {
+        if (star.isPrimary) return { x: 0, y: 0 };
+        const angle = star.angle || 0;
+        const r = star.orbitalRadius;
+        return { x: Math.cos(angle) * r, y: Math.sin(angle) * r };
     }
     
-    // ----- CANVAS RENDERING -----
-    const canvas = document.getElementById('orbitCanvas');
-    let ctx = canvas.getContext('2d');
-    let width, height;
-    let zoomLevel = 1.0;
-    function resize() { width = canvas.parentElement.clientWidth; height = canvas.parentElement.clientHeight; canvas.width = width; canvas.height = height; }
-    window.addEventListener('resize', resize); resize();
+    function getWorldPosition(body) {
+        if (body.type === 'star') {
+            return getStarWorldPosition(body.data);
+        } else if (body.type === 'planet') {
+            const star = body.parentStar;
+            const starPos = getStarWorldPosition(star);
+            const angle = body.data.angle || 0;
+            const r = body.data.visualRadius;
+            return { x: starPos.x + Math.cos(angle) * r, y: starPos.y + Math.sin(angle) * r };
+        } else if (body.type === 'moon') {
+            const planet = body.parent;
+            const star = body.parentStar;
+            const starPos = getStarWorldPosition(star);
+            const planetAngle = planet.angle || 0;
+            const planetR = planet.visualRadius;
+            const planetPos = { x: starPos.x + Math.cos(planetAngle) * planetR, y: starPos.y + Math.sin(planetAngle) * planetR };
+            const moonAngle = body.data.angle || 0;
+            const moonOffset = 12;
+            return { x: planetPos.x + Math.cos(moonAngle) * moonOffset, y: planetPos.y + Math.sin(moonAngle) * moonOffset };
+        }
+        return { x: 0, y: 0 };
+    }
+    
+    function getBarycenter() {
+        let sumX = 0, sumY = 0;
+        let count = 0;
+        for (let star of currentStars) {
+            const pos = getStarWorldPosition(star);
+            sumX += pos.x;
+            sumY += pos.y;
+            count++;
+        }
+        if (count === 0) return { x: 0, y: 0 };
+        return { x: sumX / count, y: sumY / count };
+    }
+    
+    function centerOnBarycenter() {
+        if (trackingMode) disableTracking();
+        const bary = getBarycenter();
+        panX = -bary.x * zoomLevel;
+        panY = -bary.y * zoomLevel;
+        draw();
+    }
+    function centerOnPrimaryStar() {
+        if (trackingMode) disableTracking();
+        const primary = currentStars.find(s => s.isPrimary);
+        if (primary) {
+            const pos = getStarWorldPosition(primary);
+            panX = -pos.x * zoomLevel;
+            panY = -pos.y * zoomLevel;
+        } else { panX = 0; panY = 0; }
+        draw();
+    }
+    function centerOnSelected() {
+        if (!selectedBody) return;
+        if (trackingMode) disableTracking();
+        const pos = getWorldPosition(selectedBody);
+        panX = -pos.x * zoomLevel;
+        panY = -pos.y * zoomLevel;
+        draw();
+    }
+    function updateTracking() {
+        if (!trackingMode || !selectedBody) return;
+        const pos = getWorldPosition(selectedBody);
+        panX = -pos.x * zoomLevel;
+        panY = -pos.y * zoomLevel;
+    }
+    function enableTracking() { trackingMode = true; document.getElementById('track-toggle').classList.add('track-active'); document.getElementById('trackStatus').innerText = "TRACK: ON"; centerOnSelected(); }
+    function disableTracking() { trackingMode = false; document.getElementById('track-toggle').classList.remove('track-active'); document.getElementById('trackStatus').innerText = "TRACK: OFF"; }
+    function toggleTracking() { trackingMode ? disableTracking() : enableTracking(); }
+    function setZoom(delta) { if(trackingMode) disableTracking(); zoomLevel = Math.min(5, Math.max(0.25, zoomLevel+delta)); document.getElementById('zoomLabel').innerText = `ZOOM: ${zoomLevel.toFixed(2)}x`; draw(); }
+    function resetZoom() { if(trackingMode) disableTracking(); zoomLevel=1.0; document.getElementById('zoomLabel').innerText='ZOOM: 1.00x'; draw(); }
+    function pan(dx,dy) { if(trackingMode) disableTracking(); panX+=dx; panY+=dy; draw(); }
+    function resetPan() { if(trackingMode) disableTracking(); panX=0; panY=0; draw(); }
+    function setSpeed(mult,btnId) { timeScale=mult; simulationPaused=(mult===0); document.getElementById('speedLabel').innerText=simulationPaused?"SPEED: PAUSED":`SPEED: ${mult}x`; ['speed-pause','speed-1x','speed-5x','speed-10x','speed-20x'].forEach(id=>{let b=document.getElementById(id);if(b)b.classList.remove('active');}); if(btnId) document.getElementById(btnId).classList.add('active'); }
     
     function draw() {
+        if (!ctx) return;
         ctx.clearRect(0, 0, width, height);
         ctx.save();
-        ctx.translate(width/2, height/2);
+        ctx.translate(width/2 + panX, height/2 + panY);
         ctx.scale(zoomLevel, zoomLevel);
-        // Sun
-        ctx.beginPath(); ctx.arc(0, 0, 12, 0, 2*Math.PI); ctx.fillStyle="#ffcc44"; ctx.fill();
-        // orbits
-        planets.forEach(p => { ctx.beginPath(); ctx.arc(0,0,p.radius,0,2*Math.PI); ctx.strokeStyle="rgba(80,180,180,0.2)"; ctx.setLineDash([3,5]); ctx.stroke(); });
-        ctx.setLineDash([]);
-        // asteroid dust
-        for(let i=0;i<180;i++) { let ang=(i/180)*2*Math.PI; let rad=185+Math.sin(i)*2; ctx.fillStyle="#777755"; ctx.fillRect(Math.cos(ang)*rad-0.6, Math.sin(ang)*rad-0.6,1,1); }
-        // planets
-        planets.forEach(p => {
-            let px = Math.cos(p.angle)*p.radius, py = Math.sin(p.angle)*p.radius;
-            ctx.beginPath(); ctx.arc(px, py, p.size, 0, 2*Math.PI); ctx.fillStyle = p.color; ctx.fill();
-            if(targetPlanet && targetPlanet.name === p.name) {
-                ctx.beginPath(); ctx.arc(px, py, p.size+3, 0, 2*Math.PI); ctx.strokeStyle="#ffaa44"; ctx.setLineDash([4,4]); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(px-6,py); ctx.lineTo(px+6,py); ctx.moveTo(px,py-6); ctx.lineTo(px,py+6); ctx.strokeStyle="#ffcc55"; ctx.stroke(); ctx.setLineDash([]);
+        for (let star of currentStars) {
+            const starPos = getStarWorldPosition(star);
+            for (let planet of star.planets) {
+                ctx.beginPath();
+                ctx.arc(starPos.x, starPos.y, planet.visualRadius, 0, 2*Math.PI);
+                ctx.strokeStyle = "rgba(80,180,180,0.2)";
+                ctx.setLineDash([4,6]);
+                ctx.stroke();
             }
-        });
-        // ship
-        ctx.beginPath(); ctx.moveTo(shipPos.x, shipPos.y-5); ctx.lineTo(shipPos.x-4, shipPos.y+3); ctx.lineTo(shipPos.x+4, shipPos.y+3); ctx.fillStyle="#00ffcc"; ctx.fill();
-        ctx.beginPath(); ctx.arc(shipPos.x, shipPos.y, 3, 0, 2*Math.PI); ctx.fillStyle="#88ffdd"; ctx.fill();
-        // transfer line
-        if(transferSolution && targetPlanet) {
-            const tx = transferSolution.targetFuturePos.x, ty = transferSolution.targetFuturePos.y;
-            ctx.beginPath(); ctx.moveTo(shipPos.x, shipPos.y); ctx.lineTo(tx, ty); ctx.strokeStyle="#ffaa66"; ctx.lineWidth=1.5; ctx.setLineDash([8,6]); ctx.stroke();
-            ctx.beginPath(); ctx.arc(tx, ty, 4, 0, 2*Math.PI); ctx.fillStyle="#ffaa88aa"; ctx.fill();
-            ctx.setLineDash([]);
         }
-        // axes
-        ctx.beginPath(); ctx.moveTo(-width/zoomLevel,0); ctx.lineTo(width/zoomLevel,0); ctx.moveTo(0,-height/zoomLevel); ctx.lineTo(0,height/zoomLevel); ctx.strokeStyle="rgba(100,255,200,0.08)"; ctx.stroke();
+        ctx.setLineDash([]);
+        if (currentSystem.asteroidBelt) {
+            for (let a of asteroids) {
+                const x = Math.cos(a.angle) * a.radius;
+                const y = Math.sin(a.angle) * a.radius;
+                ctx.fillStyle = "#887755";
+                ctx.fillRect(x - a.size/2, y - a.size/2, a.size, a.size);
+            }
+        }
+        for (let star of currentStars) {
+            const pos = getStarWorldPosition(star);
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, star.radius, 0, 2*Math.PI);
+            ctx.fillStyle = star.color;
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            if (selectedBody && selectedBody.type === 'star' && selectedBody.data.name === star.name) {
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, star.radius+3, 0, 2*Math.PI);
+                ctx.strokeStyle = "#ffcc55";
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3,3]);
+                ctx.stroke();
+            }
+        }
+        for (let star of currentStars) {
+            const starPos = getStarWorldPosition(star);
+            for (let planet of star.planets) {
+                const angle = planet.angle || 0;
+                const px = starPos.x + Math.cos(angle) * planet.visualRadius;
+                const py = starPos.y + Math.sin(angle) * planet.visualRadius;
+                ctx.beginPath();
+                ctx.arc(px, py, planet.size, 0, 2*Math.PI);
+                ctx.fillStyle = planet.color;
+                ctx.fill();
+                if (selectedBody && selectedBody.type === 'planet' && selectedBody.data.name === planet.name) {
+                    ctx.beginPath();
+                    ctx.arc(px, py, planet.size+2, 0, 2*Math.PI);
+                    ctx.strokeStyle = "#ffcc55";
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+                for (let moon of (planet.moons || [])) {
+                    const moonAngle = moon.angle || 0;
+                    const mx = px + Math.cos(moonAngle) * 12;
+                    const my = py + Math.sin(moonAngle) * 12;
+                    ctx.beginPath();
+                    ctx.arc(mx, my, 2.5, 0, 2*Math.PI);
+                    ctx.fillStyle = "#ccccaa";
+                    ctx.fill();
+                }
+            }
+        }
         ctx.restore();
+        ctx.font = "9px monospace";
+        ctx.fillStyle = trackingMode ? "#33ff88" : "#446666";
+        ctx.fillText(`TRACK: ${trackingMode ? "ACTIVE" : "OFF"}`, 8, 40);
+        ctx.fillStyle = "#446666";
+        ctx.fillText(`PAN: (${panX.toFixed(0)}, ${panY.toFixed(0)})`, 8, 28);
+        ctx.fillStyle = "#668888";
+        ctx.fillText(`SYSTEM: ${currentSystemId}`, 8, 52);
     }
     
-    // ----- ANIMATION LOOP (time integration) -----
-    let animLastTimestamp = 0;
-    function animate(nowMs) {
-        requestAnimationFrame(animate);
-        if(!animLastTimestamp) { animLastTimestamp = nowMs; return; }
-        let dt = Math.min(0.033, (nowMs - animLastTimestamp) / 1000);
-        if(dt > 0.001) {
-            updateSimulation(dt);
+    // UI tree building
+    const planetTreeDiv = document.getElementById('planetTree');
+    const infoPanelDiv = document.getElementById('infoPanel');
+    
+    function buildTree() {
+        planetTreeDiv.innerHTML = '';
+        for (let star of currentStars) {
+            const starBtn = document.createElement('div');
+            starBtn.className = `nav-btn star ${(selectedBody && selectedBody.type === 'star' && selectedBody.data.name === star.name) ? 'selected' : ''}`;
+            starBtn.innerHTML = `<span style="flex:1;">[★] ${star.name}</span><span style="color:#ffaa44;">${star.type}</span>`;
+            starBtn.onclick = () => selectBody({ type: 'star', data: star });
+            planetTreeDiv.appendChild(starBtn);
+            const planetContainer = document.createElement('div');
+            planetContainer.className = 'sub-nav';
+            for (let planet of star.planets) {
+                const planetBtn = document.createElement('div');
+                planetBtn.className = `nav-btn planet ${(selectedBody && selectedBody.type === 'planet' && selectedBody.data.name === planet.name) ? 'selected' : ''}`;
+                planetBtn.innerHTML = `<span style="flex:1;">[●] ${planet.name}</span><span style="color:#88aaff;">${planet.visualRadius} AU</span>`;
+                planetBtn.onclick = () => selectBody({ type: 'planet', data: planet, parentStar: star });
+                planetContainer.appendChild(planetBtn);
+                const moonContainer = document.createElement('div');
+                moonContainer.className = 'sub-nav';
+                for (let moon of (planet.moons || [])) {
+                    const moonBtn = document.createElement('div');
+                    moonBtn.className = `nav-btn moon ${(selectedBody && selectedBody.type === 'moon' && selectedBody.data.name === moon.name) ? 'selected' : ''}`;
+                    moonBtn.innerHTML = `<span style="flex:1;">[~] ${moon.name}</span><span style="font-size:9px;">${moon.desc.substring(0,20)}</span>`;
+                    moonBtn.onclick = () => selectBody({ type: 'moon', data: moon, parent: planet, parentStar: star });
+                    moonContainer.appendChild(moonBtn);
+                }
+                planetContainer.appendChild(moonContainer);
+            }
+            planetTreeDiv.appendChild(planetContainer);
         }
-        animLastTimestamp = nowMs;
+    }
+    
+    function selectBody(body) {
+        if (trackingMode) disableTracking();
+        selectedBody = body;
+        buildTree();
+        updateInfoPanel();
         draw();
     }
     
-    // ----- UI EVENT HANDLERS -----
-    function setTarget() { if(selectedPlanet) { targetPlanet = selectedPlanet; transferSolution = null; computeTransfer(); updateTransferUI(); renderPlanetList(); } }
-    function computeTransfer() { if(targetPlanet) { const sol = computePredictiveTransfer(); if(sol) transferSolution = sol; updateTransferUI(); } }
-    function clearTransfer() { transferSolution = null; updateTransferUI(); }
-    
-    function renderPlanetList() {
-        planetGrid.innerHTML = '';
-        planets.forEach(p => {
-            const card = document.createElement('div');
-            card.className = `planet-card ${selectedPlanet === p ? 'selected' : ''}`;
-            card.innerHTML = `<span class="planet-name">${p.name}</span><span class="planet-dist">🪐 ${p.radius} Mm</span>`;
-            card.onclick = () => { selectedPlanet = p; renderPlanetList(); if(p.moons.length) moonListDiv.innerHTML = p.moons.map(m => `<span class="moon-badge">🌙 ${m}</span>`).join(''); else moonListDiv.innerHTML = '<span class="moon-badge">⛔ no major moons</span>'; document.getElementById('infoLine').innerHTML = `📡 ${p.name} | orbit radius ${p.radius} DU | period ${p.period}d`; };
-            planetGrid.appendChild(card);
-        });
-        if(!selectedPlanet && planets.length) selectedPlanet = planets[2];
-        if(selectedPlanet) { const p=selectedPlanet; if(p.moons.length) moonListDiv.innerHTML = p.moons.map(m => `<span class="moon-badge">🌙 ${m}</span>`).join(''); else moonListDiv.innerHTML = '<span class="moon-badge">⛔ no major moons</span>'; document.getElementById('infoLine').innerHTML = `📡 ${p.name} | orbit radius ${p.radius} DU | period ${p.period}d`; }
+    function updateInfoPanel() {
+        if (!selectedBody) {
+            infoPanelDiv.innerHTML = '<div style="text-align:center; color:#668888;">select a star, planet or moon</div>';
+            return;
+        }
+        if (selectedBody.type === 'star') {
+            const s = selectedBody.data;
+            infoPanelDiv.innerHTML = `<div class="info-card"><div class="body-name-large">[STAR] ${s.name}</div><div class="info-row"><span class="info-label">TYPE</span><span>${s.type}</span></div><div class="info-row"><span class="info-label">MASS</span><span>${s.mass}</span></div><div class="info-row"><span class="info-label">TEMPERATURE</span><span>${s.temperature}</span></div><div class="fact-box">[FACT] Primary energy source.</div></div>`;
+        } else if (selectedBody.type === 'planet') {
+            const p = selectedBody.data;
+            const moonsStr = (p.moons || []).map(m=>m.name).join(', ') || 'None';
+            infoPanelDiv.innerHTML = `<div class="info-card"><div class="body-name-large">[PLANET] ${p.name}</div><div class="info-row"><span class="info-label">ORBIT RADIUS</span><span>${p.visualRadius} AU</span></div><div class="info-row"><span class="info-label">PERIOD</span><span>${p.periodDays} days</span></div><div class="info-row"><span class="info-label">GRAVITY</span><span>${p.gravity}</span></div><div class="info-row"><span class="info-label">ATMOSPHERE</span><span>${p.atmosphere}</span></div><div class="info-row"><span class="info-label">TEMP</span><span>${p.temperature}</span></div><div class="info-row"><span class="info-label">DAY LENGTH</span><span>${p.dayLength}</span></div><div class="info-row"><span class="info-label">MOONS</span><span>${moonsStr}</span></div><div class="fact-box">${p.fact}</div></div>`;
+        } else if (selectedBody.type === 'moon') {
+            const m = selectedBody.data;
+            infoPanelDiv.innerHTML = `<div class="info-card"><div class="body-name-large">[MOON] ${m.name}</div><div class="info-row"><span class="info-label">DESCRIPTION</span><span>${m.desc}</span></div><div class="fact-box">Natural satellite.</div></div>`;
+        }
     }
     
-    // Controls
-    function setBaseSpeed(mult, btnId) { baseTimeScale = mult; simulationPaused = (mult===0); document.getElementById('speedLabel').innerText = `SPEED: ${mult===0?"PAUSED":mult+"x"}`; ['speed-pause','speed-1x','speed-10x','speed-100x','speed-1000x'].forEach(id=>{ let b=document.getElementById(id); if(b) b.classList.remove('active'); }); if(btnId) document.getElementById(btnId).classList.add('active'); }
-    function setZoom(delta) { let nz=zoomLevel+delta; if(nz<0.2)nz=0.2; if(nz>5)nz=5; zoomLevel=nz; document.getElementById('zoomLabel').innerText=`ZOOM: ${zoomLevel.toFixed(2)}x`; }
-    function resetZoom() { zoomLevel=1.0; document.getElementById('zoomLabel').innerText='ZOOM: 1.00x'; }
-    function recenter() { resetZoom(); }
+    function switchSystem(sysId) {
+        if (trackingMode) disableTracking();
+        if (!starSystems[sysId]) { showNotify(`System "${sysId}" not found.`, true); return; }
+        currentSystemId = sysId;
+        currentSystem = starSystems[currentSystemId];
+        currentStars = currentSystem.stars;
+        initAngles();
+        generateAsteroidBelt();
+        panX = 0; panY = 0;
+        zoomLevel = 1.0;
+        document.getElementById('zoomLabel').innerText = 'ZOOM: 1.00x';
+        selectedBody = currentStars.length > 0 ? { type: 'star', data: currentStars[0] } : null;
+        buildTree();
+        updateInfoPanel();
+        draw();
+        document.querySelectorAll('.sys-btn').forEach(btn => { btn.classList.remove('active'); if (btn.innerText === sysId) btn.classList.add('active'); });
+    }
     
-    document.getElementById('speed-pause').onclick = () => setBaseSpeed(0,'speed-pause');
-    document.getElementById('speed-1x').onclick = () => setBaseSpeed(1,'speed-1x');
-    document.getElementById('speed-10x').onclick = () => setBaseSpeed(10,'speed-10x');
-    document.getElementById('speed-100x').onclick = () => setBaseSpeed(100,'speed-100x');
-    document.getElementById('speed-1000x').onclick = () => setBaseSpeed(1000,'speed-1000x');
+    function renderSystemSelector() {
+        const selector = document.getElementById('systemSelector');
+        selector.innerHTML = '';
+        for (let sysId in starSystems) {
+            const btn = document.createElement('button');
+            btn.className = `sys-btn ${currentSystemId === sysId ? 'active' : ''}`;
+            btn.innerText = sysId;
+            btn.onclick = () => switchSystem(sysId);
+            selector.appendChild(btn);
+        }
+    }
+    
+    // ----- EXPORT/IMPORT -----
+    function exportCurrentSystem() {
+        const systemData = starSystems[currentSystemId];
+        const exportObj = { [currentSystemId]: systemData };
+        const dataStr = JSON.stringify(exportObj, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentSystemId}_system.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showNotify(`Exported "${currentSystemId}" to JSON.`);
+    }
+    
+    function importSystemFromFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (typeof imported !== 'object' || imported === null) throw new Error("Invalid JSON");
+                let addedCount = 0;
+                for (let sysId in imported) {
+                    const sysData = imported[sysId];
+                    if (!sysData.stars || !Array.isArray(sysData.stars)) {
+                        showNotify(`System "${sysId}" missing 'stars' array. Skipped.`, true);
+                        continue;
+                    }
+                    starSystems[sysId] = sysData;
+                    addedCount++;
+                }
+                if (addedCount > 0) {
+                    renderSystemSelector();
+                    if (!starSystems[currentSystemId]) {
+                        const firstKey = Object.keys(starSystems)[0];
+                        if (firstKey) switchSystem(firstKey);
+                        else currentSystemId = null;
+                    } else {
+                        switchSystem(currentSystemId);
+                    }
+                    showNotify(`Imported ${addedCount} system(s).`);
+                } else {
+                    showNotify("No valid systems imported.", true);
+                }
+            } catch(err) {
+                showNotify(`Import error: ${err.message}`, true);
+            }
+        };
+        reader.onerror = () => showNotify("File read error.", true);
+        reader.readAsText(file);
+    }
+    
+    // Animation
+    function animate(now) {
+        requestAnimationFrame(animate);
+        if (!lastFrame) { lastFrame = now; draw(); return; }
+        let dt = Math.min(0.033, (now - lastFrame) / 1000);
+        if (dt > 0.001) {
+            updateOrbits(dt);
+            if (trackingMode) updateTracking();
+            draw();
+        }
+        lastFrame = now;
+    }
+    
+    // Event binding
+    const canvas = document.getElementById('orbitCanvas');
+    ctx = canvas.getContext('2d');
+    const container = document.querySelector('.canvas-container');
+    function resizeCanvas() { width = container.clientWidth; height = container.clientHeight; canvas.width = width; canvas.height = height; draw(); }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
     document.getElementById('zoom-in').onclick = () => setZoom(0.2);
     document.getElementById('zoom-out').onclick = () => setZoom(-0.2);
     document.getElementById('zoom-reset').onclick = resetZoom;
-    document.getElementById('recenter').onclick = recenter;
-    canvas.addEventListener('wheel', e => { e.preventDefault(); setZoom(e.deltaY>0 ? -0.12 : 0.12); });
+    document.getElementById('pan-up').onclick = () => pan(0, -30);
+    document.getElementById('pan-down').onclick = () => pan(0, 30);
+    document.getElementById('pan-left').onclick = () => pan(-30, 0);
+    document.getElementById('pan-right').onclick = () => pan(30, 0);
+    document.getElementById('center-star').onclick = centerOnPrimaryStar;
+    document.getElementById('center-system').onclick = centerOnBarycenter;
+    document.getElementById('center-selected').onclick = () => { if(trackingMode) disableTracking(); centerOnSelected(); };
+    document.getElementById('reset-pan').onclick = resetPan;
+    document.getElementById('track-toggle').onclick = toggleTracking;
+    document.getElementById('speed-pause').onclick = () => setSpeed(0, 'speed-pause');
+    document.getElementById('speed-1x').onclick = () => setSpeed(1, 'speed-1x');
+    document.getElementById('speed-5x').onclick = () => setSpeed(5, 'speed-5x');
+    document.getElementById('speed-10x').onclick = () => setSpeed(10, 'speed-10x');
+    document.getElementById('speed-20x').onclick = () => setSpeed(20, 'speed-20x');
+    canvas.addEventListener('wheel', e => { e.preventDefault(); if(trackingMode) disableTracking(); setZoom(e.deltaY > 0 ? -0.1 : 0.1); });
     
-    document.getElementById('setTargetBtn').onclick = setTarget;
-    document.getElementById('computeTransferBtn').onclick = computeTransfer;
-    document.getElementById('clearTransferBtn').onclick = clearTransfer;
-    document.getElementById('teleportToTargetBtn').onclick = teleportToTarget;
-    document.getElementById('thrustProBtn').onmousedown = () => { if(!manualOverride) thrustingPro = true; thrustStatusMsg.innerText = "▶️ PROGRADE THRUSTING"; };
-    document.getElementById('thrustProBtn').onmouseup = () => { thrustingPro = false; if(!manualOverride && !thrustingRetro) thrustStatusMsg.innerText = "thrust idle"; };
-    document.getElementById('thrustProBtn').onmouseleave = () => { thrustingPro = false; };
-    document.getElementById('thrustRetroBtn').onmousedown = () => { if(!manualOverride) thrustingRetro = true; thrustStatusMsg.innerText = "◀️ RETROGRADE THRUSTING"; };
-    document.getElementById('thrustRetroBtn').onmouseup = () => { thrustingRetro = false; if(!manualOverride && !thrustingPro) thrustStatusMsg.innerText = "thrust idle"; };
-    document.getElementById('thrustRetroBtn').onmouseleave = () => { thrustingRetro = false; };
-    dvSlider.oninput = (e) => { thrustAmount = parseFloat(e.target.value); dvValueSpan.innerText = thrustAmount.toFixed(2); };
-    manualOverrideCheck.onchange = (e) => { manualOverride = e.target.checked; if(manualOverride) { thrustingPro = false; thrustingRetro = false; } };
-    autoDecelCheck.onchange = (e) => { autoDecelEnabled = e.target.checked; };
+    document.getElementById('exportBtn').onclick = exportCurrentSystem;
+    const fileInput = document.getElementById('importFileInput');
+    document.getElementById('importBtn').onclick = () => fileInput.click();
+    fileInput.onchange = (e) => { if (e.target.files.length) importSystemFromFile(e.target.files[0]); fileInput.value = ''; };
     
-    renderPlanetList();
-    setTarget(); computeTransfer();
+    renderSystemSelector();
+    initAngles();
+    generateAsteroidBelt();
+    selectedBody = currentStars.length > 0 ? { type: 'star', data: currentStars[0] } : null;
+    buildTree();
+    updateInfoPanel();
+    draw();
     requestAnimationFrame(animate);
 </script>
 </body>
