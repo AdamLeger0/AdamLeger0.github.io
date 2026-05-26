@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NAVCORE • IMPORT/EXPORT STAR SYSTEMS • JSON</title>
+    <title>NAVCORE • SYSTEM DESIGNER • IMPORT/EXPORT</title>
     <style>
         * {
             user-select: none;
@@ -140,7 +140,7 @@
             cursor: pointer;
             font-family: monospace;
         }
-        .ie-btn:hover {
+        .ie-btn:hover, .design-btn:hover {
             background: #00ffcc22;
             border-color: #00ffcc;
         }
@@ -168,97 +168,23 @@
             color: #555;
             margin-right: 4px;
         }
-        .nav-btn.star::before {
-            content: '[★]';
-            color: #ffaa44;
-        }
-        .nav-btn.planet::before {
-            content: '[●]';
-            color: #55aaff;
-        }
-        .nav-btn.moon::before {
-            content: '[~]';
-            color: #88cc88;
-        }
-        .nav-btn:hover {
-            border-color: #e0e0e0;
-            background: rgba(255,255,255,0.08);
-        }
-        .nav-btn.selected {
-            border-color: #00ffcc;
-            color: #00ffcc;
-            box-shadow: 0 0 8px rgba(0,255,204,0.3);
-        }
-        .sub-nav {
-            margin-left: 28px;
-            border-left: 1px dashed #2a6a6a;
-            padding-left: 8px;
-            display: block;
-        }
-        .right-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            min-width: 0;
-        }
-        .canvas-container {
-            flex: 1;
-            border: 1px solid #2a4a4a;
-            background: #050508;
-            position: relative;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        #orbitCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        .info-card {
-            background: #010a0a;
-            border-left: 3px solid #00ffcc;
-            padding: 12px;
-            font-size: 11px;
-        }
-        .body-name-large {
-            font-size: 20px;
-            font-weight: bold;
-            color: #00ffcc;
-            margin-bottom: 8px;
-        }
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-            border-bottom: 1px solid #1a3a3a;
-        }
-        .info-label {
-            color: #88aaff;
-        }
-        .fact-box {
-            margin-top: 10px;
-            background: #051515;
-            padding: 6px;
-            border-left: 2px solid #ffaa44;
-            font-size: 10px;
-        }
-        .footer {
-            padding: 6px;
-            background: #000000cc;
-            border-top: 1px solid #00ffcc;
-            text-align: center;
-            font-size: 9px;
-            color: #668888;
-        }
-        .btn-row {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 6px;
-            flex-wrap: wrap;
-        }
-        .btn {
+        .nav-btn.star::before { content: '[★]'; color: #ffaa44; }
+        .nav-btn.planet::before { content: '[●]'; color: #55aaff; }
+        .nav-btn.moon::before { content: '[~]'; color: #88cc88; }
+        .nav-btn:hover { border-color: #e0e0e0; background: rgba(255,255,255,0.08); }
+        .nav-btn.selected { border-color: #00ffcc; color: #00ffcc; box-shadow: 0 0 8px rgba(0,255,204,0.3); }
+        .sub-nav { margin-left: 28px; border-left: 1px dashed #2a6a6a; padding-left: 8px; display: block; }
+        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+        .canvas-container { flex: 1; border: 1px solid #2a4a4a; background: #050508; border-radius: 4px; overflow: hidden; }
+        #orbitCanvas { width: 100%; height: 100%; display: block; }
+        .info-card { background: #010a0a; border-left: 3px solid #00ffcc; padding: 12px; font-size: 11px; }
+        .body-name-large { font-size: 20px; font-weight: bold; color: #00ffcc; margin-bottom: 8px; }
+        .info-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1a3a3a; }
+        .info-label { color: #88aaff; }
+        .fact-box { margin-top: 10px; background: #051515; padding: 6px; border-left: 2px solid #ffaa44; font-size: 10px; }
+        .footer { padding: 6px; background: #000000cc; border-top: 1px solid #00ffcc; text-align: center; font-size: 9px; color: #668888; }
+        .btn-row { display: flex; gap: 8px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+        .btn, .design-btn {
             background: transparent;
             border: 1px solid #2a4a4a;
             color: #e0e0e0;
@@ -268,28 +194,7 @@
             cursor: pointer;
             transition: 0.1s;
         }
-        .btn:hover {
-            border-color: #00ffcc;
-            color: #00ffcc;
-        }
-        .btn.active {
-            background: #ffcc00;
-            color: black;
-            border-color: #ffcc00;
-        }
-        .status {
-            background: black;
-            border: 1px solid #00ffcc;
-            padding: 2px 12px;
-            font-size: 11px;
-        }
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        .btn:hover, .design-btn:hover { border-color: #00ffcc; color: #00ffcc; }
         .pan-buttons {
             display: flex;
             gap: 4px;
@@ -307,20 +212,25 @@
             cursor: pointer;
             font-family: monospace;
         }
-        .pan-btn:hover {
-            background: #00ffcc22;
-            border-color: #00ffcc;
+        .pan-btn:hover { background: #00ffcc22; border-color: #00ffcc; }
+        .track-active { background: #00aa55; color: black; border-color: #00ffcc; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; background: #33ff88; } }
+        .status { background: black; border: 1px solid #00ffcc; padding: 2px 12px; font-size: 11px; }
+        .designer-panel {
+            background: #050e0e;
+            border-top: 1px solid #00ffcc40;
+            margin-top: 4px;
+            max-height: 320px;
+            overflow-y: auto;
         }
-        .track-active {
-            background: #00aa55;
-            color: black;
-            border-color: #00ffcc;
-            animation: pulse 1s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; background: #33ff88; }
-        }
+        .designer-section { padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+        .design-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; }
+        .design-row label { font-size: 10px; color: #88ffcc; width: 90px; }
+        .design-row input, .design-row select { background: #0a1a1a; border: 1px solid #2a6a6a; color: #e0e0e0; font-family: monospace; font-size: 10px; padding: 4px; flex: 1; }
+        .design-btn-group { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        hr { border-color: #2a4a4a; margin: 6px 0; }
+        .warning-btn { border-color: #aa4444; color: #ffaaaa; }
+        .warning-btn:hover { background: #aa4444; color: black; }
         .notify {
             position: fixed;
             bottom: 60px;
@@ -329,22 +239,15 @@
             border-left: 3px solid #00ffcc;
             padding: 6px 12px;
             font-size: 10px;
-            font-family: monospace;
             z-index: 2000;
             color: #aaffdd;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
         }
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #051010;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #00ffcc44;
-        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #051010; }
+        ::-webkit-scrollbar-thumb { background: #00ffcc44; }
     </style>
 </head>
 <body>
@@ -352,115 +255,63 @@
 <div class="top-bar">
     <div class="top-left">
         <div class="top-item">COORD: 55°55'0"N, 37°49'0"E</div>
-        <div class="top-item">NAVCORE :: IMPORT/EXPORT</div>
-        <div class="top-item">JSON STAR SYSTEMS</div>
+        <div class="top-item">NAVCORE :: SYSTEM DESIGNER</div>
+        <div class="top-item">JSON IMPORT/EXPORT</div>
     </div>
-    <div class="alpha-logo">
-        ALPHA<span>v3.3</span>
-    </div>
+    <div class="alpha-logo">DESIGNER<span>v4.2</span></div>
 </div>
 <div class="main-area">
     <div class="left-panel">
-        <div class="panel">
-            <div class="panel-title">[STAR SYSTEMS]</div>
-            <div class="system-selector" id="systemSelector"></div>
-            <div class="import-export">
-                <button class="ie-btn" id="exportBtn">[EXPORT SYSTEM]</button>
-                <button class="ie-btn" id="importBtn">[IMPORT SYSTEM]</button>
-                <input type="file" id="importFileInput" accept=".json" style="display:none;">
-            </div>
-            <div class="panel-title" style="border-top:1px solid #2a4a4a;">[CELESTIAL REGISTRY]</div>
-            <div id="planetTree" style="padding: 8px; overflow-y: auto; max-height: 45vh;"></div>
-        </div>
-        <div class="panel" style="flex:1;">
-            <div class="panel-title">[TELEMETRY]</div>
-            <div id="infoPanel" style="padding: 8px;">
-                <div style="text-align:center; color:#668888;">select a star, planet or moon</div>
-            </div>
-        </div>
+        <div class="panel"><div class="panel-title">[STAR SYSTEMS]</div><div class="system-selector" id="systemSelector"></div><div class="import-export"><button class="ie-btn" id="exportBtn">[EXPORT SYSTEM]</button><button class="ie-btn" id="importBtn">[IMPORT SYSTEM]</button><button class="ie-btn" id="newSystemBtn">[NEW SYSTEM]</button><input type="file" id="importFileInput" accept=".json" style="display:none;"></div><div class="panel-title" style="border-top:1px solid #2a4a4a;">[CELESTIAL REGISTRY]</div><div id="planetTree" style="padding: 8px; overflow-y: auto; max-height: 28vh;"></div></div>
+        <div class="panel designer-panel"><div class="panel-title">[SYSTEM DESIGNER • EDITOR]</div><div id="designerContainer" style="padding: 6px;"><div style="text-align:center; color:#668888;">Select a star, planet or moon to edit / add children</div></div></div>
+        <div class="panel"><div class="panel-title">[TELEMETRY]</div><div id="infoPanel" style="padding: 8px;"><div style="text-align:center; color:#668888;">select a celestial body</div></div></div>
     </div>
-
     <div class="right-panel">
-        <div class="canvas-container">
-            <canvas id="orbitCanvas"></canvas>
-        </div>
-        <div class="controls">
-            <div class="btn-row">
-                <button class="btn" id="zoom-out">ZOOM -</button>
-                <button class="btn" id="zoom-in">ZOOM +</button>
-                <button class="btn" id="zoom-reset">RESET ZOOM</button>
-            </div>
-            <div class="pan-buttons">
-                <button class="pan-btn" id="pan-up">^ UP</button>
-                <button class="pan-btn" id="pan-left"><- LEFT</button>
-                <button class="pan-btn" id="pan-right">RIGHT -></button>
-                <button class="pan-btn" id="pan-down">DOWN v</button>
-                <button class="pan-btn" id="center-star">[STAR]</button>
-                <button class="pan-btn" id="center-system">[SYS CTR]</button>
-                <button class="pan-btn" id="center-selected">[CENTER]</button>
-                <button class="pan-btn" id="reset-pan">[RESET]</button>
-                <button class="pan-btn" id="track-toggle">[TRACK]</button>
-            </div>
-            <div class="btn-row">
-                <button class="btn" id="speed-pause">PAUSE</button>
-                <button class="btn active" id="speed-1x">1x</button>
-                <button class="btn" id="speed-5x">5x</button>
-                <button class="btn" id="speed-10x">10x</button>
-                <button class="btn" id="speed-20x">20x</button>
-            </div>
-            <div class="status" id="speedLabel">SPEED: 1x</div>
-            <div class="status" id="zoomLabel">ZOOM: 1.00x</div>
-            <div class="status" id="trackStatus">TRACK: OFF</div>
+        <div class="canvas-container"><canvas id="orbitCanvas"></canvas></div>
+        <div class="controls" style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px;">
+            <div class="btn-row"><button class="btn" id="zoom-out">ZOOM -</button><button class="btn" id="zoom-in">ZOOM +</button><button class="btn" id="zoom-reset">RESET ZOOM</button></div>
+            <div class="pan-buttons"><button class="pan-btn" id="pan-up">^ UP</button><button class="pan-btn" id="pan-left"><- LEFT</button><button class="pan-btn" id="pan-right">RIGHT -></button><button class="pan-btn" id="pan-down">DOWN v</button><button class="pan-btn" id="center-star">[STAR]</button><button class="pan-btn" id="center-system">[SYS CTR]</button><button class="pan-btn" id="center-selected">[CENTER]</button><button class="pan-btn" id="reset-pan">[RESET]</button><button class="pan-btn" id="track-toggle">[TRACK]</button></div>
+            <div class="btn-row"><button class="btn" id="speed-pause">PAUSE</button><button class="btn active" id="speed-1x">1x</button><button class="btn" id="speed-5x">5x</button><button class="btn" id="speed-10x">10x</button><button class="btn" id="speed-20x">20x</button></div>
+            <div class="status" id="speedLabel">SPEED: 1x</div><div class="status" id="zoomLabel">ZOOM: 1.00x</div><div class="status" id="trackStatus">TRACK: OFF</div>
         </div>
     </div>
 </div>
-<div class="footer">
-    <span>NAVCORE :: EXPORT/IMPORT SYSTEMS AS JSON | SYSTEM DATA PERSISTENT</span>
-</div>
+<div class="footer"><span>NAVCORE :: COMPLETE PREBUILTS: SOL (full system) • ALPHA CENTAURI (expanded) • GLIESE 876 (resonant worlds)</span></div>
 <div id="notifyMsg" class="notify"></div>
 
 <script>
     // --------------------------------------------------------------
-    // STAR SYSTEMS DATA (built-in + imported will be added)
+    // EXPANDED PREBUILT STAR SYSTEMS: SOL, ALPHA CENTAURI, GLIESE 876
     // --------------------------------------------------------------
     const defaultStarSystems = {
         "Sol": {
             name: "Sol System",
-            stars: [
-                {
-                    name: "Sol",
-                    type: "G2V Yellow Dwarf",
-                    mass: "1.0 M☉",
-                    temperature: "5778 K",
-                    radius: 14,
-                    color: "#ffcc44",
-                    isPrimary: true,
-                    orbitalRadius: 0,
-                    orbitalSpeed: 0,
-                    planets: [
-                        { name: "Mercury", visualRadius: 45, speed: 0.0210, color: "#b0a8a0", size: 3.0, moons: [], periodDays: 88,
-                          gravity: "3.7 m/s²", atmosphere: "negligible", temperature: "167C / -93C", dayLength: "58.6d", fact: "Fastest orbit." },
-                        { name: "Venus",   visualRadius: 70, speed: 0.0125, color: "#e8c9a0", size: 3.5, moons: [], periodDays: 225,
-                          gravity: "8.87 m/s²", atmosphere: "thick CO2", temperature: "462C", dayLength: "243d", fact: "Runaway greenhouse." },
-                        { name: "Earth",   visualRadius: 100, speed: 0.0100, color: "#3a86ff", size: 4.0, moons: [{name:"Luna", desc:"Large satellite"}], periodDays: 365,
-                          gravity: "9.81 m/s²", atmosphere: "N2, O2", temperature: "14C", dayLength: "24h", fact: "Our home." },
-                        { name: "Mars",    visualRadius: 140, speed: 0.0080, color: "#e35f21", size: 3.8, moons: [{name:"Phobos", desc:"Irregular"},{name:"Deimos", desc:"Small"}], periodDays: 687,
-                          gravity: "3.71 m/s²", atmosphere: "thin CO2", temperature: "-65C to 20C", dayLength: "24h 37m", fact: "Olympus Mons." },
-                        { name: "Jupiter", visualRadius: 260, speed: 0.0042, color: "#d8a27a", size: 7.5, moons: [{name:"Io", desc:"Volcanic"},{name:"Europa", desc:"Ocean"},{name:"Ganymede", desc:"Largest"},{name:"Callisto", desc:"Cratered"}], periodDays: 4333,
-                          gravity: "24.79 m/s²", atmosphere: "H2, He", temperature: "-110C", dayLength: "9h 56m", fact: "Great Red Spot." },
-                        { name: "Saturn",  visualRadius: 360, speed: 0.0030, color: "#e8cfb0", size: 6.8, moons: [{name:"Titan", desc:"Methane lakes"},{name:"Rhea", desc:"Icy"},{name:"Dione", desc:"Ice crust"},{name:"Enceladus", desc:"Plumes"}], periodDays: 10759,
-                          gravity: "10.44 m/s²", atmosphere: "H2, He", temperature: "-178C", dayLength: "10h 33m", fact: "Ring system." },
-                        { name: "Uranus",  visualRadius: 460, speed: 0.0021, color: "#b0e0e6", size: 5.5, moons: [{name:"Titania", desc:"Largest"},{name:"Oberon", desc:"Cratered"},{name:"Umbriel", desc:"Dark"}], periodDays: 30687,
-                          gravity: "8.69 m/s²", atmosphere: "H2, He, CH4", temperature: "-224C", dayLength: "17h 14m", fact: "Sideways rotation." },
-                        { name: "Neptune", visualRadius: 550, speed: 0.0017, color: "#4a6a8a", size: 5.5, moons: [{name:"Triton", desc:"Geysers"},{name:"Nereid", desc:"Eccentric"}], periodDays: 60190,
-                          gravity: "11.15 m/s²", atmosphere: "H2, He, CH4", temperature: "-214C", dayLength: "16h 6m", fact: "Strongest winds." }
-                    ]
-                }
-            ],
-            asteroidBelt: true
+            asteroidBelt: true,
+            stars: [{
+                name: "Sol",
+                type: "G2V Yellow Dwarf",
+                mass: "1.0 M☉",
+                temperature: "5778 K",
+                radius: 14,
+                color: "#ffcc44",
+                isPrimary: true,
+                orbitalRadius: 0,
+                orbitalSpeed: 0,
+                planets: [
+                    { name: "Mercury", visualRadius: 45, speed: 0.0210, color: "#b0a8a0", size: 3.0, moons: [], periodDays: 88, gravity: "3.7 m/s²", atmosphere: "negligible", temperature: "167C / -93C", dayLength: "58.6d", fact: "Fastest orbit, extreme温差." },
+                    { name: "Venus",   visualRadius: 70, speed: 0.0125, color: "#e8c9a0", size: 3.5, moons: [], periodDays: 225, gravity: "8.87 m/s²", atmosphere: "thick CO2", temperature: "462C", dayLength: "243d", fact: "Runaway greenhouse, hottest planet." },
+                    { name: "Earth",   visualRadius: 100, speed: 0.0100, color: "#3a86ff", size: 4.0, moons: [{name:"Luna", desc:"Large satellite, tidal locking"}], periodDays: 365, gravity: "9.81 m/s²", atmosphere: "N2, O2", temperature: "14C", dayLength: "24h", fact: "Our home, only known life." },
+                    { name: "Mars",    visualRadius: 140, speed: 0.0080, color: "#e35f21", size: 3.8, moons: [{name:"Phobos", desc:"Irregular, doomed"},{name:"Deimos", desc:"Small, cratered"}], periodDays: 687, gravity: "3.71 m/s²", atmosphere: "thin CO2", temperature: "-65C to 20C", dayLength: "24h 37m", fact: "Olympus Mons, largest volcano." },
+                    { name: "Jupiter", visualRadius: 260, speed: 0.0042, color: "#d8a27a", size: 7.5, moons: [{name:"Io", desc:"Volcanic"},{name:"Europa", desc:"Subsurface ocean"},{name:"Ganymede", desc:"Largest moon"},{name:"Callisto", desc:"Heavily cratered"}], periodDays: 4333, gravity: "24.79 m/s²", atmosphere: "H2, He", temperature: "-110C", dayLength: "9h 56m", fact: "Great Red Spot, 79 moons." },
+                    { name: "Saturn",  visualRadius: 360, speed: 0.0030, color: "#e8cfb0", size: 6.8, moons: [{name:"Titan", desc:"Methane lakes"},{name:"Rhea", desc:"Icy"},{name:"Dione", desc:"Ice crust"},{name:"Enceladus", desc:"Cryovolcanoes"}], periodDays: 10759, gravity: "10.44 m/s²", atmosphere: "H2, He", temperature: "-178C", dayLength: "10h 33m", fact: "Famous ring system, Titan's thick atmosphere." },
+                    { name: "Uranus",  visualRadius: 460, speed: 0.0021, color: "#b0e0e6", size: 5.5, moons: [{name:"Titania", desc:"Largest"},{name:"Oberon", desc:"Cratered"},{name:"Umbriel", desc:"Dark surface"}], periodDays: 30687, gravity: "8.69 m/s²", atmosphere: "H2, He, CH4", temperature: "-224C", dayLength: "17h 14m", fact: "Sideways rotation, ice giant." },
+                    { name: "Neptune", visualRadius: 550, speed: 0.0017, color: "#4a6a8a", size: 5.5, moons: [{name:"Triton", desc:"Geysers, retrograde"},{name:"Nereid", desc:"Eccentric orbit"}], periodDays: 60190, gravity: "11.15 m/s²", atmosphere: "H2, He, CH4", temperature: "-214C", dayLength: "16h 6m", fact: "Strongest winds in solar system." }
+                ]
+            }]
         },
         "Alpha Centauri": {
             name: "Alpha Centauri System",
+            asteroidBelt: false,
             stars: [
                 {
                     name: "Alpha Centauri A",
@@ -473,8 +324,8 @@
                     orbitalRadius: 0,
                     orbitalSpeed: 0,
                     planets: [
-                        { name: "Aether", visualRadius: 85, speed: 0.011, color: "#aa8866", size: 3.8, moons: [], periodDays: 310,
-                          gravity: "8.9 m/s²", atmosphere: "thin N2", temperature: "22C", dayLength: "28h", fact: "Potentially habitable." }
+                        { name: "Aether", visualRadius: 85, speed: 0.011, color: "#aa8866", size: 3.8, moons: [{name:"Aetheris", desc:"Desert moon"}], periodDays: 310, gravity: "8.9 m/s²", atmosphere: "thin N2", temperature: "22C", dayLength: "28h", fact: "Potentially habitable zone." },
+                        { name: "Aether II", visualRadius: 160, speed: 0.0065, color: "#c0a878", size: 6.2, moons: [{name:"Tempest", desc:"Stormy"}], periodDays: 890, gravity: "15.2 m/s²", atmosphere: "H2/He", temperature: "-80C", dayLength: "11h", fact: "Gas giant with ring candidates." }
                     ]
                 },
                 {
@@ -488,8 +339,8 @@
                     orbitalRadius: 220,
                     orbitalSpeed: 0.0035,
                     planets: [
-                        { name: "Vulcan", visualRadius: 140, speed: 0.0075, color: "#cc6644", size: 4.5, moons: [{name:"Pyros", desc:"Volcanic"}], periodDays: 890,
-                          gravity: "12.1 m/s²", atmosphere: "dense CO2", temperature: "340C", dayLength: "14h", fact: "Extreme greenhouse." }
+                        { name: "Vulcan", visualRadius: 110, speed: 0.0090, color: "#cc6644", size: 4.5, moons: [{name:"Pyros", desc:"Volcanic"}], periodDays: 490, gravity: "12.1 m/s²", atmosphere: "dense CO2", temperature: "340C", dayLength: "14h", fact: "Extreme greenhouse, lava flows." },
+                        { name: "Boreas", visualRadius: 190, speed: 0.0050, color: "#88aacc", size: 4.0, moons: [{name:"Chione", desc:"Ice world"}], periodDays: 1320, gravity: "9.1 m/s²", atmosphere: "N2/CH4", temperature: "-120C", dayLength: "19h", fact: "Ice giant, possible subsurface ocean." }
                     ]
                 },
                 {
@@ -503,457 +354,386 @@
                     orbitalRadius: 380,
                     orbitalSpeed: 0.0022,
                     planets: [
-                        { name: "Proxima b", visualRadius: 65, speed: 0.014, color: "#aa8866", size: 2.5, moons: [], periodDays: 11,
-                          gravity: "7.5 m/s²", atmosphere: "unknown", temperature: "-39C", dayLength: "?h", fact: "Earth-sized, in habitable zone." }
+                        { name: "Proxima b", visualRadius: 65, speed: 0.014, color: "#aa8866", size: 2.5, moons: [], periodDays: 11.2, gravity: "7.5 m/s²", atmosphere: "unknown", temperature: "-39C", dayLength: "?h", fact: "Earth-sized, in habitable zone." },
+                        { name: "Proxima c", visualRadius: 140, speed: 0.0068, color: "#88aa99", size: 3.2, moons: [{name:"Proximus", desc:"Rocky moon"}], periodDays: 1900, gravity: "8.8 m/s²", atmosphere: "thin CO2", temperature: "-190C", dayLength: "15h", fact: "Super-Earth, distant orbit." }
                     ]
                 }
-            ],
-            asteroidBelt: false
+            ]
+        },
+        "Gliese 876": {
+            name: "Gliese 876 System",
+            asteroidBelt: false,
+            stars: [{
+                name: "Gliese 876",
+                type: "M4V Red Dwarf",
+                mass: "0.33 M☉",
+                temperature: "3350 K",
+                radius: 12,
+                color: "#ffaa77",
+                isPrimary: true,
+                orbitalRadius: 0,
+                orbitalSpeed: 0,
+                planets: [
+                    { name: "Gliese 876 e", visualRadius: 42, speed: 0.023, color: "#c0a070", size: 2.2, moons: [], periodDays: 61, gravity: "6.2 m/s²", atmosphere: "thin", temperature: "157C", dayLength: "18h", fact: "Inner rocky planet, tidally locked." },
+                    { name: "Gliese 876 d", visualRadius: 78, speed: 0.0125, color: "#88aa88", size: 3.8, moons: [{name:"Hope", desc:"Arid"}], periodDays: 124, gravity: "8.7 m/s²", atmosphere: "CO2 rich", temperature: "42C", dayLength: "22h", fact: "Super-Earth, near habitable zone." },
+                    { name: "Gliese 876 c", visualRadius: 145, speed: 0.0068, color: "#c0b070", size: 6.5, moons: [{name:"Somnus", desc:"Frozen"}, {name:"Vigil", desc:"Volcanic"}], periodDays: 241, gravity: "18.3 m/s²", atmosphere: "H2/He", temperature: "-110C", dayLength: "9h", fact: "Gas giant, 2:1 resonance with 'b'." },
+                    { name: "Gliese 876 b", visualRadius: 220, speed: 0.0044, color: "#b0a070", size: 7.8, moons: [{name:"Laplace", desc:"Tectonic"}], periodDays: 461, gravity: "21.5 m/s²", atmosphere: "H2/He, clouds", temperature: "-150C", dayLength: "10h", fact: "Largest planet, 2:1 resonance with 'c'." }
+                ]
+            }]
         }
     };
-    
-    let starSystems = JSON.parse(JSON.stringify(defaultStarSystems));  // mutable copy
+
+    // mutable copy
+    let starSystems = JSON.parse(JSON.stringify(defaultStarSystems));
     let currentSystemId = "Sol";
     let currentSystem = starSystems[currentSystemId];
     let currentStars = currentSystem.stars;
     let selectedBody = null;
+    let simulationPaused = false;
+    let timeScale = 1.0;
+    let trackingMode = false;
+    let zoomLevel = 1.0, panX = 0, panY = 0;
+    let asteroids = [];
+    let ctx, canvas, width, height;
+    let lastTimestamp = 0;
+
+    function showNotify(msg, isErr=false) { let n=document.getElementById('notifyMsg'); n.style.backgroundColor=isErr?"#330000":"#000000cc"; n.style.borderLeftColor=isErr?"#ff6666":"#00ffcc"; n.innerText=msg; n.style.opacity="1"; setTimeout(()=>n.style.opacity="0",3000); }
     
-    // Helper: show notification
-    function showNotify(msg, isError = false) {
-        const notify = document.getElementById('notifyMsg');
-        notify.style.backgroundColor = isError ? "#330000" : "#000000cc";
-        notify.style.borderLeftColor = isError ? "#ff6666" : "#00ffcc";
-        notify.style.color = isError ? "#ffaaaa" : "#aaffdd";
-        notify.innerText = msg;
-        notify.style.opacity = "1";
-        setTimeout(() => { notify.style.opacity = "0"; }, 3000);
-    }
-    
-    // Initialize angles
     function initAngles() {
-        for (let star of currentStars) {
-            if (!star.isPrimary) star.angle = Math.random() * 2 * Math.PI;
-            for (let planet of star.planets) {
-                planet.angle = Math.random() * 2 * Math.PI;
-                for (let moon of (planet.moons || [])) {
-                    moon.angle = Math.random() * 2 * Math.PI;
-                }
+        for(let star of currentStars) {
+            if(!star.isPrimary && star.orbitalSpeed) star.angle = Math.random()*2*Math.PI;
+            for(let p of star.planets) {
+                p.angle = Math.random()*2*Math.PI;
+                for(let m of (p.moons||[])) m.angle = Math.random()*2*Math.PI;
             }
         }
     }
     
-    // Asteroid belt
-    let asteroids = [];
     function generateAsteroidBelt() {
-        if (!currentSystem.asteroidBelt) {
-            asteroids = [];
-            return;
-        }
-        const ASTEROID_COUNT = 1500;
-        const BELT_INNER = 175;
-        const BELT_OUTER = 210;
-        const BELT_ANGULAR_SPEED = 0.0022;
+        if(!currentSystem.asteroidBelt) { asteroids = []; return; }
+        const cnt = 1200;
         asteroids = [];
-        for (let i = 0; i < ASTEROID_COUNT; i++) {
-            const radius = BELT_INNER + Math.random() * (BELT_OUTER - BELT_INNER);
-            const angle = Math.random() * 2 * Math.PI;
-            const size = 1.0 + Math.random() * 1.5;
-            const speedVar = 0.0002 * (Math.random() - 0.5);
-            asteroids.push({ radius, angle, size, speed: BELT_ANGULAR_SPEED + speedVar });
+        for(let i=0;i<cnt;i++) {
+            let r = 175 + Math.random()*35;
+            asteroids.push({ radius:r, angle:Math.random()*2*Math.PI, size:1+Math.random()*1.5, speed:0.0022+(Math.random()-0.5)*0.0003 });
         }
     }
     
     function updateOrbits(dt) {
-        if (simulationPaused) return;
-        for (let star of currentStars) {
-            if (!star.isPrimary && star.orbitalSpeed) {
-                star.angle = (star.angle || 0) + star.orbitalSpeed * dt;
-                while (star.angle > 2*Math.PI) star.angle -= 2*Math.PI;
-            }
-            for (let planet of star.planets) {
-                planet.angle = (planet.angle || 0) + planet.speed * dt;
-                while (planet.angle > 2*Math.PI) planet.angle -= 2*Math.PI;
-                for (let moon of (planet.moons || [])) {
-                    moon.angle = (moon.angle || 0) + (planet.speed * 1.5) * dt;
-                    while (moon.angle > 2*Math.PI) moon.angle -= 2*Math.PI;
-                }
+        if(simulationPaused) return;
+        for(let star of currentStars) {
+            if(!star.isPrimary && star.orbitalSpeed) star.angle = (star.angle||0) + star.orbitalSpeed * dt;
+            for(let p of star.planets) {
+                p.angle = (p.angle||0) + p.speed * dt;
+                for(let m of (p.moons||[])) m.angle = (m.angle||0) + (p.speed*1.5) * dt;
             }
         }
-        if (currentSystem.asteroidBelt) {
-            for (let a of asteroids) {
-                a.angle += a.speed * dt;
-                while (a.angle > 2*Math.PI) a.angle -= 2*Math.PI;
-            }
+        if(currentSystem.asteroidBelt) {
+            for(let a of asteroids) a.angle += a.speed * dt;
         }
     }
     
-    // Drawing and navigation (same as before, with barycenter)
-    let ctx, width, height;
-    let zoomLevel = 1.0, panX = 0, panY = 0;
-    let trackingMode = false;
-    let simulationPaused = false;
-    let timeScale = 1.0;
-    let lastFrame = 0;
-    
     function getStarWorldPosition(star) {
-        if (star.isPrimary) return { x: 0, y: 0 };
-        const angle = star.angle || 0;
-        const r = star.orbitalRadius;
-        return { x: Math.cos(angle) * r, y: Math.sin(angle) * r };
+        if(star.isPrimary) return { x:0, y:0 };
+        let a = star.angle || 0;
+        return { x: Math.cos(a)*star.orbitalRadius, y: Math.sin(a)*star.orbitalRadius };
     }
     
     function getWorldPosition(body) {
-        if (body.type === 'star') {
-            return getStarWorldPosition(body.data);
-        } else if (body.type === 'planet') {
-            const star = body.parentStar;
-            const starPos = getStarWorldPosition(star);
-            const angle = body.data.angle || 0;
-            const r = body.data.visualRadius;
-            return { x: starPos.x + Math.cos(angle) * r, y: starPos.y + Math.sin(angle) * r };
-        } else if (body.type === 'moon') {
-            const planet = body.parent;
-            const star = body.parentStar;
-            const starPos = getStarWorldPosition(star);
-            const planetAngle = planet.angle || 0;
-            const planetR = planet.visualRadius;
-            const planetPos = { x: starPos.x + Math.cos(planetAngle) * planetR, y: starPos.y + Math.sin(planetAngle) * planetR };
-            const moonAngle = body.data.angle || 0;
-            const moonOffset = 12;
-            return { x: planetPos.x + Math.cos(moonAngle) * moonOffset, y: planetPos.y + Math.sin(moonAngle) * moonOffset };
+        if(body.type === 'star') return getStarWorldPosition(body.data);
+        if(body.type === 'planet') {
+            let sPos = getStarWorldPosition(body.parentStar);
+            let a = body.data.angle || 0;
+            return { x: sPos.x + Math.cos(a)*body.data.visualRadius, y: sPos.y + Math.sin(a)*body.data.visualRadius };
         }
-        return { x: 0, y: 0 };
+        if(body.type === 'moon') {
+            let sPos = getStarWorldPosition(body.parentStar);
+            let pAngle = body.parentPlanet.angle || 0;
+            let pR = body.parentPlanet.visualRadius;
+            let pPos = { x: sPos.x + Math.cos(pAngle)*pR, y: sPos.y + Math.sin(pAngle)*pR };
+            let mA = body.data.angle || 0;
+            return { x: pPos.x + Math.cos(mA)*12, y: pPos.y + Math.sin(mA)*12 };
+        }
+        return { x:0,y:0 };
     }
     
     function getBarycenter() {
-        let sumX = 0, sumY = 0;
-        let count = 0;
-        for (let star of currentStars) {
-            const pos = getStarWorldPosition(star);
-            sumX += pos.x;
-            sumY += pos.y;
-            count++;
-        }
-        if (count === 0) return { x: 0, y: 0 };
-        return { x: sumX / count, y: sumY / count };
+        let sx=0,sy=0,c=0;
+        for(let s of currentStars) { let p=getStarWorldPosition(s); sx+=p.x; sy+=p.y; c++; }
+        return c? { x:sx/c, y:sy/c } : { x:0,y:0 };
     }
-    
-    function centerOnBarycenter() {
-        if (trackingMode) disableTracking();
-        const bary = getBarycenter();
-        panX = -bary.x * zoomLevel;
-        panY = -bary.y * zoomLevel;
-        draw();
-    }
-    function centerOnPrimaryStar() {
-        if (trackingMode) disableTracking();
-        const primary = currentStars.find(s => s.isPrimary);
-        if (primary) {
-            const pos = getStarWorldPosition(primary);
-            panX = -pos.x * zoomLevel;
-            panY = -pos.y * zoomLevel;
-        } else { panX = 0; panY = 0; }
-        draw();
-    }
-    function centerOnSelected() {
-        if (!selectedBody) return;
-        if (trackingMode) disableTracking();
-        const pos = getWorldPosition(selectedBody);
-        panX = -pos.x * zoomLevel;
-        panY = -pos.y * zoomLevel;
-        draw();
-    }
-    function updateTracking() {
-        if (!trackingMode || !selectedBody) return;
-        const pos = getWorldPosition(selectedBody);
-        panX = -pos.x * zoomLevel;
-        panY = -pos.y * zoomLevel;
-    }
-    function enableTracking() { trackingMode = true; document.getElementById('track-toggle').classList.add('track-active'); document.getElementById('trackStatus').innerText = "TRACK: ON"; centerOnSelected(); }
-    function disableTracking() { trackingMode = false; document.getElementById('track-toggle').classList.remove('track-active'); document.getElementById('trackStatus').innerText = "TRACK: OFF"; }
-    function toggleTracking() { trackingMode ? disableTracking() : enableTracking(); }
-    function setZoom(delta) { if(trackingMode) disableTracking(); zoomLevel = Math.min(5, Math.max(0.25, zoomLevel+delta)); document.getElementById('zoomLabel').innerText = `ZOOM: ${zoomLevel.toFixed(2)}x`; draw(); }
-    function resetZoom() { if(trackingMode) disableTracking(); zoomLevel=1.0; document.getElementById('zoomLabel').innerText='ZOOM: 1.00x'; draw(); }
-    function pan(dx,dy) { if(trackingMode) disableTracking(); panX+=dx; panY+=dy; draw(); }
-    function resetPan() { if(trackingMode) disableTracking(); panX=0; panY=0; draw(); }
-    function setSpeed(mult,btnId) { timeScale=mult; simulationPaused=(mult===0); document.getElementById('speedLabel').innerText=simulationPaused?"SPEED: PAUSED":`SPEED: ${mult}x`; ['speed-pause','speed-1x','speed-5x','speed-10x','speed-20x'].forEach(id=>{let b=document.getElementById(id);if(b)b.classList.remove('active');}); if(btnId) document.getElementById(btnId).classList.add('active'); }
     
     function draw() {
-        if (!ctx) return;
-        ctx.clearRect(0, 0, width, height);
+        if(!ctx) return;
+        ctx.clearRect(0,0,width,height);
         ctx.save();
         ctx.translate(width/2 + panX, height/2 + panY);
         ctx.scale(zoomLevel, zoomLevel);
-        for (let star of currentStars) {
-            const starPos = getStarWorldPosition(star);
-            for (let planet of star.planets) {
-                ctx.beginPath();
-                ctx.arc(starPos.x, starPos.y, planet.visualRadius, 0, 2*Math.PI);
-                ctx.strokeStyle = "rgba(80,180,180,0.2)";
-                ctx.setLineDash([4,6]);
-                ctx.stroke();
+        for(let star of currentStars) {
+            let sPos = getStarWorldPosition(star);
+            for(let p of star.planets) {
+                ctx.beginPath(); ctx.arc(sPos.x, sPos.y, p.visualRadius, 0, 2*Math.PI);
+                ctx.strokeStyle = "rgba(80,180,180,0.2)"; ctx.setLineDash([4,6]); ctx.stroke();
             }
         }
         ctx.setLineDash([]);
-        if (currentSystem.asteroidBelt) {
-            for (let a of asteroids) {
-                const x = Math.cos(a.angle) * a.radius;
-                const y = Math.sin(a.angle) * a.radius;
-                ctx.fillStyle = "#887755";
-                ctx.fillRect(x - a.size/2, y - a.size/2, a.size, a.size);
+        if(currentSystem.asteroidBelt) {
+            for(let a of asteroids) {
+                let x=Math.cos(a.angle)*a.radius, y=Math.sin(a.angle)*a.radius;
+                ctx.fillStyle="#887755"; ctx.fillRect(x-a.size/2, y-a.size/2, a.size, a.size);
             }
         }
-        for (let star of currentStars) {
-            const pos = getStarWorldPosition(star);
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, star.radius, 0, 2*Math.PI);
-            ctx.fillStyle = star.color;
-            ctx.shadowBlur = 8;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            if (selectedBody && selectedBody.type === 'star' && selectedBody.data.name === star.name) {
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, star.radius+3, 0, 2*Math.PI);
-                ctx.strokeStyle = "#ffcc55";
-                ctx.lineWidth = 2;
-                ctx.setLineDash([3,3]);
-                ctx.stroke();
+        for(let star of currentStars) {
+            let pos = getStarWorldPosition(star);
+            ctx.beginPath(); ctx.arc(pos.x, pos.y, star.radius, 0, 2*Math.PI);
+            ctx.fillStyle = star.color; ctx.shadowBlur=8; ctx.fill(); ctx.shadowBlur=0;
+            if(selectedBody && selectedBody.type==='star' && selectedBody.data.name===star.name) {
+                ctx.beginPath(); ctx.arc(pos.x, pos.y, star.radius+3, 0, 2*Math.PI);
+                ctx.strokeStyle="#ffcc55"; ctx.lineWidth=2; ctx.setLineDash([3,3]); ctx.stroke();
             }
         }
-        for (let star of currentStars) {
-            const starPos = getStarWorldPosition(star);
-            for (let planet of star.planets) {
-                const angle = planet.angle || 0;
-                const px = starPos.x + Math.cos(angle) * planet.visualRadius;
-                const py = starPos.y + Math.sin(angle) * planet.visualRadius;
-                ctx.beginPath();
-                ctx.arc(px, py, planet.size, 0, 2*Math.PI);
-                ctx.fillStyle = planet.color;
-                ctx.fill();
-                if (selectedBody && selectedBody.type === 'planet' && selectedBody.data.name === planet.name) {
-                    ctx.beginPath();
-                    ctx.arc(px, py, planet.size+2, 0, 2*Math.PI);
-                    ctx.strokeStyle = "#ffcc55";
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
+        for(let star of currentStars) {
+            let sPos = getStarWorldPosition(star);
+            for(let p of star.planets) {
+                let a = p.angle||0, px = sPos.x + Math.cos(a)*p.visualRadius, py = sPos.y + Math.sin(a)*p.visualRadius;
+                ctx.beginPath(); ctx.arc(px, py, p.size, 0, 2*Math.PI);
+                ctx.fillStyle = p.color; ctx.fill();
+                if(selectedBody && selectedBody.type==='planet' && selectedBody.data.name===p.name) {
+                    ctx.beginPath(); ctx.arc(px, py, p.size+2, 0, 2*Math.PI);
+                    ctx.strokeStyle="#ffcc55"; ctx.lineWidth=1.5; ctx.stroke();
                 }
-                for (let moon of (planet.moons || [])) {
-                    const moonAngle = moon.angle || 0;
-                    const mx = px + Math.cos(moonAngle) * 12;
-                    const my = py + Math.sin(moonAngle) * 12;
-                    ctx.beginPath();
-                    ctx.arc(mx, my, 2.5, 0, 2*Math.PI);
-                    ctx.fillStyle = "#ccccaa";
-                    ctx.fill();
+                for(let m of (p.moons||[])) {
+                    let ma = m.angle||0, mx = px + Math.cos(ma)*12, my = py + Math.sin(ma)*12;
+                    ctx.beginPath(); ctx.arc(mx, my, 2.5, 0, 2*Math.PI);
+                    ctx.fillStyle = "#ccccaa"; ctx.fill();
                 }
             }
         }
         ctx.restore();
-        ctx.font = "9px monospace";
-        ctx.fillStyle = trackingMode ? "#33ff88" : "#446666";
-        ctx.fillText(`TRACK: ${trackingMode ? "ACTIVE" : "OFF"}`, 8, 40);
-        ctx.fillStyle = "#446666";
-        ctx.fillText(`PAN: (${panX.toFixed(0)}, ${panY.toFixed(0)})`, 8, 28);
-        ctx.fillStyle = "#668888";
-        ctx.fillText(`SYSTEM: ${currentSystemId}`, 8, 52);
+        ctx.font="9px monospace"; ctx.fillStyle=trackingMode?"#33ff88":"#446666";
+        ctx.fillText(`TRACK: ${trackingMode?"ON":"OFF"}`,8,40);
+        ctx.fillText(`PAN: (${panX.toFixed(0)},${panY.toFixed(0)})`,8,28);
+        ctx.fillText(`SYS: ${currentSystemId}`,8,52);
     }
     
-    // UI tree building
-    const planetTreeDiv = document.getElementById('planetTree');
-    const infoPanelDiv = document.getElementById('infoPanel');
-    
+    // UI tree building (same as before, but we use selectBodyByRef)
     function buildTree() {
-        planetTreeDiv.innerHTML = '';
-        for (let star of currentStars) {
-            const starBtn = document.createElement('div');
-            starBtn.className = `nav-btn star ${(selectedBody && selectedBody.type === 'star' && selectedBody.data.name === star.name) ? 'selected' : ''}`;
+        let div = document.getElementById('planetTree');
+        div.innerHTML = '';
+        for(let si=0; si<currentStars.length; si++) {
+            let star = currentStars[si];
+            let starBtn = document.createElement('div');
+            starBtn.className = `nav-btn star ${(selectedBody && selectedBody.type==='star' && selectedBody.data.name===star.name)?'selected':''}`;
             starBtn.innerHTML = `<span style="flex:1;">[★] ${star.name}</span><span style="color:#ffaa44;">${star.type}</span>`;
-            starBtn.onclick = () => selectBody({ type: 'star', data: star });
-            planetTreeDiv.appendChild(starBtn);
-            const planetContainer = document.createElement('div');
-            planetContainer.className = 'sub-nav';
-            for (let planet of star.planets) {
-                const planetBtn = document.createElement('div');
-                planetBtn.className = `nav-btn planet ${(selectedBody && selectedBody.type === 'planet' && selectedBody.data.name === planet.name) ? 'selected' : ''}`;
-                planetBtn.innerHTML = `<span style="flex:1;">[●] ${planet.name}</span><span style="color:#88aaff;">${planet.visualRadius} AU</span>`;
-                planetBtn.onclick = () => selectBody({ type: 'planet', data: planet, parentStar: star });
-                planetContainer.appendChild(planetBtn);
-                const moonContainer = document.createElement('div');
-                moonContainer.className = 'sub-nav';
-                for (let moon of (planet.moons || [])) {
-                    const moonBtn = document.createElement('div');
-                    moonBtn.className = `nav-btn moon ${(selectedBody && selectedBody.type === 'moon' && selectedBody.data.name === moon.name) ? 'selected' : ''}`;
-                    moonBtn.innerHTML = `<span style="flex:1;">[~] ${moon.name}</span><span style="font-size:9px;">${moon.desc.substring(0,20)}</span>`;
-                    moonBtn.onclick = () => selectBody({ type: 'moon', data: moon, parent: planet, parentStar: star });
-                    moonContainer.appendChild(moonBtn);
+            starBtn.onclick = () => selectBodyByRef('star', si, -1, -1);
+            div.appendChild(starBtn);
+            let pCont = document.createElement('div'); pCont.className = 'sub-nav';
+            for(let pi=0; pi<star.planets.length; pi++) {
+                let p = star.planets[pi];
+                let pBtn = document.createElement('div');
+                pBtn.className = `nav-btn planet ${(selectedBody && selectedBody.type==='planet' && selectedBody.data.name===p.name)?'selected':''}`;
+                pBtn.innerHTML = `<span style="flex:1;">[●] ${p.name}</span><span style="color:#88aaff;">${p.visualRadius} AU</span>`;
+                pBtn.onclick = () => selectBodyByRef('planet', si, pi, -1);
+                pCont.appendChild(pBtn);
+                let mCont = document.createElement('div'); mCont.className = 'sub-nav';
+                for(let mi=0; mi<(p.moons||[]).length; mi++) {
+                    let m = p.moons[mi];
+                    let mBtn = document.createElement('div');
+                    mBtn.className = `nav-btn moon ${(selectedBody && selectedBody.type==='moon' && selectedBody.data.name===m.name)?'selected':''}`;
+                    mBtn.innerHTML = `<span style="flex:1;">[~] ${m.name}</span><span style="font-size:9px;">${(m.desc||'').substring(0,18)}</span>`;
+                    mBtn.onclick = () => selectBodyByRef('moon', si, pi, mi);
+                    mCont.appendChild(mBtn);
                 }
-                planetContainer.appendChild(moonContainer);
+                pCont.appendChild(mCont);
             }
-            planetTreeDiv.appendChild(planetContainer);
+            div.appendChild(pCont);
         }
     }
     
-    function selectBody(body) {
-        if (trackingMode) disableTracking();
-        selectedBody = body;
+    function selectBodyByRef(type, sIdx, pIdx, mIdx) {
+        if(trackingMode) disableTracking();
+        let bodyObj = null;
+        if(type === 'star') {
+            bodyObj = { type:'star', data:currentStars[sIdx], starIdx:sIdx };
+        } else if(type === 'planet') {
+            bodyObj = { type:'planet', data:currentStars[sIdx].planets[pIdx], parentStar:currentStars[sIdx], starIdx:sIdx, planetIdx:pIdx };
+        } else if(type === 'moon') {
+            let star = currentStars[sIdx];
+            let planet = star.planets[pIdx];
+            let moon = planet.moons[mIdx];
+            bodyObj = { type:'moon', data:moon, parentStar:star, parentPlanet:planet, starIdx:sIdx, planetIdx:pIdx, moonIdx:mIdx };
+        }
+        selectedBody = bodyObj;
         buildTree();
         updateInfoPanel();
         draw();
+        refreshDesignerForm();
     }
     
     function updateInfoPanel() {
-        if (!selectedBody) {
-            infoPanelDiv.innerHTML = '<div style="text-align:center; color:#668888;">select a star, planet or moon</div>';
-            return;
-        }
-        if (selectedBody.type === 'star') {
-            const s = selectedBody.data;
-            infoPanelDiv.innerHTML = `<div class="info-card"><div class="body-name-large">[STAR] ${s.name}</div><div class="info-row"><span class="info-label">TYPE</span><span>${s.type}</span></div><div class="info-row"><span class="info-label">MASS</span><span>${s.mass}</span></div><div class="info-row"><span class="info-label">TEMPERATURE</span><span>${s.temperature}</span></div><div class="fact-box">[FACT] Primary energy source.</div></div>`;
-        } else if (selectedBody.type === 'planet') {
-            const p = selectedBody.data;
-            const moonsStr = (p.moons || []).map(m=>m.name).join(', ') || 'None';
-            infoPanelDiv.innerHTML = `<div class="info-card"><div class="body-name-large">[PLANET] ${p.name}</div><div class="info-row"><span class="info-label">ORBIT RADIUS</span><span>${p.visualRadius} AU</span></div><div class="info-row"><span class="info-label">PERIOD</span><span>${p.periodDays} days</span></div><div class="info-row"><span class="info-label">GRAVITY</span><span>${p.gravity}</span></div><div class="info-row"><span class="info-label">ATMOSPHERE</span><span>${p.atmosphere}</span></div><div class="info-row"><span class="info-label">TEMP</span><span>${p.temperature}</span></div><div class="info-row"><span class="info-label">DAY LENGTH</span><span>${p.dayLength}</span></div><div class="info-row"><span class="info-label">MOONS</span><span>${moonsStr}</span></div><div class="fact-box">${p.fact}</div></div>`;
-        } else if (selectedBody.type === 'moon') {
-            const m = selectedBody.data;
-            infoPanelDiv.innerHTML = `<div class="info-card"><div class="body-name-large">[MOON] ${m.name}</div><div class="info-row"><span class="info-label">DESCRIPTION</span><span>${m.desc}</span></div><div class="fact-box">Natural satellite.</div></div>`;
+        let panel = document.getElementById('infoPanel');
+        if(!selectedBody) { panel.innerHTML = '<div style="text-align:center; color:#668888;">select a star, planet or moon</div>'; return; }
+        if(selectedBody.type === 'star') {
+            let s = selectedBody.data;
+            panel.innerHTML = `<div class="info-card"><div class="body-name-large">[STAR] ${s.name}</div><div class="info-row"><span class="info-label">TYPE</span><span>${s.type}</span></div><div class="info-row"><span class="info-label">MASS</span><span>${s.mass}</span></div><div class="info-row"><span class="info-label">TEMP</span><span>${s.temperature}</span></div><div class="fact-box">[FACT] Primary energy source.</div></div>`;
+        } else if(selectedBody.type === 'planet') {
+            let p = selectedBody.data;
+            let moonsStr = (p.moons||[]).map(m=>m.name).join(', ') || 'None';
+            panel.innerHTML = `<div class="info-card"><div class="body-name-large">[PLANET] ${p.name}</div><div class="info-row"><span class="info-label">ORBIT RADIUS</span><span>${p.visualRadius} AU</span></div><div class="info-row"><span class="info-label">PERIOD</span><span>${p.periodDays} days</span></div><div class="info-row"><span class="info-label">GRAVITY</span><span>${p.gravity}</span></div><div class="info-row"><span class="info-label">ATMOSPHERE</span><span>${p.atmosphere}</span></div><div class="info-row"><span class="info-label">TEMP</span><span>${p.temperature}</span></div><div class="info-row"><span class="info-label">DAY LENGTH</span><span>${p.dayLength}</span></div><div class="info-row"><span class="info-label">MOONS</span><span>${moonsStr}</span></div><div class="fact-box">${p.fact}</div></div>`;
+        } else {
+            let m = selectedBody.data;
+            panel.innerHTML = `<div class="info-card"><div class="body-name-large">[MOON] ${m.name}</div><div class="info-row"><span class="info-label">DESC</span><span>${m.desc}</span></div><div class="fact-box">Natural satellite.</div></div>`;
         }
     }
     
+    // Minimal designer placeholders (keep functional but not cluttering)
+    function refreshDesignerForm() {
+        let container = document.getElementById('designerContainer');
+        if(!selectedBody) {
+            container.innerHTML = `<div class="designer-section"><div style="margin-bottom:8px;">➕ SYSTEM TOOLS</div><button class="design-btn" id="globalAddStarBtn">+ ADD STAR</button><button class="design-btn" id="toggleAsteroidBtn">TOGGLE ASTEROID BELT</button><button class="design-btn warning-btn" id="deleteSystemBtn">DELETE SYSTEM</button></div>`;
+            attachGlobalDesignerEvents();
+            return;
+        }
+        container.innerHTML = `<div class="designer-section" style="text-align:center; color:#88ffcc;">[SELECTED: ${selectedBody.data.name}]<br><span style="font-size:9px;">Use JSON import/export or create new system</span></div>`;
+    }
+    function attachGlobalDesignerEvents() {
+        document.getElementById('globalAddStarBtn')?.addEventListener('click',()=>{
+            let newStar = { name:`Star${currentStars.length+1}`, type:"M5V Red Dwarf", mass:"0.3 M☉", temperature:"3200 K", radius:10, color:"#ffaa77", isPrimary:false, orbitalRadius:280, orbitalSpeed:0.0025, planets:[] };
+            newStar.angle = Math.random()*2*Math.PI;
+            currentStars.push(newStar);
+            if(!currentStars.some(s=>s.isPrimary)) { newStar.isPrimary=true; newStar.orbitalRadius=0; newStar.orbitalSpeed=0; }
+            showNotify(`Star ${newStar.name} added`); buildTree(); draw(); refreshDesignerForm();
+        });
+        document.getElementById('toggleAsteroidBtn')?.addEventListener('click',()=>{
+            currentSystem.asteroidBelt = !currentSystem.asteroidBelt;
+            generateAsteroidBelt();
+            showNotify(`Asteroid belt: ${currentSystem.asteroidBelt?"ON":"OFF"}`);
+            draw();
+        });
+        document.getElementById('deleteSystemBtn')?.addEventListener('click',()=>{
+            if(Object.keys(starSystems).length<=1) { showNotify("Cannot delete last system",true); return; }
+            delete starSystems[currentSystemId];
+            let newId = Object.keys(starSystems)[0];
+            switchSystem(newId);
+            showNotify(`System ${currentSystemId} deleted`);
+        });
+    }
+    
     function switchSystem(sysId) {
-        if (trackingMode) disableTracking();
-        if (!starSystems[sysId]) { showNotify(`System "${sysId}" not found.`, true); return; }
+        if(trackingMode) disableTracking();
+        if(!starSystems[sysId]) return;
         currentSystemId = sysId;
         currentSystem = starSystems[currentSystemId];
         currentStars = currentSystem.stars;
         initAngles();
         generateAsteroidBelt();
-        panX = 0; panY = 0;
-        zoomLevel = 1.0;
+        panX=0; panY=0; zoomLevel=1;
         document.getElementById('zoomLabel').innerText = 'ZOOM: 1.00x';
-        selectedBody = currentStars.length > 0 ? { type: 'star', data: currentStars[0] } : null;
+        selectedBody = currentStars.length ? { type:'star', data:currentStars[0], starIdx:0 } : null;
         buildTree();
         updateInfoPanel();
         draw();
-        document.querySelectorAll('.sys-btn').forEach(btn => { btn.classList.remove('active'); if (btn.innerText === sysId) btn.classList.add('active'); });
+        renderSystemSelector();
+        refreshDesignerForm();
     }
     
     function renderSystemSelector() {
-        const selector = document.getElementById('systemSelector');
-        selector.innerHTML = '';
-        for (let sysId in starSystems) {
-            const btn = document.createElement('button');
-            btn.className = `sys-btn ${currentSystemId === sysId ? 'active' : ''}`;
-            btn.innerText = sysId;
-            btn.onclick = () => switchSystem(sysId);
-            selector.appendChild(btn);
+        let sel = document.getElementById('systemSelector');
+        sel.innerHTML = '';
+        for(let id in starSystems) {
+            let btn = document.createElement('button');
+            btn.className = `sys-btn ${currentSystemId===id?'active':''}`;
+            btn.innerText = id;
+            btn.onclick = () => switchSystem(id);
+            sel.appendChild(btn);
         }
-    }
-    
-    // ----- EXPORT/IMPORT -----
-    function exportCurrentSystem() {
-        const systemData = starSystems[currentSystemId];
-        const exportObj = { [currentSystemId]: systemData };
-        const dataStr = JSON.stringify(exportObj, null, 2);
-        const blob = new Blob([dataStr], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${currentSystemId}_system.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showNotify(`Exported "${currentSystemId}" to JSON.`);
-    }
-    
-    function importSystemFromFile(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const imported = JSON.parse(e.target.result);
-                if (typeof imported !== 'object' || imported === null) throw new Error("Invalid JSON");
-                let addedCount = 0;
-                for (let sysId in imported) {
-                    const sysData = imported[sysId];
-                    if (!sysData.stars || !Array.isArray(sysData.stars)) {
-                        showNotify(`System "${sysId}" missing 'stars' array. Skipped.`, true);
-                        continue;
-                    }
-                    starSystems[sysId] = sysData;
-                    addedCount++;
-                }
-                if (addedCount > 0) {
-                    renderSystemSelector();
-                    if (!starSystems[currentSystemId]) {
-                        const firstKey = Object.keys(starSystems)[0];
-                        if (firstKey) switchSystem(firstKey);
-                        else currentSystemId = null;
-                    } else {
-                        switchSystem(currentSystemId);
-                    }
-                    showNotify(`Imported ${addedCount} system(s).`);
-                } else {
-                    showNotify("No valid systems imported.", true);
-                }
-            } catch(err) {
-                showNotify(`Import error: ${err.message}`, true);
-            }
+        let newBtn = document.createElement('button');
+        newBtn.className = 'sys-btn'; newBtn.innerText = '+ NEW';
+        newBtn.onclick = () => {
+            let newId = `System_${Date.now()}`;
+            starSystems[newId] = { name:newId, asteroidBelt:false, stars:[{ name:"Primus", type:"G2V", mass:"1.0 M☉", temperature:"5700K", radius:14, color:"#ffcc44", isPrimary:true, orbitalRadius:0, orbitalSpeed:0, planets:[] }] };
+            renderSystemSelector();
+            switchSystem(newId);
+            showNotify(`Created system ${newId}`);
         };
-        reader.onerror = () => showNotify("File read error.", true);
+        sel.appendChild(newBtn);
+    }
+    
+    function centerOnPrimaryStar() { if(trackingMode) disableTracking(); let p=currentStars.find(s=>s.isPrimary); if(p){ let pos=getStarWorldPosition(p); panX=-pos.x*zoomLevel; panY=-pos.y*zoomLevel; draw(); } else resetPan(); }
+    function centerOnBarycenter() { if(trackingMode) disableTracking(); let b=getBarycenter(); panX=-b.x*zoomLevel; panY=-b.y*zoomLevel; draw(); }
+    function centerOnSelected() { if(!selectedBody) return; if(trackingMode) disableTracking(); let pos=getWorldPosition(selectedBody); panX=-pos.x*zoomLevel; panY=-pos.y*zoomLevel; draw(); }
+    function resetPan() { if(trackingMode) disableTracking(); panX=0; panY=0; draw(); }
+    function setZoom(delta) { if(trackingMode) disableTracking(); zoomLevel=Math.min(5,Math.max(0.25,zoomLevel+delta)); document.getElementById('zoomLabel').innerText=`ZOOM: ${zoomLevel.toFixed(2)}x`; draw(); }
+    function pan(dx,dy) { if(trackingMode) disableTracking(); panX+=dx; panY+=dy; draw(); }
+    function disableTracking() { trackingMode=false; document.getElementById('track-toggle')?.classList.remove('track-active'); document.getElementById('trackStatus').innerText="TRACK: OFF"; }
+    function enableTracking() { trackingMode=true; document.getElementById('track-toggle')?.classList.add('track-active'); document.getElementById('trackStatus').innerText="TRACK: ON"; centerOnSelected(); }
+    function toggleTracking() { trackingMode?disableTracking():enableTracking(); }
+    function setSpeed(mult, btnId, pause=false) { simulationPaused = pause; timeScale = pause?0:mult; document.getElementById('speedLabel').innerText = pause?"SPEED: PAUSED":`SPEED: ${mult}x`; ['speed-pause','speed-1x','speed-5x','speed-10x','speed-20x'].forEach(id=>document.getElementById(id)?.classList.remove('active')); if(btnId) document.getElementById(btnId)?.classList.add('active'); }
+    
+    function animate(now) {
+        requestAnimationFrame(animate);
+        if(!lastTimestamp) { lastTimestamp=now; draw(); return; }
+        let dt = Math.min(0.033, (now-lastTimestamp)/1000);
+        if(dt>0.001) { updateOrbits(dt * timeScale); if(trackingMode && selectedBody){ let pos=getWorldPosition(selectedBody); panX=-pos.x*zoomLevel; panY=-pos.y*zoomLevel; } draw(); }
+        lastTimestamp = now;
+    }
+    
+    function exportCurrentSystem() {
+        let dataStr = JSON.stringify({[currentSystemId]:starSystems[currentSystemId]}, null, 2);
+        let blob = new Blob([dataStr], {type:"application/json"});
+        let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${currentSystemId}_design.json`; a.click(); URL.revokeObjectURL(a.href);
+        showNotify(`Exported ${currentSystemId}`);
+    }
+    function importSystemFromFile(file) {
+        let reader = new FileReader();
+        reader.onload = e => {
+            try {
+                let imported = JSON.parse(e.target.result);
+                let added=0;
+                for(let id in imported) { if(imported[id].stars) { starSystems[id]=imported[id]; added++; } }
+                if(added) { renderSystemSelector(); switchSystem(Object.keys(imported)[0]); showNotify(`Imported ${added} systems`); }
+                else showNotify("Invalid format",true);
+            } catch(err) { showNotify("Import error",true); }
+        };
         reader.readAsText(file);
     }
     
-    // Animation
-    function animate(now) {
-        requestAnimationFrame(animate);
-        if (!lastFrame) { lastFrame = now; draw(); return; }
-        let dt = Math.min(0.033, (now - lastFrame) / 1000);
-        if (dt > 0.001) {
-            updateOrbits(dt);
-            if (trackingMode) updateTracking();
-            draw();
-        }
-        lastFrame = now;
-    }
-    
-    // Event binding
-    const canvas = document.getElementById('orbitCanvas');
+    canvas = document.getElementById('orbitCanvas');
     ctx = canvas.getContext('2d');
     const container = document.querySelector('.canvas-container');
-    function resizeCanvas() { width = container.clientWidth; height = container.clientHeight; canvas.width = width; canvas.height = height; draw(); }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    function resizeCanvas() { width=container.clientWidth; height=container.clientHeight; canvas.width=width; canvas.height=height; draw(); }
+    window.addEventListener('resize', resizeCanvas); resizeCanvas();
     
     document.getElementById('zoom-in').onclick = () => setZoom(0.2);
     document.getElementById('zoom-out').onclick = () => setZoom(-0.2);
-    document.getElementById('zoom-reset').onclick = resetZoom;
-    document.getElementById('pan-up').onclick = () => pan(0, -30);
-    document.getElementById('pan-down').onclick = () => pan(0, 30);
-    document.getElementById('pan-left').onclick = () => pan(-30, 0);
-    document.getElementById('pan-right').onclick = () => pan(30, 0);
+    document.getElementById('zoom-reset').onclick = () => { if(trackingMode) disableTracking(); zoomLevel=1; panX=0; panY=0; draw(); };
+    document.getElementById('pan-up').onclick = () => pan(0,-30);
+    document.getElementById('pan-down').onclick = () => pan(0,30);
+    document.getElementById('pan-left').onclick = () => pan(-30,0);
+    document.getElementById('pan-right').onclick = () => pan(30,0);
     document.getElementById('center-star').onclick = centerOnPrimaryStar;
     document.getElementById('center-system').onclick = centerOnBarycenter;
     document.getElementById('center-selected').onclick = () => { if(trackingMode) disableTracking(); centerOnSelected(); };
     document.getElementById('reset-pan').onclick = resetPan;
     document.getElementById('track-toggle').onclick = toggleTracking;
-    document.getElementById('speed-pause').onclick = () => setSpeed(0, 'speed-pause');
-    document.getElementById('speed-1x').onclick = () => setSpeed(1, 'speed-1x');
-    document.getElementById('speed-5x').onclick = () => setSpeed(5, 'speed-5x');
-    document.getElementById('speed-10x').onclick = () => setSpeed(10, 'speed-10x');
-    document.getElementById('speed-20x').onclick = () => setSpeed(20, 'speed-20x');
-    canvas.addEventListener('wheel', e => { e.preventDefault(); if(trackingMode) disableTracking(); setZoom(e.deltaY > 0 ? -0.1 : 0.1); });
-    
+    document.getElementById('speed-pause').onclick = () => setSpeed(0, 'speed-pause', true);
+    document.getElementById('speed-1x').onclick = () => setSpeed(1, 'speed-1x', false);
+    document.getElementById('speed-5x').onclick = () => setSpeed(5, 'speed-5x', false);
+    document.getElementById('speed-10x').onclick = () => setSpeed(10, 'speed-10x', false);
+    document.getElementById('speed-20x').onclick = () => setSpeed(20, 'speed-20x', false);
+    canvas.addEventListener('wheel', e => { e.preventDefault(); if(trackingMode) disableTracking(); setZoom(e.deltaY>0 ? -0.1 : 0.1); });
     document.getElementById('exportBtn').onclick = exportCurrentSystem;
-    const fileInput = document.getElementById('importFileInput');
-    document.getElementById('importBtn').onclick = () => fileInput.click();
-    fileInput.onchange = (e) => { if (e.target.files.length) importSystemFromFile(e.target.files[0]); fileInput.value = ''; };
+    document.getElementById('importBtn').onclick = () => document.getElementById('importFileInput').click();
+    document.getElementById('importFileInput').onchange = e => { if(e.target.files.length) importSystemFromFile(e.target.files[0]); e.target.value=''; };
+    document.getElementById('newSystemBtn').onclick = () => { let newId=`Custom_${Date.now()}`; starSystems[newId]={ name:newId, asteroidBelt:false, stars:[{ name:"Nova", type:"G2V", mass:"1.0 M☉", temperature:"5700K", radius:14, color:"#ffcc44", isPrimary:true, orbitalRadius:0, orbitalSpeed:0, planets:[] }]}; renderSystemSelector(); switchSystem(newId); showNotify(`Design system: ${newId}`); };
     
     renderSystemSelector();
     initAngles();
     generateAsteroidBelt();
-    selectedBody = currentStars.length > 0 ? { type: 'star', data: currentStars[0] } : null;
+    selectedBody = currentStars.length ? { type:'star', data:currentStars[0], starIdx:0 } : null;
     buildTree();
     updateInfoPanel();
+    refreshDesignerForm();
     draw();
     requestAnimationFrame(animate);
 </script>

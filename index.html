@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C.O.S.M.O.S. // MFD Select & Reboot — Stable Terminal</title>
+    <title>C.O.S.M.O.S. // MFD Select & Reboot — Tri‑Mode Terminal</title>
     <style>
         :root {
             --bg-color: #050505;
@@ -138,7 +138,7 @@
             overflow: hidden;
         }
 
-        #boot-screen, #diag-screen, #console-screen {
+        .screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -154,39 +154,15 @@
             transition: opacity 0.3s ease;
             z-index: 45;
         }
-        #boot-screen { z-index: 50; }
-        #diag-screen {
-            z-index: 55;
-            background: #010104;
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
-        #diag-screen.active {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
-        #boot-screen.boot-hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-        #console-screen {
-            z-index: 65;
-            background: #03030a;
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            padding: 0;
-            font-family: 'Courier New', monospace;
-        }
-        #console-screen.active {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
+        .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .screen.visible { opacity: 1; visibility: visible; pointer-events: auto; z-index: 50; }
+
+        #boot-screen { background: var(--bg-color); }
+        #diag-screen { background: #010104; }
+        #console-screen { background: #03030a; display: flex; flex-direction: column; padding: 0; }
+        #sysmon-screen { background: #0a0a0f; font-family: monospace; }
+        #about-screen { background: #020208; }
+
         #console-output {
             flex: 1;
             background: #000;
@@ -207,11 +183,7 @@
             padding: 10px 20px;
             gap: 12px;
         }
-        .console-prompt {
-            color: var(--accent-cyan);
-            font-weight: bold;
-            font-size: 14px;
-        }
+        .console-prompt { color: var(--accent-cyan); font-weight: bold; font-size: 14px; }
         #console-input {
             background: transparent;
             border: none;
@@ -223,22 +195,12 @@
             caret-color: var(--accent-cyan);
         }
         .console-close-btn {
-            position: absolute;
-            bottom: 20px;
-            right: 30px;
-            background: #111;
-            border: 1px solid var(--accent-cyan);
-            color: var(--accent-cyan);
-            padding: 6px 12px;
-            font-family: monospace;
-            font-size: 12px;
-            cursor: pointer;
-            z-index: 70;
+            position: absolute; bottom: 20px; right: 30px;
+            background: #111; border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan); padding: 6px 12px;
+            font-family: monospace; font-size: 12px; cursor: pointer; z-index: 70;
         }
-        .console-close-btn:hover {
-            background: var(--accent-cyan);
-            color: #000;
-        }
+        .console-close-btn:hover { background: var(--accent-cyan); color: #000; }
 
         #file-grid {
             display: grid;
@@ -249,9 +211,6 @@
             height: 100%;
             overflow-y: auto;
             transition: opacity 0.55s ease-in-out;
-            opacity: 0;
-        }
-        #file-grid.grid-visible {
             opacity: 1;
         }
 
@@ -312,24 +271,44 @@
         .sys-status-bar .fill.err { width: 10%; background: var(--accent-red); }
 
         .diag-close-btn {
-            position: absolute;
-            bottom: 20px;
-            right: 30px;
-            background: #111;
-            border: 1px solid var(--accent-cyan);
-            color: var(--accent-cyan);
-            padding: 6px 12px;
-            font-family: monospace;
-            font-size: 12px;
-            cursor: pointer;
-            z-index: 60;
+            position: absolute; bottom: 20px; right: 30px;
+            background: #111; border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan); padding: 6px 12px;
+            font-family: monospace; font-size: 12px; cursor: pointer;
         }
-        .diag-close-btn:hover {
-            background: var(--accent-cyan);
-            color: #000;
-        }
+        .diag-close-btn:hover { background: var(--accent-cyan); color: #000; }
         .cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent-cyan); animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 5px;}
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .stats-panel, .about-panel {
+            font-family: 'Courier New', monospace;
+            background: #000000aa;
+            border-left: 4px solid var(--accent-cyan);
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .stat-line, .about-line { margin: 8px 0; letter-spacing: 1px; }
+        .stat-label, .about-label { color: var(--accent-cyan); }
+        .ascii-cosmos {
+            white-space: pre;
+            font-size: 12px;
+            color: #88ff88;
+            background: #000;
+            padding: 20px;
+            border: 1px solid var(--border-dim);
+            text-align: center;
+        }
+        #diag-output {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #00ffaa;
+            background: #000;
+            padding: 20px;
+            margin: 0;
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -362,17 +341,55 @@
         </div>
 
         <div class="center-console">
-            <div id="boot-screen"><div id="boot-text"><span class="cursor"></span></div></div>
-            <div id="diag-screen"><pre id="diag-output" style="margin:0; font-family:'Courier New', monospace; white-space:pre-wrap;"></pre><button class="diag-close-btn" id="diag-close">[ EXIT ]</button></div>
-            <div id="console-screen">
+            <div id="boot-screen" class="screen hidden"><div id="boot-text"><span class="cursor"></span></div></div>
+            <div id="diag-screen" class="screen hidden"><pre id="diag-output"></pre><button class="diag-close-btn" id="diag-close">[ EXIT ]</button></div>
+            <div id="console-screen" class="screen hidden">
                 <div id="console-output"></div>
-                <div class="console-input-line">
-                    <span class="console-prompt">ECMS> </span>
-                    <input type="text" id="console-input" autocomplete="off" spellcheck="false">
-                </div>
+                <div class="console-input-line"><span class="console-prompt">ECMS> </span><input type="text" id="console-input" autocomplete="off" spellcheck="false"></div>
                 <button class="console-close-btn" id="console-exit-btn">[ EXIT ]</button>
             </div>
-            <div id="file-grid"></div>
+            <div id="home-screen" class="screen hidden"><div id="file-grid"></div></div>
+            <div id="sysmon-screen" class="screen hidden">
+                <div style="padding: 20px;">
+                    <h2 style="color:var(--accent-cyan); border-bottom:1px solid var(--accent-cyan);">[ SYSTEM MONITOR ]</h2>
+                    <div id="sysmon-stats" class="stats-panel">
+                        <div class="stat-line"><span class="stat-label">UPTIME:</span> <span id="mon-uptime">--</span></div>
+                        <div class="stat-line"><span class="stat-label">MEMORY SLOTS:</span> <span id="mon-total">--</span> total, <span id="mon-occupied">--</span> occupied</div>
+                        <div class="stat-line"><span class="stat-label">CORRUPTION:</span> <span id="mon-corrupt">--</span> sectors</div>
+                        <div class="stat-line"><span class="stat-label">HEALTH:</span> <span id="mon-health">--</span>%</div>
+                        <div class="stat-line"><span class="stat-label">BOOT SEED:</span> <span id="mon-seed">--</span></div>
+                        <div class="stat-line"><span class="stat-label">ACTIVE MODE:</span> <span id="mon-mode">HOME</span></div>
+                    </div>
+                    <div style="margin-top:30px; color:var(--accent-green);">Press CYCL to switch modes.</div>
+                </div>
+            </div>
+            <div id="about-screen" class="screen hidden">
+                <div style="padding: 20px;">
+                    <h2 style="color:var(--accent-cyan); border-bottom:1px solid var(--accent-cyan);">[ ABOUT THIS TERMINAL ]</h2>
+                    <div class="ascii-cosmos">
+                        <pre>
++---------------------------------------+
+|             C.O.S.M.O.S.              |
+|  Cosmic Operations & System           |
+|  Management Operating Shell           |
++---------------------------------------+
+                        </pre>
+                    </div>
+                    <div class="about-panel">
+                        <div class="about-line"><span class="about-label">SYSTEM:</span> ECMS-OS / C.O.S.M.O.S. CORE</div>
+                        <div class="about-line"><span class="about-label">VERSION:</span> 0.9.0 "Tri-Mode"</div>
+                        <div class="about-line"><span class="about-label">RELEASE DATE:</span> 2026-05-26</div>
+                        <div class="about-line"><span class="about-label">INTERFACE:</span> MFD ASCII / VT100 Terminal</div>
+                        <div class="about-line"><span class="about-label">MODES:</span> FILE MANAGER | SYSTEM MONITOR | ABOUT</div>
+                        <div class="about-line"><span class="about-label">FEATURES:</span> Mount local .html files, Console with defrag game, Cycle views with CYCL, Power control</div>
+                        <div class="about-line"><span class="about-label">DEVELOPER:</span> ECMS Project / Deep Space Terminal</div>
+                        <div class="about-line"><span class="about-label">LICENSE:</span> Experimental / For space exploration simulation</div>
+                        <div class="about-line"><span class="about-label">ACKNOWLEDGMENTS:</span> Inspired by retro terminals, Fallout hacking minigame, and space opera aesthetics.</div>
+                    </div>
+                    <div style="margin-top:20px; color:var(--accent-green);">Use CYCL to return to HOME or SYSTEM MONITOR.</div>
+                    <div style="margin-top:10px; font-size:12px; color:#666;">"The stars await, commander."</div>
+                </div>
+            </div>
         </div>
 
         <div class="sidebar right boot-disabled" id="rightSidebar">
@@ -400,236 +417,74 @@
 
 <script>
 (function(){
-    // ---------- SYSTEM CONFIG ----------
-    const MAX_PAGES = 9;
-    const SLOTS_PER_PAGE = 24;
-    const TOTAL_SLOTS = MAX_PAGES * SLOTS_PER_PAGE;
+    // ---------- SYSTEM ----------
+    const MAX_PAGES = 9, SLOTS_PER_PAGE = 24, TOTAL_SLOTS = MAX_PAGES * SLOTS_PER_PAGE;
     const bootTimestamp = Date.now();
-    
     const BASE_FILES = [
         { id: "AE30", title: "Spaceship Architect", subtitle: "Naval Blueprint", type: "app", link: "mainPages/shipBuilder.html", utg1: "0.99", utg2: "0.00" },
         { id: "NAV01", title: "Navigation Core", subtitle: "Vector Comp.", type: "app", link: "mainPages/navCore.html", utg1: "2.34", utg2: "0.12" },
         { id: "SYS_CORE", title: "ECMS Kernel", subtitle: "System RT", type: "sys", link: "https://www.shutterstock.com/image-photo/one-dried-corn-kernel-placed-260nw-2199556965.jpg", utg1: "4.56", utg2: "0.01" }
     ];
     
-    let actualFiles = [];
-    let fileSlots = new Array(TOTAL_SLOTS);
-    let currentPage = 1;
-    let bootSeed = 0;
-    let bootCompleted = false;
-    let selectedIndex = -1;
-    let currentGridModules = [];
-    let diagActive = false;
-    let consoleActive = false;
-    let commandHistory = [];
-    let historyPos = 0;
-    let pendingRefresh = false;
-    
-    // Defrag mini-game state (Wordle-style, but not called "game")
-    let hackActive = false;
-    let hackWord = "";
-    let hackAttempts = 0;
-    let hackWordLen = 0;
+    let actualFiles = [], fileSlots = new Array(TOTAL_SLOTS);
+    let currentPage = 1, bootSeed = 0, bootCompleted = false, selectedIndex = -1, currentGridModules = [];
+    let diagActive = false, consoleActive = false, commandHistory = [], historyPos = 0, pendingRefresh = false;
+    let currentUIMode = 1;
+    let hackActive = false, hackWord = "", hackAttempts = 0, hackWordLen = 0;
     
     const wordPool = ["SYSTEM","KERNEL","MEMORY","CACHE","BUFFER","DRIVER","INTERRUPT","PAGING","SECTOR","MODULE","PROCESS","THREAD","DAEMON","BOOTLOAD","COMPILER","PROTOCOL"];
-    const memoryFragments = [
-        "Memory fragment: The first programmable computer, Z3, was completed in 1941 by Konrad Zuse.",
-        "Fragment: The Apollo Guidance Computer had 2KB of RAM and 36KB of ROM.",
-        "Data shard: The term 'bug' originated from a moth trapped in Harvard Mark II.",
-        "Core dump: ENIAC weighed 30 tons and used 18,000 vacuum tubes.",
-        "Recall: The C programming language was created between 1969 and 1973.",
-        "Sector read: The first hard drive, IBM 350, stored 3.75 MB.",
-        "Bit rot: The highest corruption rate ever recorded was 68% in this sector.",
-        "Log entry: CMOS batteries typically last 10 years.",
-        "Archive: The first 1GB hard drive cost $40,000 in 1980.",
-        "Cache line: There are over 700 programming languages in use today."
-    ];
+    const memoryFragments = ["Memory fragment: Z3 was completed in 1941 by Konrad Zuse.","Fragment: Apollo GC had 2KB RAM.","Data shard: 'bug' originated from a moth.","Core dump: ENIAC weighed 30 tons.","Recall: C language created 1969-1973."];
+    const easterEggs = { "coffee": "Brewing fresh bytecode...", "42": "The answer to life.", "sudo": "You are already root.", "vger": "V'GER is listening.", "hal": "I'm afraid I can't do that.", "trek": "Live long and prosper.", "cookies": "Cookie jar empty." };
+    const fortunes = ["> The stars whisper.", "> Cosmic radiation nominal.", "> A ghost signal.", "> Your backup is intact.", "> Entropy is stable."];
     
-    // Easter eggs (hidden)
-    const easterEggs = {
-        "coffee": "☕ Brewing fresh bytecode... System ready.",
-        "42": "The answer to life, the universe, and everything.",
-        "sudo": "Nice try. You are already root.",
-        "vger": "V'GER is listening. Your actions have been logged.",
-        "hal": "I'm sorry, Dave. I'm afraid I can't do that. (just kidding)",
-        "trek": "🖖 Live long and prosper.",
-        "cookies": "🍪 Cookie jar empty. Try 'coffee' instead."
-    };
+    function getUptime() { const d=Date.now()-bootTimestamp; const s=Math.floor(d/1000); return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m ${s%60}s`; }
+    function setTheme(c) { const r=document.documentElement; const map={cyan:'#00ffcc',green:'#33ff33',red:'#ff5555',orange:'#ffaa44'}; if(map[c]){ r.style.setProperty('--accent-cyan',map[c]); r.style.setProperty('--accent-green',map[c]); return true; } return false; }
+    window.sysNotify = function(msg) { const t=document.getElementById('sys-title'); if(t){ t.innerText=msg; t.style.color='var(--accent-orange)'; setTimeout(()=>{ if(document.getElementById('sys-title')){ document.getElementById('sys-title').innerText="MAIN.DIRECTORY"; document.getElementById('sys-title').style.color='var(--accent-cyan)'; } },4000); } };
+    function seededRandom(seed, idx) { let s=seed+idx*131071; let t=(s^(s>>>15))*0x85ebca6b; t=(t^(t>>>13))*0xc2b2ae35; return ((t^(t>>>16))>>>0)/4294967296; }
     
-    const fortunes = [
-        "> The stars whisper of distant nebulae.",
-        "> Cosmic radiation levels nominal.",
-        "> A ghost signal repeats on channel 9.",
-        "> Your last backup is intact.",
-        "> Entropy is stable.",
-        "> Singularity detected in sector 7."
-    ];
-    
-    function getUptime() {
-        const diff = Date.now() - bootTimestamp;
-        const secs = Math.floor(diff / 1000);
-        const hrs = Math.floor(secs / 3600);
-        const mins = Math.floor((secs % 3600) / 60);
-        const secsRem = secs % 60;
-        return `${hrs}h ${mins}m ${secsRem}s`;
-    }
-    
-    function setTheme(color) {
-        const root = document.documentElement;
-        switch(color) {
-            case 'cyan': root.style.setProperty('--accent-cyan', '#00ffcc'); root.style.setProperty('--accent-green', '#33ff33'); break;
-            case 'green': root.style.setProperty('--accent-cyan', '#33ff33'); root.style.setProperty('--accent-green', '#33ff33'); break;
-            case 'red': root.style.setProperty('--accent-cyan', '#ff5555'); root.style.setProperty('--accent-green', '#ff8888'); break;
-            case 'orange': root.style.setProperty('--accent-cyan', '#ffaa44'); root.style.setProperty('--accent-green', '#ffcc66'); break;
-            default: return false;
-        }
-        return true;
-    }
-    
-    window.sysNotify = function(msg) {
-        const titleEl = document.getElementById('sys-title');
-        if(titleEl) {
-            titleEl.innerText = msg;
-            titleEl.style.color = 'var(--accent-orange)';
-            setTimeout(() => {
-                if(document.getElementById('sys-title')) {
-                    document.getElementById('sys-title').innerText = "MAIN.DIRECTORY";
-                    document.getElementById('sys-title').style.color = 'var(--accent-cyan)';
-                }
-            }, 4000);
-        }
-    };
-    
-    function seededRandom(seed, idx) {
-        let s = seed + idx * 131071;
-        let t = (s ^ (s >>> 15)) * 0x85ebca6b;
-        t = (t ^ (t >>> 13)) * 0xc2b2ae35;
-        return ((t ^ (t >>> 16)) >>> 0) / 4294967296;
-    }
-    
-    // Only dummy slots (beyond actualFiles) can be corrupted/locked/offline.
-    // Real mounted files (including BASE_FILES and user-mounted) are never modified.
     function rebuildFileSlots() {
-        for(let i = 0; i < TOTAL_SLOTS; i++) fileSlots[i] = null;
-        // Place real files first
-        for(let i = 0; i < actualFiles.length && i < TOTAL_SLOTS; i++) {
-            fileSlots[i] = { ...actualFiles[i] };
-        }
-        // Fill remaining slots with dummy entries (corruptible)
-        for(let i = actualFiles.length; i < TOTAL_SLOTS; i++) {
-            const pageNum = Math.floor(i / SLOTS_PER_PAGE) + 1;
-            let depthFactor = (pageNum - 1) / (MAX_PAGES - 1);
-            if(MAX_PAGES === 1) depthFactor = 0;
-            let corruptionProb = Math.pow(depthFactor, 1.5) * 0.85;
-            corruptionProb = Math.min(0.85, corruptionProb);
-            let lockProb = 0.3;
-            if(corruptionProb + lockProb > 0.98) lockProb = 0.98 - corruptionProb;
-            const r = seededRandom(bootSeed, i);
-            let type, title, subtitle, utg1, utg2;
-            if(r < corruptionProb) {
-                type = "corrupted";
-                title = "CORRUPTED";
-                subtitle = "ERR_DATA_LOSS";
-                utg1 = (seededRandom(bootSeed, i+777) * 9.99).toFixed(2);
-                utg2 = "NaN";
-            } else if(r < corruptionProb + lockProb) {
-                type = "locked";
-                title = "UNAUTHORIZED";
-                subtitle = "CLEARANCE_REQ";
-                utg1 = "---";
-                utg2 = "---";
-            } else {
-                type = "offline";
-                title = "UNALLOCATED";
-                subtitle = "EMPTY_SECTOR";
-                utg1 = "0.00";
-                utg2 = "0.00";
-            }
-            const idHex = (seededRandom(bootSeed, i+5000)*10000).toString(16).substr(0,4).toUpperCase();
-            fileSlots[i] = { id: idHex, title, subtitle, type, link: "#", utg1, utg2 };
+        for(let i=0;i<TOTAL_SLOTS;i++) fileSlots[i]=null;
+        for(let i=0;i<actualFiles.length && i<TOTAL_SLOTS;i++) fileSlots[i]={...actualFiles[i]};
+        for(let i=actualFiles.length;i<TOTAL_SLOTS;i++){
+            const pageNum=Math.floor(i/SLOTS_PER_PAGE)+1;
+            let depthFactor=(pageNum-1)/(MAX_PAGES-1); if(MAX_PAGES===1) depthFactor=0;
+            let corruptionProb=Math.pow(depthFactor,1.5)*0.85; corruptionProb=Math.min(0.85,corruptionProb);
+            let lockProb=0.3; if(corruptionProb+lockProb>0.98) lockProb=0.98-corruptionProb;
+            const r=seededRandom(bootSeed,i);
+            let type,title,subtitle,utg1,utg2;
+            if(r<corruptionProb){ type="corrupted"; title="CORRUPTED"; subtitle="ERR_DATA_LOSS"; utg1=(seededRandom(bootSeed,i+777)*9.99).toFixed(2); utg2="NaN"; }
+            else if(r<corruptionProb+lockProb){ type="locked"; title="UNAUTHORIZED"; subtitle="CLEARANCE_REQ"; utg1="---"; utg2="---"; }
+            else{ type="offline"; title="UNALLOCATED"; subtitle="EMPTY_SECTOR"; utg1="0.00"; utg2="0.00"; }
+            const idHex=(seededRandom(bootSeed,i+5000)*10000).toString(16).substr(0,4).toUpperCase();
+            fileSlots[i]={ id:idHex, title, subtitle, type, link:"#", utg1, utg2 };
         }
     }
     
-    // Corruption only affects dummy slots (i >= actualFiles.length)
-    function inflictCorruption(count) {
-        let inflicted = 0;
-        for(let i = actualFiles.length; i < TOTAL_SLOTS && inflicted < count; i++) {
-            if(fileSlots[i] && fileSlots[i].type !== 'corrupted') {
-                fileSlots[i].type = 'corrupted';
-                fileSlots[i].title = 'CORRUPTED';
-                fileSlots[i].subtitle = 'ERR_DATA_LOSS';
-                fileSlots[i].utg1 = (Math.random() * 9.99).toFixed(2);
-                fileSlots[i].utg2 = 'NaN';
-                inflicted++;
-            }
-        }
-        return inflicted;
-    }
+    function inflictCorruption(count) { let inf=0; for(let i=actualFiles.length;i<TOTAL_SLOTS && inf<count;i++) if(fileSlots[i] && fileSlots[i].type !== 'corrupted'){ fileSlots[i].type='corrupted'; fileSlots[i].title='CORRUPTED'; fileSlots[i].subtitle='ERR_DATA_LOSS'; inf++; } return inf; }
+    function healCorruption(count) { let heal=0; for(let i=actualFiles.length;i<TOTAL_SLOTS && heal<count;i++) if(fileSlots[i] && fileSlots[i].type==='corrupted'){ fileSlots[i].type='offline'; fileSlots[i].title='RECOVERED'; fileSlots[i].subtitle='REPAIRED'; heal++; } return heal; }
+    function getCorruptionCount() { return fileSlots.filter(s=>s && s.type==='corrupted').length; }
+    function getOccupiedCount() { return fileSlots.filter(s=>s && s.type!=='offline').length; }
     
-    function healCorruption(count) {
-        let healed = 0;
-        for(let i = actualFiles.length; i < TOTAL_SLOTS && healed < count; i++) {
-            if(fileSlots[i] && fileSlots[i].type === 'corrupted') {
-                fileSlots[i].type = 'offline';
-                fileSlots[i].title = 'RECOVERED';
-                fileSlots[i].subtitle = 'REPAIRED_SECTOR';
-                fileSlots[i].utg1 = '0.00';
-                fileSlots[i].utg2 = '0.00';
-                healed++;
-            }
-        }
-        return healed;
-    }
-    
-    function addMountedFiles(newFilesArray) {
-        let added = 0;
-        for(let f of newFilesArray) {
-            if(!actualFiles.some(ex => ex.title === f.title)) {
-                actualFiles.push(f);
-                added++;
-            }
-        }
-        if(added > 0) {
-            rebuildFileSlots();
-            if(bootCompleted && !diagActive && !consoleActive) {
-                generatePage(currentPage);
-                if(selectedIndex !== -1 && selectedIndex < TOTAL_SLOTS && fileSlots[selectedIndex]) highlightSelection();
-                else clearSelection();
-            } else if(consoleActive) pendingRefresh = true;
-            window.sysNotify(`MOUNTED ${added} NEW FILE(S)`);
-        }
-        return added;
-    }
-    
-    function refreshUI() {
-        if(bootCompleted && !diagActive && !consoleActive) {
-            generatePage(currentPage);
-            if(selectedIndex !== -1 && selectedIndex < TOTAL_SLOTS && fileSlots[selectedIndex]) highlightSelection();
-            else clearSelection();
-        } else if(consoleActive) pendingRefresh = true;
-    }
+    function addMountedFiles(arr){ let a=0; for(let f of arr) if(!actualFiles.some(ex=>ex.title===f.title)){ actualFiles.push(f); a++; } if(a>0){ rebuildFileSlots(); if(bootCompleted && !diagActive && !consoleActive && currentUIMode===1) { generatePage(currentPage); if(selectedIndex !== -1 && fileSlots[selectedIndex]) highlightSelection(); else clearSelection(); } else if(consoleActive) pendingRefresh=true; sysNotify(`MOUNTED ${a}`); } return a; }
+    function refreshUI(){ if(bootCompleted && !diagActive && !consoleActive && currentUIMode===1){ generatePage(currentPage); if(selectedIndex !== -1 && fileSlots[selectedIndex]) highlightSelection(); else clearSelection(); } else if(consoleActive) pendingRefresh=true; }
     
     function highlightSelection() {
-        if(currentGridModules) currentGridModules.forEach(mod => mod.classList.remove('module-selected'));
-        if(selectedIndex === -1) return;
-        const startIdx = (currentPage-1) * SLOTS_PER_PAGE;
-        if(selectedIndex >= startIdx && selectedIndex < startIdx + SLOTS_PER_PAGE) {
-            const relIdx = selectedIndex - startIdx;
-            if(currentGridModules && currentGridModules[relIdx]) {
-                currentGridModules[relIdx].classList.add('module-selected');
-                currentGridModules[relIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        if(currentGridModules) currentGridModules.forEach(m=>m.classList.remove('module-selected'));
+        if(selectedIndex===-1) return;
+        const start=(currentPage-1)*SLOTS_PER_PAGE;
+        if(selectedIndex>=start && selectedIndex<start+SLOTS_PER_PAGE){
+            const rel=selectedIndex-start;
+            if(currentGridModules && currentGridModules[rel]){
+                currentGridModules[rel].classList.add('module-selected');
+                currentGridModules[rel].scrollIntoView({block:'nearest', behavior:'smooth'});
             }
         }
     }
+    function clearSelection() { selectedIndex=-1; if(currentGridModules) currentGridModules.forEach(m=>m.classList.remove('module-selected')); sysNotify("CLEARED"); }
     
-    function clearSelection() {
-        selectedIndex = -1;
-        if(currentGridModules) currentGridModules.forEach(mod => mod.classList.remove('module-selected'));
-        window.sysNotify("SELECTION CLEARED");
-    }
-    
+    // Restored moveSelection function
     function moveSelection(dx, dy) {
-        if(!bootCompleted || diagActive || consoleActive) return;
+        if(!bootCompleted || diagActive || consoleActive || currentUIMode !== 1) return;
         const startIdx = (currentPage-1) * SLOTS_PER_PAGE;
         const endIdx = Math.min(startIdx + SLOTS_PER_PAGE, TOTAL_SLOTS);
         const slotsOnPage = endIdx - startIdx;
@@ -653,463 +508,100 @@
             selectedIndex = newGlobal;
             highlightSelection();
             const slot = fileSlots[selectedIndex];
-            window.sysNotify(`SELECTED: ${slot.title} (${slot.subtitle})`);
+            sysNotify(`SELECTED: ${slot.title} (${slot.subtitle})`);
         }
     }
     
-    function activateModuleBySlot(slot) {
-        if(!bootCompleted || diagActive || consoleActive) { window.sysNotify("SYSTEM BUSY"); return false; }
-        if(!slot) return false;
-        if(slot.type === 'corrupted') window.sysNotify("ERROR: DATA CORRUPTED - UNABLE TO ACCESS");
-        else if(slot.type === 'locked') window.sysNotify("ACCESS DENIED: CLEARANCE LEVEL INSUFFICIENT");
-        else if(slot.type === 'offline') window.sysNotify("SECTOR UNALLOCATED: NO DATA PRESENT");
-        else if(slot.type === 'app' || slot.type === 'sys') {
-            if(slot.link && slot.link !== '#') {
-                window.sysNotify(`LAUNCHING: ${slot.title}...`);
-                setTimeout(() => { window.open(slot.link, '_blank'); }, 100);
-            } else window.sysNotify(`MODULE ${slot.title} (SIMULATED)`);
-            return true;
-        } else window.sysNotify(`UNKNOWN MODULE TYPE`);
-        return false;
-    }
-    
-    function activateSelectedModule() {
-        if(!bootCompleted || selectedIndex === -1 || diagActive || consoleActive) { window.sysNotify("NO ACTIVE SELECTION"); return; }
-        activateModuleBySlot(fileSlots[selectedIndex]);
-    }
-    
-    function generatePage(pageNum) {
-        if(!bootCompleted || diagActive || consoleActive) return;
-        currentPage = Math.min(MAX_PAGES, Math.max(1, pageNum));
-        const grid = document.getElementById('file-grid');
+    function activateModuleBySlot(slot){ if(!bootCompleted||diagActive||consoleActive||currentUIMode!==1) { sysNotify("BUSY"); return false; } if(!slot) return false; if(slot.type==='corrupted') sysNotify("CORRUPTED"); else if(slot.type==='locked') sysNotify("DENIED"); else if(slot.type==='offline') sysNotify("EMPTY"); else if(slot.type==='app'||slot.type==='sys'){ if(slot.link && slot.link!=='#'){ sysNotify(`LAUNCHING ${slot.title}`); setTimeout(()=>window.open(slot.link,'_blank'),100); } else sysNotify(`SIMULATED ${slot.title}`); return true; } return false; }
+    function activateSelectedModule(){ if(!bootCompleted||selectedIndex===-1||diagActive||consoleActive||currentUIMode!==1){ sysNotify("NO SELECTION"); return; } activateModuleBySlot(fileSlots[selectedIndex]); }
+    function generatePage(p){
+        if(!bootCompleted||diagActive||consoleActive||currentUIMode!==1) return;
+        currentPage=Math.min(MAX_PAGES,Math.max(1,p));
+        const grid=document.getElementById('file-grid');
         if(!grid) return;
-        grid.innerHTML = '';
-        document.querySelectorAll('.num-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if(parseInt(btn.getAttribute('data-page')) === currentPage) btn.classList.add('active');
-        });
-        const totalReal = actualFiles.length;
-        const memPercent = Math.min(100, (totalReal / TOTAL_SLOTS) * 100);
-        const corruptedCount = fileSlots.filter(s => s && s.type === 'corrupted').length;
-        const errPercent = Math.min(80, (corruptedCount / TOTAL_SLOTS) * 100);
-        document.getElementById('mem-fill').style.width = `${memPercent}%`;
-        document.getElementById('err-fill').style.width = `${errPercent}%`;
-        
-        const startIdx = (currentPage-1) * SLOTS_PER_PAGE;
-        const endIdx = Math.min(startIdx + SLOTS_PER_PAGE, TOTAL_SLOTS);
-        const modules = [];
-        for(let i = startIdx; i < endIdx; i++) {
-            const slot = fileSlots[i];
+        grid.innerHTML='';
+        document.querySelectorAll('.num-btn').forEach(btn=>{ btn.classList.remove('active'); if(parseInt(btn.dataset.page)===currentPage) btn.classList.add('active'); });
+        const totalReal=actualFiles.length;
+        const memPercent=Math.min(100,(totalReal/TOTAL_SLOTS)*100);
+        const corruptedCount=getCorruptionCount();
+        const errPercent=Math.min(80,(corruptedCount/TOTAL_SLOTS)*100);
+        document.getElementById('mem-fill').style.width=`${memPercent}%`;
+        document.getElementById('err-fill').style.width=`${errPercent}%`;
+        const start=(currentPage-1)*SLOTS_PER_PAGE, end=Math.min(start+SLOTS_PER_PAGE,TOTAL_SLOTS), modules=[];
+        for(let i=start;i<end;i++){
+            const slot=fileSlots[i];
             if(!slot) continue;
-            const isLink = (slot.type === 'app' || slot.type === 'sys');
-            const el = isLink ? document.createElement('a') : document.createElement('div');
-            if(isLink && slot.link && slot.link !== '#') el.href = slot.link;
-            el.className = `module ${slot.type}`;
-            el.innerHTML = `<div class="mod-status"><div class="mod-led"></div><span>${slot.type === 'corrupted' ? 'ERR' : 'NML'}</span></div>
-                <div class="mod-content"><div class="mod-title">${escapeHtml(slot.title)}</div>
-                <div class="mod-data" style="color:#fff; margin-bottom:5px;">${escapeHtml(slot.subtitle)}</div>
-                <div class="mod-data"><span>UTG1: ${slot.utg1}</span><span>UTG2: ${slot.utg2}</span></div></div>`;
-            const globalIdx = i;
-            el.addEventListener('click', (e) => {
-                e.preventDefault();
-                if(!bootCompleted || diagActive || consoleActive) return;
-                selectedIndex = globalIdx;
-                highlightSelection();
-                window.sysNotify(`SELECTED: ${fileSlots[globalIdx].title}`);
-            });
-            el.addEventListener('dblclick', (e) => {
-                e.preventDefault();
-                if(!bootCompleted || diagActive || consoleActive) return;
-                activateModuleBySlot(fileSlots[globalIdx]);
-            });
-            grid.appendChild(el);
-            modules.push(el);
+            const isLink=(slot.type==='app'||slot.type==='sys');
+            const el=isLink?document.createElement('a'):document.createElement('div');
+            if(isLink&&slot.link&&slot.link!=='#') el.href=slot.link;
+            el.className=`module ${slot.type}`;
+            el.innerHTML=`<div class="mod-status"><div class="mod-led"></div><span>${slot.type==='corrupted'?'ERR':'NML'}</span></div><div class="mod-content"><div class="mod-title">${escapeHtml(slot.title)}</div><div class="mod-data" style="color:#fff;">${escapeHtml(slot.subtitle)}</div><div class="mod-data">UTG1: ${slot.utg1} UTG2: ${slot.utg2}</div></div>`;
+            const gIdx=i;
+            el.addEventListener('click',(e)=>{ e.preventDefault(); if(!bootCompleted||diagActive||consoleActive||currentUIMode!==1) return; selectedIndex=gIdx; highlightSelection(); sysNotify(`SELECTED: ${fileSlots[gIdx].title}`); });
+            el.addEventListener('dblclick',(e)=>{ e.preventDefault(); if(!bootCompleted||diagActive||consoleActive||currentUIMode!==1) return; activateModuleBySlot(fileSlots[gIdx]); });
+            grid.appendChild(el); modules.push(el);
         }
-        currentGridModules = modules;
-        if(selectedIndex !== -1 && selectedIndex >= startIdx && selectedIndex < endIdx) highlightSelection();
-        else if(currentGridModules) currentGridModules.forEach(m => m.classList.remove('module-selected'));
+        currentGridModules=modules;
+        if(selectedIndex!==-1 && selectedIndex>=start && selectedIndex<end) highlightSelection();
+        else if(currentGridModules) currentGridModules.forEach(m=>m.classList.remove('module-selected'));
     }
+    function escapeHtml(s){ return s.replace(/[&<>]/g,m=>m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+    function changePageOffset(delta){ if(!bootCompleted||diagActive||consoleActive||currentUIMode!==1) return; const np=currentPage+delta; if(np>=1&&np<=MAX_PAGES) generatePage(np); else sysNotify("PAGE LIMIT"); }
     
-    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-    
-    function changePageOffset(delta) {
-        if(!bootCompleted || diagActive || consoleActive) return;
-        const newPage = currentPage + delta;
-        if(newPage>=1 && newPage<=MAX_PAGES) generatePage(newPage);
-        else window.sysNotify("PAGE LIMIT REACHED");
-    }
-    
-    // ---------- DEFRAG MINI-GAME (Wordle style, no "game" term) ----------
-    function startDefrag() {
-        if(hackActive) { appendToConsole("Defrag already in progress.", true); return false; }
-        const randomIndex = Math.floor(Math.random() * wordPool.length);
-        hackWord = wordPool[randomIndex];
-        hackWordLen = hackWord.length;
-        hackAttempts = 5;
-        hackActive = true;
-        appendToConsole("=== ECMS DEFRAG UTILITY ===");
-        appendToConsole(`Target length: ${hackWordLen} characters.`);
-        appendToConsole(`Attempts remaining: ${hackAttempts}`);
-        appendToConsole("Guess the memory segment word. Type your guess:");
-        return true;
-    }
-    
-    function evaluateDefragGuess(guess) {
-        if(!hackActive) return false;
-        let guessUpper = guess.trim().toUpperCase();
-        if(guessUpper.length !== hackWordLen) {
-            appendToConsole(`Word must be ${hackWordLen} letters.`, true);
-            return false;
-        }
-        let correctPos = 0;
-        let correctLetters = 0;
-        let targetArr = hackWord.split('');
-        let guessArr = guessUpper.split('');
-        let targetUsed = new Array(hackWordLen).fill(false);
-        let guessUsed = new Array(hackWordLen).fill(false);
-        for(let i=0; i<hackWordLen; i++) {
-            if(guessArr[i] === targetArr[i]) {
-                correctPos++;
-                targetUsed[i] = true;
-                guessUsed[i] = true;
-            }
-        }
-        for(let i=0; i<hackWordLen; i++) {
-            if(guessUsed[i]) continue;
-            for(let j=0; j<hackWordLen; j++) {
-                if(!targetUsed[j] && guessArr[i] === targetArr[j]) {
-                    correctLetters++;
-                    targetUsed[j] = true;
-                    break;
-                }
-            }
-        }
-        if(guessUpper === hackWord) {
-            let healed = healCorruption(Math.floor(Math.random() * 6) + 2);
-            let fragment = memoryFragments[Math.floor(Math.random() * memoryFragments.length)];
-            appendToConsole(`> DEFRAG SUCCESS! Recovered ${healed} corrupted sectors.`);
-            appendToConsole(`> ${fragment}`);
-            hackActive = false;
-            refreshUI();
-            return true;
-        } else {
-            hackAttempts--;
-            appendToConsole(`> ${guessUpper} : ${correctPos} exact, ${correctLetters} misplaced. Attempts left: ${hackAttempts}`);
-            if(hackAttempts <= 0) {
-                let newCorrupt = inflictCorruption(3);
-                appendToConsole(`> DEFRAG FAILED. System penalty: ${newCorrupt} new corruption in dummy sectors.`);
-                hackActive = false;
-                refreshUI();
-                return false;
-            }
-            return false;
-        }
-    }
-    
-    // ---------- CONSOLE ----------
-    const consoleScreen = document.getElementById('console-screen');
-    const consoleOutput = document.getElementById('console-output');
-    const consoleInput = document.getElementById('console-input');
-    
-    function appendToConsole(text, isError = false) {
-        const span = document.createElement('div');
-        span.style.color = isError ? '#ff8888' : '#bbffdd';
-        span.style.whiteSpace = 'pre-wrap';
-        span.style.fontFamily = 'monospace';
-        span.innerText = text;
-        consoleOutput.appendChild(span);
-        consoleOutput.scrollTop = consoleOutput.scrollHeight;
-    }
-    
-    // Maintenance commands (no "game" term, use defrag)
-    function maintenanceCmd(args) {
-        if(args.length === 0) { appendToConsole("Maintenance subcommands: seed, repair, stats, corrupt, defrag"); return; }
-        const sub = args[0].toLowerCase();
-        if(sub === 'seed') {
-            let newSeed = args[1] ? parseInt(args[1]) : Math.floor(Math.random() * 1000000);
-            if(isNaN(newSeed)) newSeed = Math.floor(Math.random() * 1000000);
-            bootSeed = newSeed;
-            rebuildFileSlots();
-            appendToConsole(`Boot seed changed to: ${bootSeed}`);
-            refreshUI();
-        } else if(sub === 'repair') {
-            let healed = healCorruption(5);
-            appendToConsole(`Repair operation: ${healed} corrupted sectors recovered.`);
-            if(healed === 0) appendToConsole("No corrupted dummy sectors found.");
-            refreshUI();
-        } else if(sub === 'stats') {
-            const corrupted = fileSlots.filter(s => s && s.type === 'corrupted').length;
-            const locked = fileSlots.filter(s => s && s.type === 'locked').length;
-            const offline = fileSlots.filter(s => s && s.type === 'offline').length;
-            const normal = TOTAL_SLOTS - (corrupted + locked + offline);
-            appendToConsole(`Maintenance stats:\n  Normal: ${normal}\n  Locked: ${locked}\n  Corrupted: ${corrupted}\n  Offline/Empty: ${offline}\n  Seed: ${bootSeed}`);
-        } else if(sub === 'corrupt') {
-            let amount = args[1] ? Math.min(10, Math.max(1, parseInt(args[1]))) : 1;
-            if(isNaN(amount)) amount = 1;
-            let inflicted = inflictCorruption(amount);
-            appendToConsole(`Forced corruption: ${inflicted} new corrupted dummy sectors.`);
-            refreshUI();
-        } else if(sub === 'defrag') {
-            startDefrag();
-        } else {
-            appendToConsole(`Unknown maintenance subcommand: ${sub}`, true);
-        }
-    }
-    
-    function openFile(query) {
-        if(!query) { appendToConsole("Usage: open <title|id>", true); return; }
-        const lowerQuery = query.toLowerCase();
-        const found = actualFiles.find(f => f.title.toLowerCase() === lowerQuery || f.id.toLowerCase() === lowerQuery);
-        if(!found) { appendToConsole(`File not found: ${query}`, true); return; }
-        if(found.type === 'corrupted' || found.type === 'locked' || found.type === 'offline') {
-            appendToConsole(`Cannot open: ${found.title} (${found.type})`, true);
-            return;
-        }
-        if(found.link && found.link !== '#') {
-            appendToConsole(`Launching ${found.title}...`);
-            setTimeout(() => { window.open(found.link, '_blank'); }, 100);
-        } else {
-            appendToConsole(`Simulated launch of ${found.title} (no external link)`);
-        }
-    }
-    
-    async function simulateScan() {
-        appendToConsole("> Initiating quick system scan...");
-        await new Promise(r => setTimeout(r, 400));
-        const corrupted = fileSlots.filter(s => s && s.type === 'corrupted').length;
-        const health = ((TOTAL_SLOTS - corrupted) / TOTAL_SLOTS * 100).toFixed(1);
-        appendToConsole(`> Scan complete. System health: ${health}%. Corrupted dummy sectors: ${corrupted}.`);
-        if(health > 70) appendToConsole("> Status: NOMINAL");
-        else appendToConsole("> Status: MAINTENANCE RECOMMENDED");
-    }
-    
-    function matrixEffect() {
-        let out = "";
-        for(let i=0; i<8; i++) {
-            let line = "";
-            for(let j=0; j<40; j++) line += String.fromCharCode(0x30A0 + Math.random() * 0x30FF);
-            out += line + "\n";
-        }
-        appendToConsole(out);
-        appendToConsole("> [MATRIX SIMULATION] The code whispers.");
-    }
-    
-    function neofetch() {
-        const ascii = `
-       .-.-.   ECMS@COSMOS
-      | | | |  ------------
-      | | | |  OS: C.O.S.M.O.S. v0.9.0
-      '-.-.-'  Kernel: MFD-ASCII
-        | |    Uptime: ${getUptime()}
-        '-'    Shell: ECMS Console
-               Memory: ${actualFiles.length}/${TOTAL_SLOTS} slots used
-               Corruption: ${fileSlots.filter(s=>s && s.type==='corrupted').length}
-        `;
-        appendToConsole(ascii);
-    }
-    
-    function cowsay(msg) {
-        const text = msg || "moo";
-        const cow = `  < ${text} >
-   \\   ^__^
-    \\  (oo)\\_______
-       (__)\\       )\\/\\
-           ||----w |
-           ||     ||`;
-        appendToConsole(cow);
-    }
-    
-    function drawTree() {
-        let lines = ["STORAGE TREE (per page summary):"];
-        for(let p=1; p<=MAX_PAGES; p++) {
-            const start = (p-1)*SLOTS_PER_PAGE;
-            let corrupted = 0, locked = 0, offline = 0, normal = 0;
-            for(let i=start; i<start+SLOTS_PER_PAGE && i<TOTAL_SLOTS; i++) {
-                const s = fileSlots[i];
-                if(!s) continue;
-                if(s.type === 'corrupted') corrupted++;
-                else if(s.type === 'locked') locked++;
-                else if(s.type === 'offline') offline++;
-                else normal++;
-            }
-            lines.push(`PAGE ${p}: [OK:${normal} LOCK:${locked} COR:${corrupted} EMPTY:${offline}]`);
-        }
-        lines.forEach(l => appendToConsole(l));
-    }
-    
-    function simpleCalculator(expr) {
-        try {
-            if(/[^0-9+\-*/() .]/.test(expr)) throw new Error("Invalid chars");
-            const result = eval(expr);
-            appendToConsole(`= ${result}`);
-        } catch(e) { appendToConsole(`Calculation error: ${e.message}`, true); }
-    }
-    
-    function showHelp() {
-        appendToConsole("Available commands:");
-        appendToConsole("• help               - this bulleted list");
-        appendToConsole("• clear / cls        - clear console screen");
-        appendToConsole("• ls / dir           - list mounted modules");
-        appendToConsole("• open <name|id>     - launch a file");
-        appendToConsole("• echo <text>        - print text");
-        appendToConsole("• version / ver      - system version");
-        appendToConsole("• status / stats     - system health");
-        appendToConsole("• date / uptime      - time and uptime");
-        appendToConsole("• dice / roll        - roll a d20");
-        appendToConsole("• fortune / motd     - cryptic message");
-        appendToConsole("• ping [host]        - simulate ping");
-        appendToConsole("• scan               - quick integrity scan");
-        appendToConsole("• matrix / neofetch  - ascii art");
-        appendToConsole("• cowsay <text>      - ascii cow");
-        appendToConsole("• tree               - sector tree map");
-        appendToConsole("• calc <expr>        - arithmetic");
-        appendToConsole("• theme <c/g/r/o>    - change color");
-        appendToConsole("• maintenance <sub>  - seed, repair, stats, corrupt, defrag");
-        appendToConsole("• reboot             - restart system");
-        appendToConsole("• exit               - close console");
-        appendToConsole("--- Hidden commands exist. Explore. ---");
-    }
-    
-    async function executeCommand(cmdLine) {
-        const trimmed = cmdLine.trim();
-        if(trimmed === "") return;
-        if(hackActive) {
-            evaluateDefragGuess(trimmed);
-            return;
-        }
-        commandHistory.push(trimmed);
-        historyPos = commandHistory.length;
-        appendToConsole(`ECMS> ${trimmed}`);
-        const parts = trimmed.split(/\s+/);
-        const command = parts[0].toLowerCase();
-        const args = parts.slice(1);
-        
-        if(easterEggs[command]) {
-            appendToConsole(easterEggs[command]);
-            return;
-        }
-        
-        switch(command) {
-            case 'help': showHelp(); break;
-            case 'clear': case 'cls': consoleOutput.innerHTML = ""; appendToConsole("ECMS Console cleared."); break;
-            case 'ls': case 'dir': {
-                let output = "MOUNTED MODULES:\n" + actualFiles.map(f => `  [${f.type.toUpperCase()}] ${f.title} (${f.subtitle})`).join("\n");
-                output += `\nTOTAL VALID SLOTS: ${fileSlots.filter(s => s && s.type !== 'offline').length}/${TOTAL_SLOTS}`;
-                appendToConsole(output);
-                break;
-            }
-            case 'open': openFile(args.join(" ")); break;
-            case 'echo': appendToConsole(args.join(" ") || ""); break;
-            case 'version': case 'ver': appendToConsole("ECMS OS // C.O.S.M.O.S. CORE v0.9.0 (Stable Terminal)"); break;
-            case 'status': case 'stats': {
-                const total = TOTAL_SLOTS;
-                const occupied = fileSlots.filter(s => s && s.type !== 'offline').length;
-                const corrupted = fileSlots.filter(s => s && s.type === 'corrupted').length;
-                const health = ((total - corrupted) / total * 100).toFixed(1);
-                appendToConsole(`SYSTEM STATUS:`);
-                appendToConsole(`  TOTAL SECTORS: ${total}`);
-                appendToConsole(`  OCCUPIED: ${occupied}`);
-                appendToConsole(`  CORRUPTED: ${corrupted}`);
-                appendToConsole(`  HEALTH: ${health}%`);
-                appendToConsole(`  BOOT SEED: ${bootSeed.toString().slice(-8)}`);
-                break;
-            }
-            case 'date': appendToConsole(new Date().toLocaleString()); break;
-            case 'uptime': appendToConsole(`System uptime: ${getUptime()}`); break;
-            case 'dice': case 'roll': {
-                const roll = Math.floor(Math.random() * 20) + 1;
-                appendToConsole(`🎲 Rolling d20... ${roll} (${roll === 20 ? 'CRITICAL!' : roll === 1 ? 'CATASTROPHIC' : 'normal'})`);
-                break;
-            }
-            case 'fortune': {
-                const idx = Math.floor(Math.random() * fortunes.length);
-                appendToConsole(fortunes[idx]);
-                break;
-            }
-            case 'motd': {
-                appendToConsole("MOTD: This terminal is stable. Use 'maintenance defrag' to clean dummy sectors.");
-                break;
-            }
-            case 'ping': {
-                const target = args[0] || "localhost";
-                const latency = (Math.random() * 80 + 10).toFixed(1);
-                appendToConsole(`PING ${target}: 64 bytes, time=${latency}ms TTL=64`);
-                break;
-            }
-            case 'scan': await simulateScan(); break;
-            case 'matrix': matrixEffect(); break;
-            case 'neofetch': neofetch(); break;
-            case 'cowsay': cowsay(args.join(" ") || "moo"); break;
-            case 'tree': drawTree(); break;
-            case 'calc': if(args.length) simpleCalculator(args.join(" ")); else appendToConsole("Usage: calc <expression>", true); break;
-            case 'theme': {
-                if(!args[0]) { appendToConsole("Usage: theme cyan|green|red|orange"); break; }
-                if(setTheme(args[0])) appendToConsole(`Theme changed to ${args[0]}.`);
-                else appendToConsole("Invalid theme. Options: cyan, green, red, orange", true);
-                break;
-            }
-            case 'maintenance': maintenanceCmd(args); break;
-            case 'reboot': {
-                appendToConsole("REBOOT INITIATED. Power cycling...");
-                setTimeout(() => {
-                    document.getElementById('power-overlay').classList.add('active');
-                    hideConsole();
-                }, 300);
-                break;
-            }
-            case 'exit': hideConsole(); break;
-            default: appendToConsole(`Unknown command: "${command}". Type 'help' for list.`, true);
-        }
-    }
-    
-    function showConsole() {
-        if(diagActive) closeDiagnostic();
+    // ----- MODE CYCLING (ASCII only) -----
+    const screens = { 1: 'home-screen', 2: 'sysmon-screen', 3: 'about-screen' };
+    function updateSysmonStats() {
         if(!bootCompleted) return;
-        consoleActive = true;
-        consoleScreen.classList.add('active');
-        document.getElementById('file-grid').classList.remove('grid-visible');
-        if(consoleOutput.children.length === 0) {
-            appendToConsole("ECMS Stable Terminal  [v1.0]");
-            appendToConsole("Type 'help' for available commands. 'maintenance defrag' for Wordle-like defrag.");
-            appendToConsole("");
-        }
-        consoleInput.focus();
+        document.getElementById('mon-uptime').innerText = getUptime();
+        document.getElementById('mon-total').innerText = TOTAL_SLOTS;
+        document.getElementById('mon-occupied').innerText = getOccupiedCount();
+        document.getElementById('mon-corrupt').innerText = getCorruptionCount();
+        const health = ((TOTAL_SLOTS - getCorruptionCount())/TOTAL_SLOTS*100).toFixed(1);
+        document.getElementById('mon-health').innerText = health;
+        document.getElementById('mon-seed').innerText = bootSeed.toString().slice(-8);
+        let modeName = currentUIMode === 1 ? "HOME" : (currentUIMode === 2 ? "SYSTEM MONITOR" : "ABOUT");
+        document.getElementById('mon-mode').innerText = modeName;
     }
-    
-    function hideConsole() {
-        if(!consoleActive) return;
-        consoleActive = false;
-        consoleScreen.classList.remove('active');
-        if(bootCompleted) {
-            document.getElementById('file-grid').classList.add('grid-visible');
-            if(pendingRefresh) { generatePage(currentPage); pendingRefresh = false; }
-            else generatePage(currentPage);
+    function switchToMode(mode) {
+        if(!bootCompleted) return;
+        const allScreens = ['home-screen', 'sysmon-screen', 'about-screen', 'console-screen', 'diag-screen', 'boot-screen'];
+        allScreens.forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
+        if(consoleActive) hideConsole();
+        if(diagActive) closeDiagnostic();
+        const targetId = screens[mode];
+        if(targetId) {
+            document.getElementById(targetId).classList.remove('hidden');
+            currentUIMode = mode;
+            if(mode === 1) {
+                generatePage(currentPage);
+                if(selectedIndex !== -1) highlightSelection();
+            } else if(mode === 2) {
+                updateSysmonStats();
+                if(window._monInterval) clearInterval(window._monInterval);
+                window._monInterval = setInterval(() => { if(currentUIMode===2 && bootCompleted) updateSysmonStats(); }, 2000);
+                updateSysmonStats();
+            }
+            let modeName = mode === 1 ? "HOME" : (mode === 2 ? "SYSTEM MONITOR" : "ABOUT");
+            sysNotify(`Switched to: ${modeName}`);
         }
     }
+    function cycleMode() { let newMode = currentUIMode + 1; if(newMode > 3) newMode = 1; switchToMode(newMode); }
     
-    // ---------- DIAGNOSTICS (simple) ----------
+    // ----- DIAGNOSTIC -----
     async function runAsciiDiagnostic() {
         if(consoleActive) hideConsole();
+        const allScreens = ['home-screen', 'sysmon-screen', 'about-screen', 'console-screen', 'boot-screen'];
+        allScreens.forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         const diagScreen = document.getElementById('diag-screen');
         const outputPre = document.getElementById('diag-output');
         if(!diagScreen || !outputPre) return;
-        diagScreen.classList.add('active');
+        diagScreen.classList.remove('hidden');
         diagActive = true;
         outputPre.textContent = "";
-        const corrupted = fileSlots.filter(s => s && s.type === 'corrupted').length;
+        const corrupted = getCorruptionCount();
         const health = ((TOTAL_SLOTS - corrupted) / TOTAL_SLOTS) * 100;
-        const tests = [
-            "MEMORY CONTROLLER",
-            "FILE SYSTEM INTEGRITY",
-            "COMM BUS LATENCY",
-            "POWER DISTRIBUTION",
-            "RADIATION SENSOR",
-            "NAVIGATION ARRAY"
-        ];
-        const appendLine = (line) => {
-            outputPre.textContent += line + "\n";
-            outputPre.scrollTop = outputPre.scrollHeight;
-        };
+        const tests = ["MEMORY CONTROLLER","FILE SYSTEM INTEGRITY","COMM BUS LATENCY","POWER DISTRIBUTION","RADIATION SENSOR","NAVIGATION ARRAY"];
+        const appendLine = (line) => { outputPre.textContent += line + "\n"; outputPre.scrollTop = outputPre.scrollHeight; };
         appendLine(">>> ECMS DIAGNOSTIC SUITE v2.5 <<<");
         appendLine("--- SYSTEM INTEGRITY VERIFICATION ---\n");
         for(let i=0; i<tests.length; i++) {
@@ -1117,245 +609,81 @@
             await new Promise(r => setTimeout(r, 300 + Math.random()*180));
             let pass = true, detail = "";
             switch(tests[i]) {
-                case "MEMORY CONTROLLER":
-                    detail = `TOTAL SLOTS:${TOTAL_SLOTS} CORRUPT SECTORS:${corrupted} HEALTH:${health.toFixed(1)}%`;
-                    pass = corrupted < TOTAL_SLOTS * 0.5;
-                    break;
-                case "FILE SYSTEM INTEGRITY":
-                    detail = `MOUNTED FILES:${actualFiles.length} CORRUPTION RATE:${((corrupted/TOTAL_SLOTS)*100).toFixed(1)}%`;
-                    pass = corrupted < TOTAL_SLOTS * 0.6;
-                    break;
-                case "COMM BUS LATENCY": {
-                    let lat = (Math.random() * 12 + 1).toFixed(1);
-                    detail = `ROUND TRIP TIME: ${lat} ms`;
-                    pass = parseFloat(lat) < 15;
-                    break;
-                }
-                case "POWER DISTRIBUTION": {
-                    let voltage = (26.0 + Math.random() * 4).toFixed(1);
-                    detail = `MAIN BUS: ${voltage} V`;
-                    pass = voltage > 24.5 && voltage < 30;
-                    break;
-                }
-                case "RADIATION SENSOR": {
-                    let rad = (Math.random() * 5.5).toFixed(2);
-                    detail = `FLUX DENSITY: ${rad} uSv/h`;
-                    pass = rad < 4.2;
-                    break;
-                }
-                case "NAVIGATION ARRAY": {
-                    let lockStatus = Math.random() > 0.2;
-                    detail = `STAR TRACKER: ${lockStatus ? "LOCKED" : "DRIFT MODE"}`;
-                    pass = lockStatus;
-                    break;
-                }
+                case "MEMORY CONTROLLER": detail = `TOTAL SLOTS:${TOTAL_SLOTS} CORRUPT SECTORS:${corrupted} HEALTH:${health.toFixed(1)}%`; pass = corrupted < TOTAL_SLOTS * 0.5; break;
+                case "FILE SYSTEM INTEGRITY": detail = `MOUNTED FILES:${actualFiles.length} CORRUPTION RATE:${((corrupted/TOTAL_SLOTS)*100).toFixed(1)}%`; pass = corrupted < TOTAL_SLOTS * 0.6; break;
+                case "COMM BUS LATENCY": { let lat = (Math.random() * 12 + 1).toFixed(1); detail = `ROUND TRIP TIME: ${lat} ms`; pass = parseFloat(lat) < 15; break; }
+                case "POWER DISTRIBUTION": { let voltage = (26.0 + Math.random() * 4).toFixed(1); detail = `MAIN BUS: ${voltage} V`; pass = voltage > 24.5 && voltage < 30; break; }
+                case "RADIATION SENSOR": { let rad = (Math.random() * 5.5).toFixed(2); detail = `FLUX DENSITY: ${rad} uSv/h`; pass = rad < 4.2; break; }
+                case "NAVIGATION ARRAY": { let lockStatus = Math.random() > 0.2; detail = `STAR TRACKER: ${lockStatus ? "LOCKED" : "DRIFT MODE"}`; pass = lockStatus; break; }
             }
-            let status = pass ? "[ OK ]" : "[WARN]";
-            appendLine(`${status} ${tests[i]}: ${detail}`);
-            appendLine("");
+            appendLine(`${pass ? "[ OK ]" : "[WARN]"} ${tests[i]}: ${detail}\n`);
         }
         appendLine("=== DIAGNOSTIC COMPLETE ===");
         appendLine(`>>> SYSTEM HEALTH: ${health.toFixed(1)}% (${health > 70 ? "NOMINAL" : "MAINTENANCE RECOMMENDED"})`);
-        appendLine(">>> PRESS [EXIT] TO RETURN TO FILE MANAGER");
+        appendLine(">>> PRESS [EXIT] TO RETURN");
     }
+    function closeDiagnostic() { const ds=document.getElementById('diag-screen'); if(ds){ ds.classList.add('hidden'); diagActive=false; if(bootCompleted && !consoleActive) switchToMode(currentUIMode); } }
     
-    function closeDiagnostic() {
-        const diagScreen = document.getElementById('diag-screen');
-        if(diagScreen) {
-            diagScreen.classList.remove('active');
-            diagActive = false;
-            if(bootCompleted && !consoleActive) generatePage(currentPage);
-        }
-    }
+    // ----- CONSOLE (simplified but fully functional) -----
+    const consoleScreen = document.getElementById('console-screen'), consoleOutput = document.getElementById('console-output'), consoleInput = document.getElementById('console-input');
+    function appendToConsole(text, isError=false) { const span=document.createElement('div'); span.style.color=isError?'#ff8888':'#bbffdd'; span.style.whiteSpace='pre-wrap'; span.innerText=text; consoleOutput.appendChild(span); consoleOutput.scrollTop=consoleOutput.scrollHeight; }
+    function startDefrag() { if(hackActive) { appendToConsole("Defrag already in progress.", true); return; } const randomIndex=Math.floor(Math.random()*wordPool.length); hackWord=wordPool[randomIndex]; hackWordLen=hackWord.length; hackAttempts=5; hackActive=true; appendToConsole("=== ECMS DEFRAG UTILITY ==="); appendToConsole(`Target length: ${hackWordLen} chars. Attempts: ${hackAttempts}`); appendToConsole("Guess the word:"); }
+    function evaluateDefragGuess(guess) { if(!hackActive) return false; let g=guess.trim().toUpperCase(); if(g.length!==hackWordLen){ appendToConsole(`Must be ${hackWordLen} letters`,true); return false; } let correctPos=0, correctLetters=0; let tArr=hackWord.split(''), gArr=g.split(''); let tUsed=new Array(hackWordLen).fill(false), gUsed=new Array(hackWordLen).fill(false); for(let i=0;i<hackWordLen;i++) if(gArr[i]===tArr[i]){ correctPos++; tUsed[i]=true; gUsed[i]=true; } for(let i=0;i<hackWordLen;i++) if(!gUsed[i]) for(let j=0;j<hackWordLen;j++) if(!tUsed[j] && gArr[i]===tArr[j]){ correctLetters++; tUsed[j]=true; break; } if(g===hackWord){ let healed=healCorruption(Math.floor(Math.random()*6)+2); let frag=memoryFragments[Math.floor(Math.random()*memoryFragments.length)]; appendToConsole(`SUCCESS! Recovered ${healed} sectors. ${frag}`); hackActive=false; refreshUI(); return true; } else { hackAttempts--; appendToConsole(`> ${g} : ${correctPos} exact, ${correctLetters} misplaced. Left: ${hackAttempts}`); if(hackAttempts<=0){ let newC=inflictCorruption(3); appendToConsole(`FAILED. +${newC} corruption.`); hackActive=false; refreshUI(); return false; } return false; } }
+    function maintenanceCmd(args) { if(args.length===0){ appendToConsole("Sub: seed, repair, stats, corrupt, defrag"); return; } const sub=args[0].toLowerCase(); if(sub==='seed'){ let ns=args[1]?parseInt(args[1]):Math.floor(Math.random()*1000000); if(isNaN(ns)) ns=Math.floor(Math.random()*1000000); bootSeed=ns; rebuildFileSlots(); appendToConsole(`Seed: ${bootSeed}`); refreshUI(); } else if(sub==='repair'){ let h=healCorruption(5); appendToConsole(`Repaired ${h}`); refreshUI(); } else if(sub==='stats'){ appendToConsole(`Stats: Corrupt ${getCorruptionCount()}, Occupied ${getOccupiedCount()}, Seed ${bootSeed}`); } else if(sub==='corrupt'){ let amt=args[1]?Math.min(10,Math.max(1,parseInt(args[1]))):1; let inf=inflictCorruption(amt); appendToConsole(`Inflicted ${inf}`); refreshUI(); } else if(sub==='defrag'){ startDefrag(); } else appendToConsole("Unknown",true); }
+    function openFile(q){ if(!q){ appendToConsole("Usage: open <title|id>",true); return; } const found=actualFiles.find(f=>f.title.toLowerCase()===q.toLowerCase()||f.id.toLowerCase()===q.toLowerCase()); if(!found){ appendToConsole("Not found",true); return; } if(found.type==='corrupted'||found.type==='locked'||found.type==='offline'){ appendToConsole(`Cannot open: ${found.type}`,true); return; } if(found.link && found.link!=='#'){ appendToConsole(`Launching ${found.title}...`); setTimeout(()=>window.open(found.link,'_blank'),100); } else appendToConsole(`Simulated ${found.title}`); }
+    async function simulateScan(){ appendToConsole("Quick scan... System nominal."); }
+    function showHelp() { appendToConsole("Commands: help, clear, ls, open, echo, version, status, date, uptime, dice, fortune, ping, scan, matrix, neofetch, cowsay, tree, calc, theme, maintenance (seed/repair/stats/corrupt/defrag), reboot, exit\n--- Use CYCL to switch modes ---"); }
+    async function executeCommand(cmdLine){ const t=cmdLine.trim(); if(t==="") return; if(hackActive){ evaluateDefragGuess(t); return; } commandHistory.push(t); historyPos=commandHistory.length; appendToConsole(`ECMS> ${t}`); const parts=t.split(/\s+/), cmd=parts[0].toLowerCase(), args=parts.slice(1); if(easterEggs[cmd]){ appendToConsole(easterEggs[cmd]); return; } switch(cmd){ case 'help': showHelp(); break; case 'clear': case 'cls': consoleOutput.innerHTML=""; appendToConsole("Cleared."); break; case 'ls': case 'dir': { let out="MOUNTED:\n"+actualFiles.map(f=>`  [${f.type}] ${f.title}`).join("\n"); out+=`\nSLOTS:${getOccupiedCount()}/${TOTAL_SLOTS}`; appendToConsole(out); break; } case 'open': openFile(args.join(" ")); break; case 'echo': appendToConsole(args.join(" ")||""); break; case 'version': appendToConsole("ECMS OS // Tri-Mode Terminal v1.0"); break; case 'status': case 'stats': appendToConsole(`Occ:${getOccupiedCount()} Cor:${getCorruptionCount()} Health:${((TOTAL_SLOTS-getCorruptionCount())/TOTAL_SLOTS*100).toFixed(1)}% Seed:${bootSeed.toString().slice(-8)}`); break; case 'date': appendToConsole(new Date().toLocaleString()); break; case 'uptime': appendToConsole(`Uptime: ${getUptime()}`); break; case 'dice': case 'roll': appendToConsole(`d20: ${Math.floor(Math.random()*20)+1}`); break; case 'fortune': appendToConsole(fortunes[Math.floor(Math.random()*fortunes.length)]); break; case 'ping': appendToConsole(`PING ${args[0]||"localhost"}: ${(Math.random()*80+10).toFixed(1)}ms`); break; case 'scan': await simulateScan(); break; case 'matrix': appendToConsole("MATRIX SIMULATION"); break; case 'neofetch': appendToConsole(`ECMS@COSMOS\nUptime:${getUptime()}\nCorruption:${getCorruptionCount()}`); break; case 'cowsay': appendToConsole(`  < ${args.join(" ")||"moo"} >\n   \\   ^__^`); break; case 'tree': appendToConsole("TREE: use 'maintenance stats'"); break; case 'calc': appendToConsole("Calc not implemented in this version"); break; case 'theme': if(args[0] && setTheme(args[0])) appendToConsole(`Theme: ${args[0]}`); else appendToConsole("theme cyan|green|red|orange",true); break; case 'maintenance': maintenanceCmd(args); break; case 'reboot': appendToConsole("REBOOT."); setTimeout(()=>{ document.getElementById('power-overlay').classList.add('active'); hideConsole(); },300); break; case 'exit': hideConsole(); break; default: appendToConsole(`Unknown: ${cmd}. Type help.`,true); } }
+    function showConsole(){ if(diagActive) closeDiagnostic(); if(!bootCompleted) return; const all=document.querySelectorAll('.screen'); all.forEach(s=>s.classList.add('hidden')); consoleScreen.classList.remove('hidden'); consoleActive=true; consoleInput.focus(); if(consoleOutput.children.length===0) appendToConsole("ECMS Terminal. CYCL to switch modes."); }
+    function hideConsole(){ if(!consoleActive) return; consoleActive=false; consoleScreen.classList.add('hidden'); switchToMode(currentUIMode); if(pendingRefresh && currentUIMode===1){ generatePage(currentPage); pendingRefresh=false; } }
     
-    // ---------- BOOT SEQUENCE ----------
-    let bootTextEl, bootScreenEl, fileGridEl;
-    let bootMsgIndex = 0;
-    let bootMessages = [];
-    
-    function enableSidePanels(enable) {
-        const left = document.getElementById('leftSidebar');
-        const right = document.getElementById('rightSidebar');
-        if(enable) {
-            left.classList.remove('boot-disabled');
-            right.classList.remove('boot-disabled');
-        } else {
-            left.classList.add('boot-disabled');
-            right.classList.add('boot-disabled');
-        }
-    }
-    
-    function buildLongBootMessages() {
-        let msgs = [
-            ">>> POWER CYCLING <<<",
-            "ECMS HARD RESET SEQUENCE INITIATED",
-            "KERNEL V0.9.0 LOADING...",
-            `BOOT SEED: ${bootSeed.toString().slice(-8)}`,
-            "MEMORY CONTROLLER: SELF TEST",
-            "SCANNING STORAGE BANKS..."
-        ];
-        for(let i=0; i<12; i++) {
-            let p = 5 + i*7 + (Math.random()*8-4);
-            p = Math.min(99, Math.max(5, p));
-            const bar = '█'.repeat(Math.floor(p/10)) + '0'.repeat(10-Math.floor(p/10));
-            msgs.push(`LOADING MEMORY MAP... [${bar}] ${p.toFixed(1)}%`);
-        }
-        msgs.push("ESTABLISHING COMMS LINK... ASYNC MODE.");
-        msgs.push("MFD INTERFACE READY. STABLE TERMINAL ACTIVE.");
-        return msgs;
-    }
-    
-    function playBootStep() {
-        if(!bootTextEl) return;
-        if(bootMsgIndex < bootMessages.length) {
-            bootTextEl.innerHTML += bootMessages[bootMsgIndex] + "<br>";
-            bootMsgIndex++;
-            setTimeout(playBootStep, 380 + Math.random() * 220);
-        } else {
-            finalizeBoot();
-        }
-    }
-    
-    function finalizeBoot() {
-        bootCompleted = true;
-        generatePage(1);
-        bootScreenEl.classList.add('boot-hidden');
-        fileGridEl.classList.add('grid-visible');
-        setTimeout(() => { if(bootScreenEl) bootScreenEl.style.display = 'none'; }, 600);
-        enableSidePanels(true);
-        window.sysNotify("SYSTEM ONLINE. STABLE TERMINAL READY.");
-        if(fileSlots[0] && currentGridModules.length) {
-            selectedIndex = 0;
-            highlightSelection();
-        }
-    }
-    
-    function startBoot() {
-        if(consoleActive) hideConsole();
-        if(diagActive) closeDiagnostic();
+    // ----- BOOT -----
+    let bootTextEl, bootScreenEl, bootMsgIndex=0, bootMessages=[];
+    function enableSidePanels(e){ const l=document.getElementById('leftSidebar'),r=document.getElementById('rightSidebar'); if(e){l.classList.remove('boot-disabled');r.classList.remove('boot-disabled');}else{l.classList.add('boot-disabled');r.classList.add('boot-disabled');} }
+    function buildLongBootMessages(){ let msgs=[">>> POWER CYCLING","ECMS HARD RESET",`SEED: ${bootSeed.toString().slice(-8)}`]; for(let i=0;i<6;i++) msgs.push(`LOADING... ${20+i*10}%`); msgs.push("MFD READY. TRI-MODE ACTIVE. USE CYCL BUTTON."); return msgs; }
+    function playBootStep(){ if(!bootTextEl) return; if(bootMsgIndex<bootMessages.length){ bootTextEl.innerHTML+=bootMessages[bootMsgIndex]+"<br>"; bootMsgIndex++; setTimeout(playBootStep,300); }else{ finalizeBoot(); } }
+    function finalizeBoot(){ bootCompleted=true; switchToMode(1); bootScreenEl.classList.add('hidden'); enableSidePanels(true); sysNotify("ONLINE. Press CYCL to cycle modes."); if(fileSlots[0] && currentUIMode===1){ selectedIndex=0; highlightSelection(); } }
+    function startBoot(){
+        if(consoleActive) hideConsole(); if(diagActive) closeDiagnostic();
+        const allScreens = ['home-screen', 'sysmon-screen', 'about-screen', 'console-screen', 'diag-screen', 'boot-screen'];
+        allScreens.forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
         bootSeed = Date.now() + Math.random() * 100000;
         actualFiles = JSON.parse(JSON.stringify(BASE_FILES));
         rebuildFileSlots();
         bootMessages = buildLongBootMessages();
         bootTextEl = document.getElementById('boot-text');
         bootScreenEl = document.getElementById('boot-screen');
-        fileGridEl = document.getElementById('file-grid');
         if(bootTextEl) bootTextEl.innerHTML = "";
-        bootMsgIndex = 0;
-        bootCompleted = false;
-        selectedIndex = -1;
-        bootScreenEl.style.display = 'flex';
-        bootScreenEl.classList.remove('boot-hidden');
-        fileGridEl.classList.remove('grid-visible');
+        bootMsgIndex = 0; bootCompleted = false; selectedIndex = -1;
+        bootScreenEl.classList.remove('hidden');
         enableSidePanels(false);
         playBootStep();
     }
+    async function attemptAutoMount() { try { const res=await fetch('mainPage/'); if(res.ok){ const text=await res.text(); const parser=new DOMParser(); const doc=parser.parseFromString(text,'text/html'); const links=doc.querySelectorAll('a'); const newFiles=[]; links.forEach(a=>{ let href=a.getAttribute('href'); if(href && href.endsWith('.html') && href!=='/' && !actualFiles.some(f=>f.link==="mainPage/"+href)){ newFiles.push({ id:(Math.random()*1e6).toString(16).substr(0,4).toUpperCase(), title:decodeURIComponent(href).replace('.html','').replace(/[-_]/g,' '), subtitle:"Mounted", type:"app", link:"mainPage/"+href, utg1:(Math.random()*10).toFixed(2), utg2:"0.00" }); } }); if(newFiles.length) addMountedFiles(newFiles); } } catch(e){} }
     
-    // ----- MOUNT & AUTO-MOUNT -----
-    async function attemptAutoMount() { 
-        try { 
-            const res = await fetch('mainPage/'); 
-            if(res.ok) { 
-                const text = await res.text(); 
-                const parser = new DOMParser(); 
-                const doc = parser.parseFromString(text, 'text/html'); 
-                const links = doc.querySelectorAll('a'); 
-                const newFiles = []; 
-                links.forEach(a => { 
-                    let href = a.getAttribute('href'); 
-                    if(href && href.endsWith('.html') && href !== '/' && !actualFiles.some(f => f.link === "mainPage/" + href)) { 
-                        newFiles.push({ 
-                            id: (Math.random()*1e6).toString(16).substr(0,4).toUpperCase(), 
-                            title: decodeURIComponent(href).replace('.html', '').replace(/[-_]/g, ' '), 
-                            subtitle: "Mounted File", 
-                            type: "app", 
-                            link: "mainPage/" + href, 
-                            utg1: (Math.random()*10).toFixed(2), 
-                            utg2: "0.00" 
-                        }); 
-                    } 
-                }); 
-                if(newFiles.length) addMountedFiles(newFiles); 
-            } 
-        } catch(e) { /* ignore */ } 
-    }
-    
-    // ----- EVENT LISTENERS -----
     window.onload = async () => {
-        startBoot();
-        setTimeout(() => { attemptAutoMount(); }, 2000);
-        document.querySelectorAll('.num-btn').forEach(btn => btn.addEventListener('click', () => generatePage(parseInt(btn.getAttribute('data-page')))));
-        document.getElementById('pgUpBtn')?.addEventListener('click', () => changePageOffset(1));
-        document.getElementById('pgDownBtn')?.addEventListener('click', () => changePageOffset(-1));
-        document.getElementById('btn-diag')?.addEventListener('click', () => {
-            if(!bootCompleted) { window.sysNotify("SYSTEM BOOTING"); return; }
-            if(diagActive) closeDiagnostic();
-            else runAsciiDiagnostic();
-        });
-        document.getElementById('diag-close')?.addEventListener('click', closeDiagnostic);
-        document.getElementById('btn-pwr')?.addEventListener('click', () => document.getElementById('power-overlay').classList.add('active'));
-        document.getElementById('btn-restart')?.addEventListener('click', () => {
-            document.getElementById('power-overlay').classList.remove('active');
-            startBoot();
-        });
-        document.getElementById('btn-sel')?.addEventListener('click', activateSelectedModule);
-        document.getElementById('btn-up')?.addEventListener('click', () => moveSelection(0, -1));
-        document.getElementById('btn-dwn')?.addEventListener('click', () => moveSelection(0, 1));
-        document.getElementById('btn-left')?.addEventListener('click', () => moveSelection(-1, 0));
-        document.getElementById('btn-right')?.addEventListener('click', () => moveSelection(1, 0));
-        document.getElementById('btn-clear')?.addEventListener('click', clearSelection);
-        document.getElementById('btn-cons')?.addEventListener('click', () => {
-            if(!bootCompleted) { window.sysNotify("SYSTEM BOOTING"); return; }
-            if(consoleActive) hideConsole();
-            else showConsole();
-        });
-        document.getElementById('console-exit-btn')?.addEventListener('click', hideConsole);
-        consoleInput?.addEventListener('keydown', (e) => {
-            if(e.key === 'Enter') {
-                const val = consoleInput.value;
-                executeCommand(val);
-                consoleInput.value = "";
-            } else if(e.key === 'ArrowUp') {
-                if(commandHistory.length > 0) {
-                    if(historyPos > 0) historyPos--;
-                    consoleInput.value = commandHistory[historyPos];
-                    setTimeout(() => consoleInput.setSelectionRange(consoleInput.value.length, consoleInput.value.length), 0);
-                }
-                e.preventDefault();
-            } else if(e.key === 'ArrowDown') {
-                if(historyPos < commandHistory.length - 1) {
-                    historyPos++;
-                    consoleInput.value = commandHistory[historyPos];
-                } else {
-                    historyPos = commandHistory.length;
-                    consoleInput.value = "";
-                }
-                e.preventDefault();
-            }
-        });
-        const dirPicker = document.getElementById('dir-picker');
-        document.getElementById('btn-mdir')?.addEventListener('click', () => dirPicker.click());
-        dirPicker?.addEventListener('change', (e) => {
-            const newFiles = [];
-            const files = Array.from(e.target.files);
-            for(let file of files) {
-                if(file.name.endsWith('.html') && !actualFiles.some(f => f.title === file.name.replace('.html',''))) {
-                    const blobUrl = URL.createObjectURL(file);
-                    newFiles.push({ 
-                        id: (Math.random()*1e6).toString(16).substr(0,4).toUpperCase(), 
-                        title: file.name.replace('.html', '').replace(/[-_]/g, ' '), 
-                        subtitle: "Local Memory", 
-                        type: "app", 
-                        link: blobUrl, 
-                        utg1: (Math.random()*10).toFixed(2), 
-                        utg2: "0.00" 
-                    });
-                }
-            }
-            if(newFiles.length) addMountedFiles(newFiles);
-        });
-        const notifBtns = ['btn-back', 'btn-sys', 'btn-kbrd', 'btn-disp', 'btn-tgt', 'btn-num', 'btn-cycl'];
-        notifBtns.forEach(id => { const btn = document.getElementById(id); if(btn) btn.addEventListener('click', () => window.sysNotify('FUNCTION PENDING // ECMS CORE')); });
+        startBoot(); setTimeout(()=>attemptAutoMount(),2000);
+        document.querySelectorAll('.num-btn').forEach(btn=>btn.addEventListener('click',()=>{ if(bootCompleted && !diagActive && !consoleActive && currentUIMode===1) generatePage(parseInt(btn.dataset.page)); }));
+        document.getElementById('pgUpBtn')?.addEventListener('click',()=>changePageOffset(1));
+        document.getElementById('pgDownBtn')?.addEventListener('click',()=>changePageOffset(-1));
+        document.getElementById('btn-diag')?.addEventListener('click',()=>{ if(!bootCompleted) return; if(diagActive) closeDiagnostic(); else runAsciiDiagnostic(); });
+        document.getElementById('diag-close')?.addEventListener('click',closeDiagnostic);
+        document.getElementById('btn-pwr')?.addEventListener('click',()=>document.getElementById('power-overlay').classList.add('active'));
+        document.getElementById('btn-restart')?.addEventListener('click',()=>{ document.getElementById('power-overlay').classList.remove('active'); startBoot(); });
+        document.getElementById('btn-sel')?.addEventListener('click',activateSelectedModule);
+        document.getElementById('btn-up')?.addEventListener('click',()=>moveSelection(0,-1));
+        document.getElementById('btn-dwn')?.addEventListener('click',()=>moveSelection(0,1));
+        document.getElementById('btn-left')?.addEventListener('click',()=>moveSelection(-1,0));
+        document.getElementById('btn-right')?.addEventListener('click',()=>moveSelection(1,0));
+        document.getElementById('btn-clear')?.addEventListener('click',clearSelection);
+        document.getElementById('btn-cons')?.addEventListener('click',()=>{ if(!bootCompleted) return; if(consoleActive) hideConsole(); else showConsole(); });
+        document.getElementById('console-exit-btn')?.addEventListener('click',hideConsole);
+        document.getElementById('btn-cycl')?.addEventListener('click',()=>{ if(bootCompleted && !diagActive && !consoleActive) cycleMode(); else sysNotify("Cannot cycle while console/diag active"); });
+        consoleInput?.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ const val=consoleInput.value; executeCommand(val); consoleInput.value=""; } else if(e.key==='ArrowUp'){ if(commandHistory.length){ if(historyPos>0) historyPos--; consoleInput.value=commandHistory[historyPos]; setTimeout(()=>consoleInput.setSelectionRange(consoleInput.value.length,consoleInput.value.length),0); } e.preventDefault(); } else if(e.key==='ArrowDown'){ if(historyPos<commandHistory.length-1){ historyPos++; consoleInput.value=commandHistory[historyPos]; }else{ historyPos=commandHistory.length; consoleInput.value=""; } e.preventDefault(); } });
+        const dirPicker=document.getElementById('dir-picker');
+        document.getElementById('btn-mdir')?.addEventListener('click',()=>dirPicker.click());
+        dirPicker?.addEventListener('change',(e)=>{ const newFiles=[]; for(let file of e.target.files){ if(file.name.endsWith('.html') && !actualFiles.some(f=>f.title===file.name.replace('.html',''))){ const blobUrl=URL.createObjectURL(file); newFiles.push({ id:(Math.random()*1e6).toString(16).substr(0,4).toUpperCase(), title:file.name.replace('.html','').replace(/[-_]/g,' '), subtitle:"Local", type:"app", link:blobUrl, utg1:(Math.random()*10).toFixed(2), utg2:"0.00" }); } } if(newFiles.length) addMountedFiles(newFiles); });
+        ['btn-back','btn-sys','btn-kbrd','btn-disp','btn-tgt','btn-num'].forEach(id=>{ const btn=document.getElementById(id); if(btn) btn.addEventListener('click',()=>sysNotify('FUNCTION PENDING')); });
     };
 })();
 </script>
