@@ -23,6 +23,11 @@
             --int-col: #cc55ff;
             --wis-col: #ffdd55;
             --cha-col: #ff8855;
+            
+            --btn-bg: #1e2a2f;
+            --btn-hover: #2c7a6e;
+            --page-active: #ffdd55;
+            --page-inactive: #4a5d6b;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -133,6 +138,11 @@
             flex-direction: column;
             width: 50px;
             margin-right: 10px;
+            cursor: pointer;
+            transition: filter 0.1s;
+        }
+        .info-label-col:hover {
+            filter: brightness(1.2);
         }
         
         .info-label-text {
@@ -177,24 +187,20 @@
         .status-label { background: var(--text-bright); color: #000; padding: 3px 8px; font-weight: bold; }
         .status-text { border: 1px solid var(--border); padding: 3px 10px; flex-grow: 1; border-left: none;}
 
+        /* CIRCLES PANEL */
         .circles-panel {
-            position: relative;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 40px;
+            gap: 30px 40px;
+            padding: 30px;
             justify-items: center;
+            align-items: center;
         }
 
         .circle-outer {
+            position: relative;
             width: 140px;
             height: 140px;
-            border-radius: 50%;
-            border: 1px solid var(--border);
-            padding: 8px;
-            position: relative;
-            background: #000000aa;
-            z-index: 5;
         }
 
         .circle-inner {
@@ -208,30 +214,69 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            overflow: hidden;
         }
 
-        .circle-inner::before {
+        /* VHS scanline mask */
+        .circle-inner::after {
             content: '';
             position: absolute;
-            top: 25%; bottom: 25%; left: 10%; right: 10%;
-            background: rgba(0,0,0,0.65);
-            border-radius: 50%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.2) 0px,
+                rgba(0, 0, 0, 0.2) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+            pointer-events: none;
             z-index: 1;
-            filter: blur(4px);
         }
 
         .circle-data {
             position: relative;
             z-index: 2;
             text-align: center;
+            background: transparent;
         }
+        .c-name { font-size: 14px; letter-spacing: 1px; margin-bottom: 2px; font-weight: bold; text-shadow: 0 0 2px black;}
+        .c-pct { font-size: 10px; margin-bottom: 5px; text-shadow: 0 0 1px black;}
+        .c-val { font-size: 28px; color: var(--text-bright); font-weight: bold; margin-bottom: 4px; text-shadow: 0 0 2px black;}
 
-        .c-name { font-size: 14px; letter-spacing: 1px; margin-bottom: 2px;}
-        .c-pct { font-size: 10px; margin-bottom: 5px; }
-        .c-val { font-size: 24px; color: var(--text-bright); font-weight: bold; margin-bottom: 5px; }
-        .stat-controls { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
-        .stat-btn { background: transparent; border: 1px solid var(--border); color: var(--text-bright); font-family: monospace; font-size: 14px; width: 24px; cursor: pointer; border-radius: 4px; }
-        .stat-btn:hover { background: rgba(100,200,200,0.3); }
+        .stat-controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 6px;
+        }
+        .stat-btn {
+            background: var(--btn-bg);
+            border: 1px solid var(--text-bright);
+            color: var(--text-bright);
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .stat-btn:hover {
+            background: var(--btn-hover);
+            border-color: white;
+            transform: scale(1.05);
+        }
+        .stat-btn:active {
+            transform: scale(0.95);
+        }
 
         .bottom-bar {
             position: absolute;
@@ -250,9 +295,23 @@
             font-family: 'Share Tech Mono', monospace;
             width: 40px; height: 30px;
             cursor: pointer;
-            border-bottom: 3px solid var(--text-bright);
+            border-bottom: 3px solid var(--page-inactive);
+            transition: all 0.1s;
         }
-        .page-btn:hover { background: rgba(100,200,200,0.2); }
+        .page-btn.active {
+            border-bottom-color: var(--page-active);
+            color: var(--page-active);
+            background: rgba(255, 221, 85, 0.1);
+        }
+        .page-btn.inactive {
+            border-bottom-color: var(--page-inactive);
+            color: var(--page-inactive);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .page-btn.active:hover {
+            background: rgba(255, 221, 85, 0.2);
+        }
         
         .level-selector {
             margin-left: auto;
@@ -264,6 +323,71 @@
             cursor: pointer;
         }
         .level-selector:hover { background: rgba(44,122,110,0.2); }
+
+        /* MODAL OVERLAY */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            backdrop-filter: blur(3px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            width: 500px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(44,122,110,0.5);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        .modal-header {
+            font-size: 18px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+            color: var(--text-bright);
+        }
+        .modal-row {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .modal-row label {
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+        select, .modal-row input {
+            background: #0a1217;
+            border: 1px solid var(--border);
+            color: var(--text-bright);
+            padding: 8px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .modal-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 5px 15px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        .modal-btn:hover {
+            background: var(--btn-hover);
+            color: white;
+            border-color: white;
+        }
     </style>
 </head>
 <body>
@@ -277,7 +401,7 @@
     </div>
 
     <div class="layout-grid">
-        <!-- LEFT SIDEBAR: SYSTEM TOOLS -->
+        <!-- LEFT SIDEBAR -->
         <div class="sidebar">
             <div class="nav-group">
                 <div class="btn"><div class="btn-box"></div><div class="btn-text">SCAN.NEW</div></div>
@@ -291,16 +415,14 @@
             </div>
         </div>
 
-        <!-- DATA PANEL: SUBJECT INFO -->
+        <!-- DATA PANEL -->
         <div class="data-panel">
-            <!-- Row 1: core combat stats -->
             <div class="top-stats">
                 <div class="stat-badge">ARMOR: <span class="val" id="acValue">15</span></div>
                 <div class="stat-badge">INIT <span class="val" id="initValue">+4</span></div>
                 <div class="stat-badge">HP: <span class="val" id="hpValue">12</span></div>
                 <div class="stat-badge">SPEED <span class="val">35ft</span></div>
             </div>
-            <!-- Row 2: additional D&D substats -->
             <div class="top-stats">
                 <div class="stat-badge">PROF.BONUS: <span class="val">+2</span></div>
                 <div class="stat-badge">PASSIVE.PER: <span class="val" id="passivePerception">13</span></div>
@@ -309,49 +431,53 @@
                 <div class="stat-badge">SAVING.THROW: <span class="val" id="savingThrowDisplay">STR+3/DEX+4</span></div>
             </div>
 
+            <!-- Species block (clickable) -->
             <div class="info-row" style="--color: var(--race-col);">
-                <div class="info-label-col">
+                <div class="info-label-col" id="speciesLabelBtn">
                     <div class="info-label-text">SPECIES</div>
                     <div class="info-label-hash"></div>
                 </div>
-                <div class="info-content">
+                <div class="info-content" id="speciesContent">
                     <div>DESIGNATION: <span class="highlight">ELF (WOOD)</span></div>
                     <div>SUBSTRATE: NOMINAL</div>
                     <div>TRAITS: ACUTE.SENSES, FEY.ANCESTRY</div>
                 </div>
             </div>
 
+            <!-- Role block (clickable) -->
             <div class="info-row" style="--color: var(--class-col);">
-                <div class="info-label-col">
+                <div class="info-label-col" id="roleLabelBtn">
                     <div class="info-label-text">ROLE</div>
                     <div class="info-label-hash"></div>
                 </div>
-                <div class="info-content">
-                    <div>PRIMARY: <span class="highlight">RANGER (SCOUT)</span></div>
-                    <div>SPECIALIZATION: UNASSIGNED</div>
-                    <div>ABILITIES: FAVORED.ENEMY, NATURAL.EXPLORER</div>
+                <div class="info-content" id="roleContent">
+                    <div>PRIMARY: <span class="highlight">RANGER</span></div>
+                    <div>SPECIALIZATION: NONE</div>
+                    <div>ABILITIES: NOMINAL</div>
                 </div>
             </div>
 
+            <!-- Affinity block (clickable) -->
             <div class="info-row" style="--color: var(--align-col);">
-                <div class="info-label-col">
+                <div class="info-label-col" id="affinityLabelBtn">
                     <div class="info-label-text">AFFINITY</div>
                     <div class="info-label-hash"></div>
                 </div>
-                <div class="info-content">
+                <div class="info-content" id="affinityContent">
                     <div>ETHICAL: <span class="highlight">CHAOTIC</span></div>
                     <div>MORAL: GOOD</div>
                     <div>DRIVERS: FREEDOM, INDEPENDENCE</div>
                 </div>
             </div>
 
+            <!-- History block (clickable) -->
             <div class="info-row" style="--color: var(--back-col);">
-                <div class="info-label-col">
+                <div class="info-label-col" id="historyLabelBtn">
                     <div class="info-label-text">HISTORY</div>
                     <div class="info-label-hash"></div>
                 </div>
-                <div class="info-content">
-                    <div>ORIGIN: OUTLANDER</div>
+                <div class="info-content" id="historyContent">
+                    <div>ORIGIN: <span class="highlight">OUTLANDER</span></div>
                     <div>PROFICIENCIES: NOMINAL</div>
                     <div>GEAR: NOMINAL</div>
                 </div>
@@ -363,95 +489,18 @@
             </div>
         </div>
 
-        <!-- STAT CIRCLES (with +/- controls) -->
+        <!-- STAT CIRCLES (unchanged) -->
         <div class="circles-panel">
-            <!-- STR -->
-            <div class="circle-outer" style="--color: var(--str-col);" data-stat="str">
-                <div class="circle-inner" style="--fill: 75%;">
-                    <div class="circle-data">
-                        <div class="c-name">STR</div>
-                        <div class="c-pct">75%</div>
-                        <div class="c-val" id="strVal">16</div>
-                        <div class="stat-controls">
-                            <button class="stat-btn" data-action="dec" data-stat="str">-</button>
-                            <button class="stat-btn" data-action="inc" data-stat="str">+</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- INT -->
-            <div class="circle-outer" style="--color: var(--int-col);" data-stat="int">
-                <div class="circle-inner" style="--fill: 55%;">
-                    <div class="circle-data">
-                        <div class="c-name">INT</div>
-                        <div class="c-pct">55%</div>
-                        <div class="c-val" id="intVal">12</div>
-                        <div class="stat-controls">
-                            <button class="stat-btn" data-action="dec" data-stat="int">-</button>
-                            <button class="stat-btn" data-action="inc" data-stat="int">+</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- DEX -->
-            <div class="circle-outer" style="--color: var(--dex-col);" data-stat="dex">
-                <div class="circle-inner" style="--fill: 90%;">
-                    <div class="circle-data">
-                        <div class="c-name">DEX</div>
-                        <div class="c-pct">90%</div>
-                        <div class="c-val" id="dexVal">18</div>
-                        <div class="stat-controls">
-                            <button class="stat-btn" data-action="dec" data-stat="dex">-</button>
-                            <button class="stat-btn" data-action="inc" data-stat="dex">+</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- WIS -->
-            <div class="circle-outer" style="--color: var(--wis-col);" data-stat="wis">
-                <div class="circle-inner" style="--fill: 80%;">
-                    <div class="circle-data">
-                        <div class="c-name">WIS</div>
-                        <div class="c-pct">80%</div>
-                        <div class="c-val" id="wisVal">16</div>
-                        <div class="stat-controls">
-                            <button class="stat-btn" data-action="dec" data-stat="wis">-</button>
-                            <button class="stat-btn" data-action="inc" data-stat="wis">+</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- CON -->
-            <div class="circle-outer" style="--color: var(--con-col);" data-stat="con">
-                <div class="circle-inner" style="--fill: 65%;">
-                    <div class="circle-data">
-                        <div class="c-name">CON</div>
-                        <div class="c-pct">65%</div>
-                        <div class="c-val" id="conVal">14</div>
-                        <div class="stat-controls">
-                            <button class="stat-btn" data-action="dec" data-stat="con">-</button>
-                            <button class="stat-btn" data-action="inc" data-stat="con">+</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- CHA -->
-            <div class="circle-outer" style="--color: var(--cha-col);" data-stat="cha">
-                <div class="circle-inner" style="--fill: 45%;">
-                    <div class="circle-data">
-                        <div class="c-name">CHA</div>
-                        <div class="c-pct">45%</div>
-                        <div class="c-val" id="chaVal">10</div>
-                        <div class="stat-controls">
-                            <button class="stat-btn" data-action="dec" data-stat="cha">-</button>
-                            <button class="stat-btn" data-action="inc" data-stat="cha">+</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- STR, DEX, CON, INT, WIS, CHA circles with +/- buttons -->
+            <div class="circle-outer" data-stat="str"><div class="circle-inner" style="--color: var(--str-col); --fill: 75%;"><div class="circle-data"><div class="c-name">STR</div><div class="c-pct" id="strPct">75%</div><div class="c-val" id="strVal">16</div><div class="stat-controls"><button class="stat-btn" data-stat="str" data-delta="-1">−</button><button class="stat-btn" data-stat="str" data-delta="1">+</button></div></div></div></div>
+            <div class="circle-outer" data-stat="int"><div class="circle-inner" style="--color: var(--int-col); --fill: 55%;"><div class="circle-data"><div class="c-name">INT</div><div class="c-pct" id="intPct">55%</div><div class="c-val" id="intVal">12</div><div class="stat-controls"><button class="stat-btn" data-stat="int" data-delta="-1">−</button><button class="stat-btn" data-stat="int" data-delta="1">+</button></div></div></div></div>
+            <div class="circle-outer" data-stat="dex"><div class="circle-inner" style="--color: var(--dex-col); --fill: 90%;"><div class="circle-data"><div class="c-name">DEX</div><div class="c-pct" id="dexPct">90%</div><div class="c-val" id="dexVal">18</div><div class="stat-controls"><button class="stat-btn" data-stat="dex" data-delta="-1">−</button><button class="stat-btn" data-stat="dex" data-delta="1">+</button></div></div></div></div>
+            <div class="circle-outer" data-stat="wis"><div class="circle-inner" style="--color: var(--wis-col); --fill: 80%;"><div class="circle-data"><div class="c-name">WIS</div><div class="c-pct" id="wisPct">80%</div><div class="c-val" id="wisVal">16</div><div class="stat-controls"><button class="stat-btn" data-stat="wis" data-delta="-1">−</button><button class="stat-btn" data-stat="wis" data-delta="1">+</button></div></div></div></div>
+            <div class="circle-outer" data-stat="con"><div class="circle-inner" style="--color: var(--con-col); --fill: 65%;"><div class="circle-data"><div class="c-name">CON</div><div class="c-pct" id="conPct">65%</div><div class="c-val" id="conVal">14</div><div class="stat-controls"><button class="stat-btn" data-stat="con" data-delta="-1">−</button><button class="stat-btn" data-stat="con" data-delta="1">+</button></div></div></div></div>
+            <div class="circle-outer" data-stat="cha"><div class="circle-inner" style="--color: var(--cha-col); --fill: 45%;"><div class="circle-data"><div class="c-name">CHA</div><div class="c-pct" id="chaPct">45%</div><div class="c-val" id="chaVal">10</div><div class="stat-controls"><button class="stat-btn" data-stat="cha" data-delta="-1">−</button><button class="stat-btn" data-stat="cha" data-delta="1">+</button></div></div></div></div>
         </div>
 
-        <!-- RIGHT SIDEBAR: CONSTRUCTION CONTROLS -->
+        <!-- RIGHT SIDEBAR (TBD) -->
         <div class="sidebar right">
             <div class="nav-group">
                 <div class="btn"><div class="btn-box"></div><div class="btn-text">SPECIES.SEL</div></div>
@@ -470,96 +519,277 @@
         </div>
     </div>
 
-    <!-- BOTTOM PAGE SELECTOR & LEVEL UP -->
+    <!-- BOTTOM BAR with page selector -->
     <div class="bottom-bar">
-        <button class="page-btn">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">4</button>
-        <button class="page-btn">5</button>
-        <button class="page-btn">6</button>
-        <button class="page-btn">7</button>
-        <button class="page-btn">8</button>
-        <button class="page-btn">9</button>
-        <button class="page-btn">0</button>
-        
-        <div class="level-selector" id="levelUpBtn">
-            LEVEL.UP
-            <div style="font-size: 20px;">⬆️</div>
-        </div>
+        <button class="page-btn" data-page="1">1</button>
+        <button class="page-btn" data-page="2">2</button>
+        <button class="page-btn" data-page="3">3</button>
+        <button class="page-btn" data-page="4">4</button>
+        <button class="page-btn" data-page="5">5</button>
+        <button class="page-btn" data-page="6">6</button>
+        <button class="page-btn" data-page="7">7</button>
+        <button class="page-btn" data-page="8">8</button>
+        <button class="page-btn" data-page="9">9</button>
+        <button class="page-btn" data-page="10">0</button>
+        <div class="level-selector" id="levelUpBtn">LEVEL.UP <div style="font-size: 20px;">⬆️</div></div>
+    </div>
+</div>
+
+<!-- MODALS -->
+<!-- Species Modal -->
+<div id="speciesModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">SPECIES EDITOR // SRD</div>
+        <div class="modal-row"><label>SPECIES</label><select id="speciesSelect"></select></div>
+        <div class="modal-row"><label>SUBRACE</label><select id="subraceSelect"></select></div>
+        <div class="modal-buttons"><button class="modal-btn" id="speciesModalCancel">CANCEL</button><button class="modal-btn" id="speciesModalSave">SAVE</button></div>
+    </div>
+</div>
+
+<!-- Role Modal (Class) -->
+<div id="roleModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">ROLE EDITOR // SRD CLASSES</div>
+        <div class="modal-row"><label>CLASS</label><select id="classSelect"></select></div>
+        <div class="modal-buttons"><button class="modal-btn" id="roleModalCancel">CANCEL</button><button class="modal-btn" id="roleModalSave">SAVE</button></div>
+    </div>
+</div>
+
+<!-- Affinity Modal (Alignment) -->
+<div id="affinityModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">AFFINITY EDITOR // ALIGNMENT</div>
+        <div class="modal-row"><label>ETHICAL AXIS</label><select id="ethicalSelect"><option>Lawful</option><option>Neutral</option><option>Chaotic</option></select></div>
+        <div class="modal-row"><label>MORAL AXIS</label><select id="moralSelect"><option>Good</option><option>Neutral</option><option>Evil</option></select></div>
+        <div class="modal-buttons"><button class="modal-btn" id="affinityModalCancel">CANCEL</button><button class="modal-btn" id="affinityModalSave">SAVE</button></div>
+    </div>
+</div>
+
+<!-- History Modal (Background) -->
+<div id="historyModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">HISTORY EDITOR // SRD BACKGROUNDS</div>
+        <div class="modal-row"><label>BACKGROUND</label><select id="backgroundSelect"></select></div>
+        <div class="modal-buttons"><button class="modal-btn" id="historyModalCancel">CANCEL</button><button class="modal-btn" id="historyModalSave">SAVE</button></div>
     </div>
 </div>
 
 <script>
-    // Current ability scores
-    let scores = {
-        str: 16,
-        dex: 18,
-        con: 14,
-        int: 12,
-        wis: 16,
-        cha: 10
+    // ---------- SRD Data ----------
+    const speciesData = {
+        "Dwarf": { subraces: ["Hill Dwarf", "Mountain Dwarf"], traits: "Darkvision, Dwarven Resilience, Dwarven Combat Training, Tool Proficiency, Stonecunning" },
+        "Elf": { subraces: ["High Elf", "Wood Elf", "Dark Elf (Drow)"], traits: "Darkvision, Keen Senses, Fey Ancestry, Trance" },
+        "Halfling": { subraces: ["Lightfoot", "Stout"], traits: "Lucky, Brave, Halfling Nimbleness" },
+        "Human": { subraces: ["Standard", "Variant (Feat)"], traits: "Versatile, Extra Language" },
+        "Dragonborn": { subraces: ["Chromatic", "Metallic"], traits: "Draconic Ancestry, Breath Weapon, Damage Resistance" },
+        "Gnome": { subraces: ["Forest Gnome", "Rock Gnome"], traits: "Darkvision, Gnome Cunning" },
+        "Half-Elf": { subraces: ["Standard"], traits: "Darkvision, Fey Ancestry, Skill Versatility" },
+        "Half-Orc": { subraces: ["Standard"], traits: "Darkvision, Menacing, Relentless Endurance, Savage Attacks" },
+        "Tiefling": { subraces: ["Asmodeus", "Other Infernal"], traits: "Darkvision, Hellish Resistance, Infernal Legacy" }
     };
+    const classesSRD = ["Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard"];
+    const backgroundsSRD = ["Acolyte", "Charlatan", "Criminal", "Entertainer", "Folk Hero", "Guild Artisan", "Hermit", "Noble", "Outlander", "Sage", "Sailor", "Soldier", "Urchin", "Gladiator", "Spy"];
 
-    // Helper: ability modifier
-    function mod(score) {
-        return Math.floor((score - 10) / 2);
+    // Current selections
+    let currentSpecies = "Elf";
+    let currentSubrace = "Wood Elf";
+    let currentClass = "Ranger";
+    let currentBackground = "Outlander";
+    let currentEthical = "Chaotic";
+    let currentMoral = "Good";
+
+    // Populate species dropdown
+    const speciesSelect = document.getElementById('speciesSelect');
+    const subraceSelect = document.getElementById('subraceSelect');
+    for (let s in speciesData) speciesSelect.appendChild(new Option(s, s));
+    function updateSubraceOptions() {
+        subraceSelect.innerHTML = '';
+        let subs = speciesData[currentSpecies].subraces;
+        subs.forEach(sub => subraceSelect.appendChild(new Option(sub, sub)));
+        if (subs.includes(currentSubrace)) subraceSelect.value = currentSubrace;
+        else subraceSelect.value = subs[0];
+    }
+    speciesSelect.addEventListener('change', () => {
+        currentSpecies = speciesSelect.value;
+        updateSubraceOptions();
+    });
+
+    // Populate class dropdown
+    const classSelect = document.getElementById('classSelect');
+    classesSRD.forEach(c => classSelect.appendChild(new Option(c, c)));
+
+    // Populate background dropdown
+    const backgroundSelect = document.getElementById('backgroundSelect');
+    backgroundsSRD.forEach(b => backgroundSelect.appendChild(new Option(b, b)));
+
+    // Update UI displays
+    function updateSpeciesDisplay() {
+        const traits = speciesData[currentSpecies].traits;
+        document.getElementById('speciesContent').innerHTML = `
+            <div>DESIGNATION: <span class="highlight">${currentSpecies} (${currentSubrace})</span></div>
+            <div>SUBSTRATE: ${currentSubrace.toUpperCase()}</div>
+            <div>TRAITS: ${traits}</div>
+        `;
+    }
+    function updateRoleDisplay() {
+        document.getElementById('roleContent').innerHTML = `
+            <div>PRIMARY: <span class="highlight">${currentClass}</span></div>
+            <div>SPECIALIZATION: NONE</div>
+            <div>ABILITIES: NOMINAL</div>
+        `;
+    }
+    function updateAffinityDisplay() {
+        document.getElementById('affinityContent').innerHTML = `
+            <div>ETHICAL: <span class="highlight">${currentEthical}</span></div>
+            <div>MORAL: ${currentMoral}</div>
+            <div>DRIVERS: FREEDOM, INDEPENDENCE</div>
+        `;
+    }
+    function updateHistoryDisplay() {
+        document.getElementById('historyContent').innerHTML = `
+            <div>ORIGIN: <span class="highlight">${currentBackground}</span></div>
+            <div>PROFICIENCIES: NOMINAL</div>
+            <div>GEAR: NOMINAL</div>
+        `;
     }
 
-    // Update all derived stats and UI
+    // Modal handling
+    const speciesModal = document.getElementById('speciesModal');
+    const roleModal = document.getElementById('roleModal');
+    const affinityModal = document.getElementById('affinityModal');
+    const historyModal = document.getElementById('historyModal');
+    function openModal(m) { m.style.display = 'flex'; }
+    function closeModal(m) { m.style.display = 'none'; }
+
+    document.getElementById('speciesLabelBtn').addEventListener('click', () => {
+        speciesSelect.value = currentSpecies;
+        updateSubraceOptions();
+        subraceSelect.value = currentSubrace;
+        openModal(speciesModal);
+    });
+    document.getElementById('speciesModalCancel').addEventListener('click', () => closeModal(speciesModal));
+    document.getElementById('speciesModalSave').addEventListener('click', () => {
+        currentSpecies = speciesSelect.value;
+        currentSubrace = subraceSelect.value;
+        updateSpeciesDisplay();
+        closeModal(speciesModal);
+    });
+
+    document.getElementById('roleLabelBtn').addEventListener('click', () => {
+        classSelect.value = currentClass;
+        openModal(roleModal);
+    });
+    document.getElementById('roleModalCancel').addEventListener('click', () => closeModal(roleModal));
+    document.getElementById('roleModalSave').addEventListener('click', () => {
+        currentClass = classSelect.value;
+        updateRoleDisplay();
+        closeModal(roleModal);
+    });
+
+    document.getElementById('affinityLabelBtn').addEventListener('click', () => {
+        document.getElementById('ethicalSelect').value = currentEthical;
+        document.getElementById('moralSelect').value = currentMoral;
+        openModal(affinityModal);
+    });
+    document.getElementById('affinityModalCancel').addEventListener('click', () => closeModal(affinityModal));
+    document.getElementById('affinityModalSave').addEventListener('click', () => {
+        currentEthical = document.getElementById('ethicalSelect').value;
+        currentMoral = document.getElementById('moralSelect').value;
+        updateAffinityDisplay();
+        closeModal(affinityModal);
+    });
+
+    document.getElementById('historyLabelBtn').addEventListener('click', () => {
+        backgroundSelect.value = currentBackground;
+        openModal(historyModal);
+    });
+    document.getElementById('historyModalCancel').addEventListener('click', () => closeModal(historyModal));
+    document.getElementById('historyModalSave').addEventListener('click', () => {
+        currentBackground = backgroundSelect.value;
+        updateHistoryDisplay();
+        closeModal(historyModal);
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === speciesModal) closeModal(speciesModal);
+        if (e.target === roleModal) closeModal(roleModal);
+        if (e.target === affinityModal) closeModal(affinityModal);
+        if (e.target === historyModal) closeModal(historyModal);
+    });
+
+    // ---------- Page Selector Logic ----------
+    let totalPages = 1;   // only one page exists currently
+    let currentPage = 1;
+    const pageButtons = document.querySelectorAll('.page-btn');
+    function updatePageButtons() {
+        pageButtons.forEach(btn => {
+            let page = parseInt(btn.getAttribute('data-page'), 10);
+            if (page <= totalPages) {
+                btn.classList.remove('inactive');
+                btn.classList.add('active');
+                if (page === currentPage) btn.style.borderBottomColor = 'var(--page-active)';
+                else btn.style.borderBottomColor = 'var(--border)';
+                btn.style.cursor = 'pointer';
+                btn.disabled = false;
+            } else {
+                btn.classList.add('inactive');
+                btn.classList.remove('active');
+                btn.style.borderBottomColor = 'var(--page-inactive)';
+                btn.style.cursor = 'not-allowed';
+                btn.disabled = true;
+            }
+        });
+        // highlight current page
+        pageButtons.forEach(btn => {
+            if (parseInt(btn.getAttribute('data-page'), 10) === currentPage && currentPage <= totalPages) {
+                btn.style.borderBottomColor = 'var(--page-active)';
+                btn.style.color = 'var(--page-active)';
+            } else if (parseInt(btn.getAttribute('data-page'), 10) <= totalPages) {
+                btn.style.borderBottomColor = 'var(--border)';
+                btn.style.color = 'var(--text-bright)';
+            }
+        });
+    }
+    pageButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            let page = parseInt(btn.getAttribute('data-page'), 10);
+            if (page <= totalPages && page !== currentPage) {
+                currentPage = page;
+                updatePageButtons();
+                console.log(`Switched to page ${currentPage} (future content)`);
+                // Here you would load different content for each page
+            }
+        });
+    });
+    updatePageButtons();
+
+    // ---------- Stat system (unchanged) ----------
+    let scores = { str: 16, dex: 18, con: 14, int: 12, wis: 16, cha: 10 };
+    function mod(score) { return Math.floor((score - 10) / 2); }
     function refreshUI() {
-        // Update each stat's displayed value, percentage, and circle fill
         for (let stat of ['str', 'dex', 'con', 'int', 'wis', 'cha']) {
             let val = scores[stat];
             let percent = (val / 20) * 100;
-            let valSpan = document.getElementById(`${stat}Val`);
-            if (valSpan) valSpan.innerText = val;
-            let circleOuter = document.querySelector(`.circle-outer[data-stat="${stat}"] .circle-inner`);
-            if (circleOuter) {
-                circleOuter.style.setProperty('--fill', `${percent}%`);
-                let pctSpan = circleOuter.querySelector('.c-pct');
-                if (pctSpan) pctSpan.innerText = `${Math.round(percent)}%`;
-            }
+            document.getElementById(`${stat}Val`).innerText = val;
+            document.getElementById(`${stat}Pct`).innerText = `${Math.round(percent)}%`;
+            let circleInner = document.querySelector(`.circle-outer[data-stat="${stat}"] .circle-inner`);
+            if (circleInner) circleInner.style.setProperty('--fill', `${percent}%`);
         }
-
-        // Calculate modifiers
-        let strMod = mod(scores.str);
-        let dexMod = mod(scores.dex);
-        let conMod = mod(scores.con);
-        let intMod = mod(scores.int);
-        let wisMod = mod(scores.wis);
-        let chaMod = mod(scores.cha);
-
-        // Derived values (SRD basic)
-        let ac = 10 + dexMod;      // base unarmored
+        let strMod = mod(scores.str), dexMod = mod(scores.dex), conMod = mod(scores.con);
+        let intMod = mod(scores.int), wisMod = mod(scores.wis), chaMod = mod(scores.cha);
+        let ac = 10 + dexMod;
         let init = dexMod;
-        let hp = 10 + conMod;      // Ranger level 1 (d10 hit die)
+        let hp = 10 + conMod;
         let passivePerception = 10 + wisMod;
-        let profBonus = 2;         // level 1
-        let spellDC = 8 + profBonus + intMod;   // assuming INT caster (wizard/artificer)
-        let savingThrowStr = `STR${strMod>=0?'+':''}${strMod}`;
-        let savingThrowDex = `DEX${dexMod>=0?'+':''}${dexMod}`;
-        let savingThrowCon = `CON${conMod>=0?'+':''}${conMod}`;
-        let savingThrowInt = `INT${intMod>=0?'+':''}${intMod}`;
-        let savingThrowWis = `WIS${wisMod>=0?'+':''}${wisMod}`;
-        let savingThrowCha = `CHA${chaMod>=0?'+':''}${chaMod}`;
-        let savingThrowDisplay = `${savingThrowStr}/${savingThrowDex}/${savingThrowCon}/${savingThrowInt}/${savingThrowWis}/${savingThrowCha}`;
-
-        // Update DOM elements
+        let spellDC = 8 + 2 + intMod;
+        let savingThrowDisplay = `STR${strMod>=0?'+':''}${strMod}/DEX${dexMod>=0?'+':''}${dexMod}/CON${conMod>=0?'+':''}${conMod}/INT${intMod>=0?'+':''}${intMod}/WIS${wisMod>=0?'+':''}${wisMod}/CHA${chaMod>=0?'+':''}${chaMod}`;
         document.getElementById('acValue').innerText = ac;
         document.getElementById('initValue').innerText = (init >= 0 ? '+' : '') + init;
         document.getElementById('hpValue').innerText = hp;
         document.getElementById('passivePerception').innerText = passivePerception;
         document.getElementById('spellDC').innerText = spellDC;
         document.getElementById('savingThrowDisplay').innerText = savingThrowDisplay;
-
-        // Optional: also update initiative sign
-        let initSpan = document.getElementById('initValue');
-        if (init >= 0) initSpan.innerText = `+${init}`;
-        else initSpan.innerText = `${init}`;
     }
-
-    // Change a stat by delta (-1 or +1), enforce 3-20 range
     function adjustStat(stat, delta) {
         let newVal = scores[stat] + delta;
         if (newVal < 3) newVal = 3;
@@ -569,34 +799,25 @@
             refreshUI();
         }
     }
-
-    // Attach event listeners to all +/- buttons
-    function bindControls() {
-        const buttons = document.querySelectorAll('.stat-btn');
-        buttons.forEach(btn => {
-            btn.removeEventListener('click', handler);
-            btn.addEventListener('click', handler);
+    function bindButtons() {
+        document.querySelectorAll('.stat-btn').forEach(btn => {
+            btn.removeEventListener('click', btnHandler);
+            btn.addEventListener('click', btnHandler);
         });
     }
-
-    function handler(e) {
+    function btnHandler(e) {
         e.stopPropagation();
-        const action = e.currentTarget.getAttribute('data-action');
-        const stat = e.currentTarget.getAttribute('data-stat');
-        if (action === 'inc') adjustStat(stat, 1);
-        if (action === 'dec') adjustStat(stat, -1);
+        let stat = e.currentTarget.getAttribute('data-stat');
+        let delta = parseInt(e.currentTarget.getAttribute('data-delta'), 10);
+        adjustStat(stat, delta);
     }
-
-    // Level Up button (just a placeholder for now)
-    document.getElementById('levelUpBtn').addEventListener('click', () => {
-        console.log("LEVEL.UP clicked – future feature");
-        alert("[S.C.O.P.E.] Level up not yet implemented. This will increase proficiency, HP, etc.");
-    });
-
-    // Initial binding and refresh
-    bindControls();
+    document.getElementById('levelUpBtn').addEventListener('click', () => alert("[S.C.O.P.E.] Level up coming soon."));
+    bindButtons();
     refreshUI();
-    console.log("S.C.O.P.E. Engine online — manual stat editor active");
+    updateSpeciesDisplay();
+    updateRoleDisplay();
+    updateAffinityDisplay();
+    updateHistoryDisplay();
 </script>
 </body>
 </html>
