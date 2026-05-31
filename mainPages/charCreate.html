@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C.O.S.M.O.S. // S.C.O.P.E. Analyzer (Alpha)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #060b0f;
+            --text-dim: #7f9bb5;
+            --text-bright: #c4f0ff;
+            --border: #2c7a6e;
+            
+            --race-col: #33c4ff;
+            --class-col: #ff9933;
+            --align-col: #66ffcc;
+            --back-col: #99ccff;
+            
+            --str-col: #ff5555;
+            --dex-col: #55ff99;
+            --con-col: #55aaff;
+            --int-col: #cc55ff;
+            --wis-col: #ffdd55;
+            --cha-col: #ff8855;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #010101;
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-size: 14px;
+            padding: 20px;
+        }
+
+        .screen-container {
+            width: 1200px;
+            height: 750px;
+            background-color: var(--bg);
+            border: 2px solid var(--border);
+            padding: 15px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(44, 122, 110, 0.3);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+        }
+
+        .header-title {
+            background: var(--text-bright);
+            color: #000;
+            padding: 5px 15px;
+            font-weight: bold;
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+
+        .header-path { font-size: 11px; margin-left: 10px; flex-grow: 1; padding-bottom: 2px; white-space: nowrap; overflow-x: auto;}
+        .header-version { font-size: 12px; }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 100px 450px 1fr 100px;
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .sidebar { display: flex; flex-direction: column; justify-content: space-between;}
+        .sidebar.right { align-items: flex-end; }
+        
+        .nav-group { display: flex; flex-direction: column; gap: 12px; }
+        .nav-group.bottom { margin-bottom: 40px; }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-dim);
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .btn:hover { color: var(--text-bright); text-shadow: 0 0 2px var(--border);}
+        .sidebar.right .btn { flex-direction: row-reverse; }
+        
+        .btn-box {
+            width: 8px; height: 8px;
+            background: var(--text-bright);
+        }
+        .btn-text {
+            border: 1px solid var(--border);
+            padding: 4px 8px;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .data-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-left: 20px;
+        }
+
+        .top-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 5px; }
+        .stat-badge {
+            border: 1px solid var(--border);
+            padding: 4px 8px;
+            display: flex;
+            gap: 8px;
+            background: rgba(0,0,0,0.5);
+        }
+        .stat-badge .val { color: var(--text-bright); font-weight: bold; }
+
+        .info-row { display: flex; height: 65px; position: relative; }
+        
+        .info-label-col {
+            display: flex;
+            flex-direction: column;
+            width: 50px;
+            margin-right: 10px;
+        }
+        
+        .info-label-text {
+            background: var(--color);
+            color: #000;
+            text-align: center;
+            font-size: 11px;
+            padding: 2px 0;
+            font-weight: bold;
+        }
+        
+        .info-label-hash {
+            flex-grow: 1;
+            background: repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 2px,
+                var(--color) 2px,
+                var(--color) 4px
+            );
+            opacity: 0.7;
+        }
+
+        .info-content {
+            border: 1px solid var(--border);
+            flex-grow: 1;
+            padding: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .info-content span.highlight { color: var(--text-bright); }
+
+        .status-bar {
+            display: flex;
+            margin-top: auto;
+            margin-bottom: 50px;
+            font-size: 12px;
+        }
+        .status-label { background: var(--text-bright); color: #000; padding: 3px 8px; font-weight: bold; }
+        .status-text { border: 1px solid var(--border); padding: 3px 10px; flex-grow: 1; border-left: none;}
+
+        .circles-panel {
+            position: relative;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 40px;
+            justify-items: center;
+        }
+
+        .circle-outer {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            padding: 8px;
+            position: relative;
+            background: #000000aa;
+            z-index: 5;
+        }
+
+        .circle-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: linear-gradient(to top, var(--color) var(--fill), transparent var(--fill));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .circle-inner::before {
+            content: '';
+            position: absolute;
+            top: 25%; bottom: 25%; left: 10%; right: 10%;
+            background: rgba(0,0,0,0.65);
+            border-radius: 50%;
+            z-index: 1;
+            filter: blur(4px);
+        }
+
+        .circle-data {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .c-name { font-size: 14px; letter-spacing: 1px; margin-bottom: 2px;}
+        .c-pct { font-size: 10px; margin-bottom: 5px; }
+        .c-val { font-size: 24px; color: var(--text-bright); font-weight: bold; margin-bottom: 5px; }
+        .stat-controls { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
+        .stat-btn { background: transparent; border: 1px solid var(--border); color: var(--text-bright); font-family: monospace; font-size: 14px; width: 24px; cursor: pointer; border-radius: 4px; }
+        .stat-btn:hover { background: rgba(100,200,200,0.3); }
+
+        .bottom-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 120px;
+            right: 120px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .page-btn {
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-bright);
+            font-family: 'Share Tech Mono', monospace;
+            width: 40px; height: 30px;
+            cursor: pointer;
+            border-bottom: 3px solid var(--text-bright);
+        }
+        .page-btn:hover { background: rgba(100,200,200,0.2); }
+        
+        .level-selector {
+            margin-left: auto;
+            border: 1px solid var(--border);
+            padding: 5px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .level-selector:hover { background: rgba(44,122,110,0.2); }
+    </style>
+</head>
+<body>
+
+<div class="screen-container">
+    <div class="header">
+        <div class="header-title">C.O.S.M.O.S.</div>
+        <div class="header-path">S.C.O.P.E. // SYSTEMIC CHARACTER OBSERVATION & PROFILING ENGINE // ACTIVE</div>
+        <div class="header-version">ALPHA 0.0.1 // BIOMETRIC_ANALYSIS v2.4</div>
+        <div style="position: absolute; top: 15px; right: 15px; font-size: 10px;">LVL.001</div>
+    </div>
+
+    <div class="layout-grid">
+        <!-- LEFT SIDEBAR: SYSTEM TOOLS -->
+        <div class="sidebar">
+            <div class="nav-group">
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">SCAN.NEW</div></div>
+                <div class="btn" style="margin-top: 15px;"><div class="btn-box"></div><div class="btn-text">RECALL</div></div>
+            </div>
+            <div class="nav-group bottom">
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">PROF</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">SYS</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">FEATS</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">INVEN</div></div>
+            </div>
+        </div>
+
+        <!-- DATA PANEL: SUBJECT INFO -->
+        <div class="data-panel">
+            <!-- Row 1: core combat stats -->
+            <div class="top-stats">
+                <div class="stat-badge">ARMOR: <span class="val" id="acValue">15</span></div>
+                <div class="stat-badge">INIT <span class="val" id="initValue">+4</span></div>
+                <div class="stat-badge">HP: <span class="val" id="hpValue">12</span></div>
+                <div class="stat-badge">SPEED <span class="val">35ft</span></div>
+            </div>
+            <!-- Row 2: additional D&D substats -->
+            <div class="top-stats">
+                <div class="stat-badge">PROF.BONUS: <span class="val">+2</span></div>
+                <div class="stat-badge">PASSIVE.PER: <span class="val" id="passivePerception">13</span></div>
+                <div class="stat-badge">HIT.DICE: <span class="val">1d10</span></div>
+                <div class="stat-badge">SPELL.DC: <span class="val" id="spellDC">11</span></div>
+                <div class="stat-badge">SAVING.THROW: <span class="val" id="savingThrowDisplay">STR+3/DEX+4</span></div>
+            </div>
+
+            <div class="info-row" style="--color: var(--race-col);">
+                <div class="info-label-col">
+                    <div class="info-label-text">SPECIES</div>
+                    <div class="info-label-hash"></div>
+                </div>
+                <div class="info-content">
+                    <div>DESIGNATION: <span class="highlight">ELF (WOOD)</span></div>
+                    <div>SUBSTRATE: NOMINAL</div>
+                    <div>TRAITS: ACUTE.SENSES, FEY.ANCESTRY</div>
+                </div>
+            </div>
+
+            <div class="info-row" style="--color: var(--class-col);">
+                <div class="info-label-col">
+                    <div class="info-label-text">ROLE</div>
+                    <div class="info-label-hash"></div>
+                </div>
+                <div class="info-content">
+                    <div>PRIMARY: <span class="highlight">RANGER (SCOUT)</span></div>
+                    <div>SPECIALIZATION: UNASSIGNED</div>
+                    <div>ABILITIES: FAVORED.ENEMY, NATURAL.EXPLORER</div>
+                </div>
+            </div>
+
+            <div class="info-row" style="--color: var(--align-col);">
+                <div class="info-label-col">
+                    <div class="info-label-text">AFFINITY</div>
+                    <div class="info-label-hash"></div>
+                </div>
+                <div class="info-content">
+                    <div>ETHICAL: <span class="highlight">CHAOTIC</span></div>
+                    <div>MORAL: GOOD</div>
+                    <div>DRIVERS: FREEDOM, INDEPENDENCE</div>
+                </div>
+            </div>
+
+            <div class="info-row" style="--color: var(--back-col);">
+                <div class="info-label-col">
+                    <div class="info-label-text">HISTORY</div>
+                    <div class="info-label-hash"></div>
+                </div>
+                <div class="info-content">
+                    <div>ORIGIN: OUTLANDER</div>
+                    <div>PROFICIENCIES: NOMINAL</div>
+                    <div>GEAR: NOMINAL</div>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-label">S.C.O.P.E.</div>
+                <div class="status-text">PROFILING ACTIVE // SUBJECT INTEGRITY NOMINAL</div>
+            </div>
+        </div>
+
+        <!-- STAT CIRCLES (with +/- controls) -->
+        <div class="circles-panel">
+            <!-- STR -->
+            <div class="circle-outer" style="--color: var(--str-col);" data-stat="str">
+                <div class="circle-inner" style="--fill: 75%;">
+                    <div class="circle-data">
+                        <div class="c-name">STR</div>
+                        <div class="c-pct">75%</div>
+                        <div class="c-val" id="strVal">16</div>
+                        <div class="stat-controls">
+                            <button class="stat-btn" data-action="dec" data-stat="str">-</button>
+                            <button class="stat-btn" data-action="inc" data-stat="str">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- INT -->
+            <div class="circle-outer" style="--color: var(--int-col);" data-stat="int">
+                <div class="circle-inner" style="--fill: 55%;">
+                    <div class="circle-data">
+                        <div class="c-name">INT</div>
+                        <div class="c-pct">55%</div>
+                        <div class="c-val" id="intVal">12</div>
+                        <div class="stat-controls">
+                            <button class="stat-btn" data-action="dec" data-stat="int">-</button>
+                            <button class="stat-btn" data-action="inc" data-stat="int">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- DEX -->
+            <div class="circle-outer" style="--color: var(--dex-col);" data-stat="dex">
+                <div class="circle-inner" style="--fill: 90%;">
+                    <div class="circle-data">
+                        <div class="c-name">DEX</div>
+                        <div class="c-pct">90%</div>
+                        <div class="c-val" id="dexVal">18</div>
+                        <div class="stat-controls">
+                            <button class="stat-btn" data-action="dec" data-stat="dex">-</button>
+                            <button class="stat-btn" data-action="inc" data-stat="dex">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- WIS -->
+            <div class="circle-outer" style="--color: var(--wis-col);" data-stat="wis">
+                <div class="circle-inner" style="--fill: 80%;">
+                    <div class="circle-data">
+                        <div class="c-name">WIS</div>
+                        <div class="c-pct">80%</div>
+                        <div class="c-val" id="wisVal">16</div>
+                        <div class="stat-controls">
+                            <button class="stat-btn" data-action="dec" data-stat="wis">-</button>
+                            <button class="stat-btn" data-action="inc" data-stat="wis">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- CON -->
+            <div class="circle-outer" style="--color: var(--con-col);" data-stat="con">
+                <div class="circle-inner" style="--fill: 65%;">
+                    <div class="circle-data">
+                        <div class="c-name">CON</div>
+                        <div class="c-pct">65%</div>
+                        <div class="c-val" id="conVal">14</div>
+                        <div class="stat-controls">
+                            <button class="stat-btn" data-action="dec" data-stat="con">-</button>
+                            <button class="stat-btn" data-action="inc" data-stat="con">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- CHA -->
+            <div class="circle-outer" style="--color: var(--cha-col);" data-stat="cha">
+                <div class="circle-inner" style="--fill: 45%;">
+                    <div class="circle-data">
+                        <div class="c-name">CHA</div>
+                        <div class="c-pct">45%</div>
+                        <div class="c-val" id="chaVal">10</div>
+                        <div class="stat-controls">
+                            <button class="stat-btn" data-action="dec" data-stat="cha">-</button>
+                            <button class="stat-btn" data-action="inc" data-stat="cha">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR: CONSTRUCTION CONTROLS -->
+        <div class="sidebar right">
+            <div class="nav-group">
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">SPECIES.SEL</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">ROLE.SEL</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">STAT.ROLL</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">HISTORY.SEL</div></div>
+            </div>
+            <div class="nav-group bottom">
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">NEXT</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">PREV</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">DIAG</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">ABILITIES</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">SKILLS</div></div>
+                <div class="btn"><div class="btn-box"></div><div class="btn-text">COMMIT</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM PAGE SELECTOR & LEVEL UP -->
+    <div class="bottom-bar">
+        <button class="page-btn">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">4</button>
+        <button class="page-btn">5</button>
+        <button class="page-btn">6</button>
+        <button class="page-btn">7</button>
+        <button class="page-btn">8</button>
+        <button class="page-btn">9</button>
+        <button class="page-btn">0</button>
+        
+        <div class="level-selector" id="levelUpBtn">
+            LEVEL.UP
+            <div style="font-size: 20px;">⬆️</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Current ability scores
+    let scores = {
+        str: 16,
+        dex: 18,
+        con: 14,
+        int: 12,
+        wis: 16,
+        cha: 10
+    };
+
+    // Helper: ability modifier
+    function mod(score) {
+        return Math.floor((score - 10) / 2);
+    }
+
+    // Update all derived stats and UI
+    function refreshUI() {
+        // Update each stat's displayed value, percentage, and circle fill
+        for (let stat of ['str', 'dex', 'con', 'int', 'wis', 'cha']) {
+            let val = scores[stat];
+            let percent = (val / 20) * 100;
+            let valSpan = document.getElementById(`${stat}Val`);
+            if (valSpan) valSpan.innerText = val;
+            let circleOuter = document.querySelector(`.circle-outer[data-stat="${stat}"] .circle-inner`);
+            if (circleOuter) {
+                circleOuter.style.setProperty('--fill', `${percent}%`);
+                let pctSpan = circleOuter.querySelector('.c-pct');
+                if (pctSpan) pctSpan.innerText = `${Math.round(percent)}%`;
+            }
+        }
+
+        // Calculate modifiers
+        let strMod = mod(scores.str);
+        let dexMod = mod(scores.dex);
+        let conMod = mod(scores.con);
+        let intMod = mod(scores.int);
+        let wisMod = mod(scores.wis);
+        let chaMod = mod(scores.cha);
+
+        // Derived values (SRD basic)
+        let ac = 10 + dexMod;      // base unarmored
+        let init = dexMod;
+        let hp = 10 + conMod;      // Ranger level 1 (d10 hit die)
+        let passivePerception = 10 + wisMod;
+        let profBonus = 2;         // level 1
+        let spellDC = 8 + profBonus + intMod;   // assuming INT caster (wizard/artificer)
+        let savingThrowStr = `STR${strMod>=0?'+':''}${strMod}`;
+        let savingThrowDex = `DEX${dexMod>=0?'+':''}${dexMod}`;
+        let savingThrowCon = `CON${conMod>=0?'+':''}${conMod}`;
+        let savingThrowInt = `INT${intMod>=0?'+':''}${intMod}`;
+        let savingThrowWis = `WIS${wisMod>=0?'+':''}${wisMod}`;
+        let savingThrowCha = `CHA${chaMod>=0?'+':''}${chaMod}`;
+        let savingThrowDisplay = `${savingThrowStr}/${savingThrowDex}/${savingThrowCon}/${savingThrowInt}/${savingThrowWis}/${savingThrowCha}`;
+
+        // Update DOM elements
+        document.getElementById('acValue').innerText = ac;
+        document.getElementById('initValue').innerText = (init >= 0 ? '+' : '') + init;
+        document.getElementById('hpValue').innerText = hp;
+        document.getElementById('passivePerception').innerText = passivePerception;
+        document.getElementById('spellDC').innerText = spellDC;
+        document.getElementById('savingThrowDisplay').innerText = savingThrowDisplay;
+
+        // Optional: also update initiative sign
+        let initSpan = document.getElementById('initValue');
+        if (init >= 0) initSpan.innerText = `+${init}`;
+        else initSpan.innerText = `${init}`;
+    }
+
+    // Change a stat by delta (-1 or +1), enforce 3-20 range
+    function adjustStat(stat, delta) {
+        let newVal = scores[stat] + delta;
+        if (newVal < 3) newVal = 3;
+        if (newVal > 20) newVal = 20;
+        if (newVal !== scores[stat]) {
+            scores[stat] = newVal;
+            refreshUI();
+        }
+    }
+
+    // Attach event listeners to all +/- buttons
+    function bindControls() {
+        const buttons = document.querySelectorAll('.stat-btn');
+        buttons.forEach(btn => {
+            btn.removeEventListener('click', handler);
+            btn.addEventListener('click', handler);
+        });
+    }
+
+    function handler(e) {
+        e.stopPropagation();
+        const action = e.currentTarget.getAttribute('data-action');
+        const stat = e.currentTarget.getAttribute('data-stat');
+        if (action === 'inc') adjustStat(stat, 1);
+        if (action === 'dec') adjustStat(stat, -1);
+    }
+
+    // Level Up button (just a placeholder for now)
+    document.getElementById('levelUpBtn').addEventListener('click', () => {
+        console.log("LEVEL.UP clicked – future feature");
+        alert("[S.C.O.P.E.] Level up not yet implemented. This will increase proficiency, HP, etc.");
+    });
+
+    // Initial binding and refresh
+    bindControls();
+    refreshUI();
+    console.log("S.C.O.P.E. Engine online — manual stat editor active");
+</script>
+</body>
+</html>
