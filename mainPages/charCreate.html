@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C.O.S.M.O.S. // S.C.O.P.E. Analyzer (Alpha)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>C.O.S.M.O.S. // S.C.O.P.E. — Phase 7: SRD Complete & Polish</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -11,27 +11,22 @@
             --text-dim: #7f9bb5;
             --text-bright: #c4f0ff;
             --border: #2c7a6e;
-            
             --race-col: #33c4ff;
             --class-col: #ff9933;
             --align-col: #66ffcc;
             --back-col: #99ccff;
-            
             --str-col: #ff5555;
             --dex-col: #55ff99;
             --con-col: #55aaff;
             --int-col: #cc55ff;
             --wis-col: #ffdd55;
             --cha-col: #ff8855;
-            
             --btn-bg: #1e2a2f;
             --btn-hover: #2c7a6e;
             --page-active: #ffdd55;
             --page-inactive: #4a5d6b;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
             background-color: #010101;
             color: var(--text-dim);
@@ -43,7 +38,6 @@
             font-size: 14px;
             padding: 20px;
         }
-
         .screen-container {
             width: 1200px;
             height: 750px;
@@ -55,16 +49,15 @@
             flex-direction: column;
             box-shadow: 0 0 20px rgba(44, 122, 110, 0.3);
         }
-
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
+            align-items: baseline;
             border-bottom: 1px solid var(--border);
             padding-bottom: 5px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
-
         .header-title {
             background: var(--text-bright);
             color: #000;
@@ -73,54 +66,60 @@
             font-size: 16px;
             letter-spacing: 1px;
         }
-
-        .header-path { font-size: 11px; margin-left: 10px; flex-grow: 1; padding-bottom: 2px; white-space: nowrap; overflow-x: auto;}
+        .header-path { font-size: 11px; margin-left: 10px; flex-grow: 1; white-space: nowrap; overflow-x: auto; }
         .header-version { font-size: 12px; }
-
         .layout-grid {
             display: grid;
             grid-template-columns: 100px 450px 1fr 100px;
             flex-grow: 1;
             position: relative;
         }
-
-        .sidebar { display: flex; flex-direction: column; justify-content: space-between;}
+        .sidebar { display: flex; flex-direction: column; justify-content: space-between; }
         .sidebar.right { align-items: flex-end; }
-        
         .nav-group { display: flex; flex-direction: column; gap: 12px; }
         .nav-group.bottom { margin-bottom: 40px; }
-
         .btn {
             display: flex;
             align-items: center;
             gap: 8px;
             color: var(--text-dim);
-            text-decoration: none;
             cursor: pointer;
             font-size: 13px;
             transition: 0.2s;
         }
-        .btn:hover { color: var(--text-bright); text-shadow: 0 0 2px var(--border);}
+        .btn:hover { color: var(--text-bright); text-shadow: 0 0 2px var(--border); }
         .sidebar.right .btn { flex-direction: row-reverse; }
-        
-        .btn-box {
-            width: 8px; height: 8px;
-            background: var(--text-bright);
-        }
+        .btn-box { width: 8px; height: 8px; background: var(--text-bright); }
         .btn-text {
             border: 1px solid var(--border);
             padding: 4px 8px;
             min-width: 70px;
             text-align: center;
         }
-
+        .module-view {
+            display: none;
+            grid-column: span 2;
+            width: 100%;
+        }
+        .module-view.active-module {
+            display: flex;
+            gap: 20px;
+        }
         .data-panel {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            padding-left: 20px;
+            flex: 1;
         }
-
+        .circles-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px 40px;
+            padding: 30px;
+            justify-items: center;
+            align-items: center;
+            flex: 1;
+        }
         .top-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 5px; }
         .stat-badge {
             border: 1px solid var(--border);
@@ -130,21 +129,15 @@
             background: rgba(0,0,0,0.5);
         }
         .stat-badge .val { color: var(--text-bright); font-weight: bold; }
-
         .info-row { display: flex; height: 65px; position: relative; }
-        
         .info-label-col {
             display: flex;
             flex-direction: column;
             width: 50px;
             margin-right: 10px;
             cursor: pointer;
-            transition: filter 0.1s;
         }
-        .info-label-col:hover {
-            filter: brightness(1.2);
-        }
-        
+        .info-label-col:hover { filter: brightness(1.2); }
         .info-label-text {
             background: var(--color);
             color: #000;
@@ -153,19 +146,11 @@
             padding: 2px 0;
             font-weight: bold;
         }
-        
         .info-label-hash {
             flex-grow: 1;
-            background: repeating-linear-gradient(
-                -45deg,
-                transparent,
-                transparent 2px,
-                var(--color) 2px,
-                var(--color) 4px
-            );
+            background: repeating-linear-gradient(-45deg, transparent, transparent 2px, var(--color) 2px, var(--color) 4px);
             opacity: 0.7;
         }
-
         .info-content {
             border: 1px solid var(--border);
             flex-grow: 1;
@@ -177,7 +162,6 @@
             justify-content: center;
         }
         .info-content span.highlight { color: var(--text-bright); }
-
         .status-bar {
             display: flex;
             margin-top: auto;
@@ -185,24 +169,12 @@
             font-size: 12px;
         }
         .status-label { background: var(--text-bright); color: #000; padding: 3px 8px; font-weight: bold; }
-        .status-text { border: 1px solid var(--border); padding: 3px 10px; flex-grow: 1; border-left: none;}
-
-        /* CIRCLES PANEL */
-        .circles-panel {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px 40px;
-            padding: 30px;
-            justify-items: center;
-            align-items: center;
-        }
-
+        .status-text { border: 1px solid var(--border); padding: 3px 10px; flex-grow: 1; border-left: none; }
         .circle-outer {
             position: relative;
             width: 140px;
             height: 140px;
         }
-
         .circle-inner {
             width: 100%;
             height: 100%;
@@ -216,8 +188,6 @@
             position: relative;
             overflow: hidden;
         }
-
-        /* VHS scanline mask */
         .circle-inner::after {
             content: '';
             position: absolute;
@@ -225,33 +195,19 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0.2) 0px,
-                rgba(0, 0, 0, 0.2) 2px,
-                transparent 2px,
-                transparent 4px
-            );
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 2px, transparent 2px, transparent 4px);
             pointer-events: none;
             z-index: 1;
         }
-
         .circle-data {
             position: relative;
             z-index: 2;
             text-align: center;
-            background: transparent;
         }
-        .c-name { font-size: 14px; letter-spacing: 1px; margin-bottom: 2px; font-weight: bold; text-shadow: 0 0 2px black;}
-        .c-pct { font-size: 10px; margin-bottom: 5px; text-shadow: 0 0 1px black;}
-        .c-val { font-size: 28px; color: var(--text-bright); font-weight: bold; margin-bottom: 4px; text-shadow: 0 0 2px black;}
-
-        .stat-controls {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            margin-top: 6px;
-        }
+        .c-name { font-size: 14px; letter-spacing: 1px; margin-bottom: 2px; font-weight: bold; text-shadow: 0 0 2px black; }
+        .c-pct { font-size: 10px; margin-bottom: 5px; text-shadow: 0 0 1px black; }
+        .c-val { font-size: 28px; color: var(--text-bright); font-weight: bold; margin-bottom: 4px; text-shadow: 0 0 2px black; }
+        .stat-controls { display: flex; gap: 12px; justify-content: center; margin-top: 6px; }
         .stat-btn {
             background: var(--btn-bg);
             border: 1px solid var(--text-bright);
@@ -267,17 +223,94 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
-        .stat-btn:hover {
+        .stat-btn:hover { background: var(--btn-hover); border-color: white; transform: scale(1.05); }
+        button, .mini-btn, .equipment-controls button, .remove-item, .remove-spell, .remove-feat, .add-btn, .modal-btn, .page-btn {
+            background: var(--btn-bg);
+            border: 1px solid var(--border);
+            color: var(--text-bright);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            padding: 4px 8px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+        button:hover, .mini-btn:hover, .equipment-controls button:hover, .remove-item:hover, .remove-spell:hover, .remove-feat:hover, .add-btn:hover, .modal-btn:hover, .page-btn:hover {
             background: var(--btn-hover);
-            border-color: white;
-            transform: scale(1.05);
+            border-color: var(--text-bright);
+            color: white;
         }
-        .stat-btn:active {
-            transform: scale(0.95);
+        .equipment-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
-
+        .equipment-input, select.equipment-input {
+            background: #0a1217;
+            border: 1px solid var(--border);
+            color: var(--text-bright);
+            padding: 6px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .equipment-container, .skills-container, .spells-container, .feats-container, .identity-container {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+        .equipment-header, .skills-header, .spells-header, .feats-header, .identity-header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+            font-size: 18px;
+            color: var(--text-bright);
+        }
+        .equipment-list, .skills-list, .saves-list, .spells-list, .feats-list, .proficiency-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .equipment-list li, .skills-list li, .saves-list li, .spells-list li, .feats-list li, .proficiency-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(44,122,110,0.3);
+            font-size: 12px;
+        }
+        .skill-name, .save-name, .spell-name, .feat-name, .prof-name { color: var(--text-bright); }
+        .skill-control, .save-control { display: flex; gap: 15px; align-items: center; }
+        .skill-total, .save-total { min-width: 35px; text-align: right; color: #ffdd55; }
+        .toggle-proficiency {
+            cursor: pointer;
+            background: var(--btn-bg);
+            border: 1px solid var(--border);
+            color: var(--text-bright);
+            padding: 2px 8px;
+            font-family: monospace;
+            font-size: 10px;
+        }
+        .toggle-proficiency.active {
+            background: var(--btn-hover);
+            border-color: var(--page-active);
+            color: white;
+        }
+        .two-columns { display: flex; gap: 30px; width: 100%; }
+        .skills-col, .saves-col { flex: 1; }
+        .spell-slots-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        .spell-slots-table th, .spell-slots-table td {
+            border: 1px solid var(--border);
+            padding: 4px;
+            text-align: center;
+        }
         .bottom-bar {
             position: absolute;
             bottom: 20px;
@@ -287,21 +320,13 @@
             gap: 10px;
             align-items: center;
         }
-
         .page-btn {
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text-bright);
-            font-family: 'Share Tech Mono', monospace;
             width: 40px; height: 30px;
-            cursor: pointer;
             border-bottom: 3px solid var(--page-inactive);
-            transition: all 0.1s;
         }
         .page-btn.active {
             border-bottom-color: var(--page-active);
-            color: var(--page-active);
-            background: rgba(255, 221, 85, 0.1);
+            background: rgba(255,221,85,0.1);
         }
         .page-btn.inactive {
             border-bottom-color: var(--page-inactive);
@@ -309,10 +334,6 @@
             cursor: not-allowed;
             opacity: 0.5;
         }
-        .page-btn.active:hover {
-            background: rgba(255, 221, 85, 0.2);
-        }
-        
         .level-selector {
             margin-left: auto;
             border: 1px solid var(--border);
@@ -322,9 +343,6 @@
             gap: 10px;
             cursor: pointer;
         }
-        .level-selector:hover { background: rgba(44,122,110,0.2); }
-
-        /* MODAL OVERLAY */
         .modal {
             display: none;
             position: fixed;
@@ -341,8 +359,6 @@
             border: 2px solid var(--border);
             width: 500px;
             padding: 20px;
-            box-shadow: 0 0 30px rgba(44,122,110,0.5);
-            font-family: 'Share Tech Mono', monospace;
         }
         .modal-header {
             font-size: 18px;
@@ -351,17 +367,9 @@
             padding-bottom: 5px;
             color: var(--text-bright);
         }
-        .modal-row {
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .modal-row label {
-            font-size: 12px;
-            letter-spacing: 1px;
-        }
-        select, .modal-row input {
+        .modal-row { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
+        .modal-row label { font-size: 12px; }
+        select, .modal-row input, textarea {
             background: #0a1217;
             border: 1px solid var(--border);
             color: var(--text-bright);
@@ -369,455 +377,917 @@
             font-family: monospace;
             font-size: 14px;
         }
-        .modal-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .modal-btn {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            padding: 5px 15px;
-            cursor: pointer;
-            font-family: monospace;
-        }
-        .modal-btn:hover {
+        textarea { resize: vertical; min-height: 80px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; }
+        #importFileInput { display: none; }
+        .armor-desc { font-size: 11px; color: #88aacc; margin-top: 4px; }
+        .autosave-toast {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
             background: var(--btn-hover);
-            color: white;
-            border-color: white;
+            color: #010101;
+            font-weight: bold;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-family: monospace;
+            border-left: 4px solid var(--page-active);
+            opacity: 0;
+            transition: opacity 0.12s;
+            pointer-events: none;
+            z-index: 2000;
+        }
+        .portrait-preview { margin-top: 10px; text-align: center; }
+        .portrait-preview img { max-width: 150px; max-height: 150px; border: 1px solid var(--border); background: #000; }
+        .identity-field { margin-bottom: 15px; }
+        .identity-field label { display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-bright); }
+        .char-name-header {
+            font-size: 12px;
+            color: var(--text-bright);
+            margin-left: 15px;
+            white-space: nowrap;
+            overflow-x: auto;
+            max-width: 300px;
+        }
+        .inventory-section {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+        .inventory-section h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--text-bright);
+        }
+        .spell-filter-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .spell-info {
+            font-size: 10px;
+            color: #88aacc;
+            margin-top: 5px;
+        }
+        .prof-section {
+            margin-top: 15px;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+        }
+        .prof-section h4 {
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: var(--text-bright);
+        }
+        .prof-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .prof-tag {
+            background: var(--btn-bg);
+            border: 1px solid var(--border);
+            padding: 2px 6px;
+            font-size: 10px;
+            border-radius: 2px;
+        }
+        .stat-badge .small-btn {
+            background: var(--btn-bg);
+            border: 1px solid var(--border);
+            color: var(--text-bright);
+            font-size: 10px;
+            padding: 0px 4px;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+        .currency-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .currency-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .slot-counter {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+        }
+        .slot-counter button {
+            font-size: 10px;
+            padding: 0px 4px;
         }
     </style>
 </head>
 <body>
-
 <div class="screen-container">
     <div class="header">
         <div class="header-title">C.O.S.M.O.S.</div>
-        <div class="header-path">S.C.O.P.E. // SYSTEMIC CHARACTER OBSERVATION & PROFILING ENGINE // ACTIVE</div>
-        <div class="header-version">ALPHA 0.0.1 // BIOMETRIC_ANALYSIS v2.4</div>
-        <div style="position: absolute; top: 15px; right: 15px; font-size: 10px;">LVL.001</div>
+        <div class="header-path">S.C.O.P.E. // PHASE 7: SRD COMPLETE & POLISH</div>
+        <div class="header-version">v0.7 // CURRENCY + HIT DICE + SLOTS</div>
+        <div style="position: absolute; top: 15px; right: 15px; font-size: 10px;" id="levelDisplay">LVL.001</div>
+        <div class="char-name-header" id="charNameHeader">UNNAMED</div>
     </div>
 
     <div class="layout-grid">
         <!-- LEFT SIDEBAR -->
         <div class="sidebar">
             <div class="nav-group">
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">SCAN.NEW</div></div>
-                <div class="btn" style="margin-top: 15px;"><div class="btn-box"></div><div class="btn-text">RECALL</div></div>
+                <div class="btn" id="scanNewBtn"><div class="btn-box"></div><div class="btn-text">SCAN.NEW</div></div>
+                <div class="btn" style="margin-top: 15px;" id="recallBtn"><div class="btn-box"></div><div class="btn-text">RECALL</div></div>
             </div>
             <div class="nav-group bottom">
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">PROF</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">SYS</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">FEATS</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">INVEN</div></div>
+                <div class="btn" id="profBtn"><div class="btn-box"></div><div class="btn-text">PROF</div></div>
+                <div class="btn" id="identityBtn"><div class="btn-box"></div><div class="btn-text">IDENT</div></div>
+                <div class="btn" id="featsBtn"><div class="btn-box"></div><div class="btn-text">FEATS</div></div>
+                <div class="btn" id="invenBtn"><div class="btn-box"></div><div class="btn-text">GEAR</div></div>
             </div>
         </div>
 
-        <!-- DATA PANEL -->
-        <div class="data-panel">
-            <div class="top-stats">
-                <div class="stat-badge">ARMOR: <span class="val" id="acValue">15</span></div>
-                <div class="stat-badge">INIT <span class="val" id="initValue">+4</span></div>
-                <div class="stat-badge">HP: <span class="val" id="hpValue">12</span></div>
-                <div class="stat-badge">SPEED <span class="val">35ft</span></div>
+        <!-- PROF MODULE -->
+        <div id="profModule" class="module-view active-module">
+            <div class="data-panel">
+                <div class="top-stats">
+                    <div class="stat-badge">ARMOR: <span class="val" id="acValue">10</span></div>
+                    <div class="stat-badge">INIT <span class="val" id="initValue">+0</span></div>
+                    <div class="stat-badge">HP: <span class="val" id="hpValue">10</span></div>
+                    <div class="stat-badge">SPEED 30ft</div>
+                </div>
+                <div class="top-stats">
+                    <div class="stat-badge">PROF.BONUS: <span class="val" id="profBonusValue">+2</span></div>
+                    <div class="stat-badge">PASSIVE.PER: <span class="val" id="passivePerception">10</span></div>
+                    <div class="stat-badge">HIT.DICE: <span class="val" id="hitDiceDisplay">1d6</span> <span id="hitDiceRemaining">(1/1)</span>
+                        <button class="small-btn" id="hitDiceUseBtn">-</button>
+                        <button class="small-btn" id="hitDiceRestoreBtn">+</button>
+                    </div>
+                    <div class="stat-badge">SPELL.DC: <span class="val" id="spellDC">10</span></div>
+                    <div class="stat-badge">SAVING.THROW: <span class="val" id="savingThrowDisplay">STR+0/DEX+0</span></div>
+                </div>
+                <div class="info-row" style="--color: #88aacc;"><div class="info-label-col" id="armorLabelBtn"><div class="info-label-text">ARMOR</div><div class="info-label-hash"></div></div><div class="info-content"><div>EQUIPMENT: <span class="highlight" id="armorNameDisplay">Unarmored</span></div><div>AC FORMULA: <span id="armorFormulaDisplay">10 + DEX</span></div></div></div>
+                <div class="info-row" style="--color: var(--race-col);"><div class="info-label-col" id="speciesLabelBtn"><div class="info-label-text">SPECIES</div><div class="info-label-hash"></div></div><div class="info-content" id="speciesContent"><div>DESIGNATION: <span class="highlight">HUMAN (STANDARD)</span></div><div>SUBSTRATE: STANDARD</div><div>TRAITS: VERSATILE</div></div></div>
+                <div class="info-row" style="--color: var(--class-col);"><div class="info-label-col" id="roleLabelBtn"><div class="info-label-text">ROLE</div><div class="info-label-hash"></div></div><div class="info-content" id="roleContent"><div>PRIMARY: <span class="highlight">COMMONER</span></div><div>SPECIALIZATION: <span id="subclassDisplay">None</span></div><div>ABILITIES: BASIC</div></div></div>
+                <div class="info-row" style="--color: var(--align-col);"><div class="info-label-col" id="affinityLabelBtn"><div class="info-label-text">AFFINITY</div><div class="info-label-hash"></div></div><div class="info-content" id="affinityContent"><div>ETHICAL: <span class="highlight">NEUTRAL</span></div><div>MORAL: NEUTRAL</div><div>DRIVERS: SURVIVAL</div></div></div>
+                <div class="info-row" style="--color: var(--back-col);"><div class="info-label-col" id="historyLabelBtn"><div class="info-label-text">HISTORY</div><div class="info-label-hash"></div></div><div class="info-content" id="historyContent"><div>ORIGIN: <span class="highlight">VILLAGER</span></div><div>PROFICIENCIES: SEE SKILLS TAB</div><div>GEAR: SIMPLE</div></div></div>
+                <div class="status-bar"><div class="status-label">S.C.O.P.E.</div><div class="status-text">PHASE 7: CURRENCY + HIT DICE + SLOT TRACKING</div></div>
             </div>
-            <div class="top-stats">
-                <div class="stat-badge">PROF.BONUS: <span class="val">+2</span></div>
-                <div class="stat-badge">PASSIVE.PER: <span class="val" id="passivePerception">13</span></div>
-                <div class="stat-badge">HIT.DICE: <span class="val">1d10</span></div>
-                <div class="stat-badge">SPELL.DC: <span class="val" id="spellDC">11</span></div>
-                <div class="stat-badge">SAVING.THROW: <span class="val" id="savingThrowDisplay">STR+3/DEX+4</span></div>
-            </div>
-
-            <!-- Species block (clickable) -->
-            <div class="info-row" style="--color: var(--race-col);">
-                <div class="info-label-col" id="speciesLabelBtn">
-                    <div class="info-label-text">SPECIES</div>
-                    <div class="info-label-hash"></div>
-                </div>
-                <div class="info-content" id="speciesContent">
-                    <div>DESIGNATION: <span class="highlight">ELF (WOOD)</span></div>
-                    <div>SUBSTRATE: NOMINAL</div>
-                    <div>TRAITS: ACUTE.SENSES, FEY.ANCESTRY</div>
-                </div>
-            </div>
-
-            <!-- Role block (clickable) -->
-            <div class="info-row" style="--color: var(--class-col);">
-                <div class="info-label-col" id="roleLabelBtn">
-                    <div class="info-label-text">ROLE</div>
-                    <div class="info-label-hash"></div>
-                </div>
-                <div class="info-content" id="roleContent">
-                    <div>PRIMARY: <span class="highlight">RANGER</span></div>
-                    <div>SPECIALIZATION: NONE</div>
-                    <div>ABILITIES: NOMINAL</div>
-                </div>
-            </div>
-
-            <!-- Affinity block (clickable) -->
-            <div class="info-row" style="--color: var(--align-col);">
-                <div class="info-label-col" id="affinityLabelBtn">
-                    <div class="info-label-text">AFFINITY</div>
-                    <div class="info-label-hash"></div>
-                </div>
-                <div class="info-content" id="affinityContent">
-                    <div>ETHICAL: <span class="highlight">CHAOTIC</span></div>
-                    <div>MORAL: GOOD</div>
-                    <div>DRIVERS: FREEDOM, INDEPENDENCE</div>
-                </div>
-            </div>
-
-            <!-- History block (clickable) -->
-            <div class="info-row" style="--color: var(--back-col);">
-                <div class="info-label-col" id="historyLabelBtn">
-                    <div class="info-label-text">HISTORY</div>
-                    <div class="info-label-hash"></div>
-                </div>
-                <div class="info-content" id="historyContent">
-                    <div>ORIGIN: <span class="highlight">OUTLANDER</span></div>
-                    <div>PROFICIENCIES: NOMINAL</div>
-                    <div>GEAR: NOMINAL</div>
-                </div>
-            </div>
-
-            <div class="status-bar">
-                <div class="status-label">S.C.O.P.E.</div>
-                <div class="status-text">PROFILING ACTIVE // SUBJECT INTEGRITY NOMINAL</div>
+            <div class="circles-panel">
+                <div class="circle-outer" data-stat="str"><div class="circle-inner" style="--color: var(--str-col); --fill:50%"><div class="circle-data"><div class="c-name">STR</div><div class="c-pct" id="strPct">50%</div><div class="c-val" id="strVal">10</div><div class="stat-controls"><button class="stat-btn" data-stat="str" data-delta="-1">−</button><button class="stat-btn" data-stat="str" data-delta="1">+</button></div></div></div></div>
+                <div class="circle-outer" data-stat="dex"><div class="circle-inner" style="--color: var(--dex-col); --fill:50%"><div class="circle-data"><div class="c-name">DEX</div><div class="c-pct" id="dexPct">50%</div><div class="c-val" id="dexVal">10</div><div class="stat-controls"><button class="stat-btn" data-stat="dex" data-delta="-1">−</button><button class="stat-btn" data-stat="dex" data-delta="1">+</button></div></div></div></div>
+                <div class="circle-outer" data-stat="con"><div class="circle-inner" style="--color: var(--con-col); --fill:50%"><div class="circle-data"><div class="c-name">CON</div><div class="c-pct" id="conPct">50%</div><div class="c-val" id="conVal">10</div><div class="stat-controls"><button class="stat-btn" data-stat="con" data-delta="-1">−</button><button class="stat-btn" data-stat="con" data-delta="1">+</button></div></div></div></div>
+                <div class="circle-outer" data-stat="int"><div class="circle-inner" style="--color: var(--int-col); --fill:50%"><div class="circle-data"><div class="c-name">INT</div><div class="c-pct" id="intPct">50%</div><div class="c-val" id="intVal">10</div><div class="stat-controls"><button class="stat-btn" data-stat="int" data-delta="-1">−</button><button class="stat-btn" data-stat="int" data-delta="1">+</button></div></div></div></div>
+                <div class="circle-outer" data-stat="wis"><div class="circle-inner" style="--color: var(--wis-col); --fill:50%"><div class="circle-data"><div class="c-name">WIS</div><div class="c-pct" id="wisPct">50%</div><div class="c-val" id="wisVal">10</div><div class="stat-controls"><button class="stat-btn" data-stat="wis" data-delta="-1">−</button><button class="stat-btn" data-stat="wis" data-delta="1">+</button></div></div></div></div>
+                <div class="circle-outer" data-stat="cha"><div class="circle-inner" style="--color: var(--cha-col); --fill:50%"><div class="circle-data"><div class="c-name">CHA</div><div class="c-pct" id="chaPct">50%</div><div class="c-val" id="chaVal">10</div><div class="stat-controls"><button class="stat-btn" data-stat="cha" data-delta="-1">−</button><button class="stat-btn" data-stat="cha" data-delta="1">+</button></div></div></div></div>
             </div>
         </div>
 
-        <!-- STAT CIRCLES (unchanged) -->
-        <div class="circles-panel">
-            <!-- STR, DEX, CON, INT, WIS, CHA circles with +/- buttons -->
-            <div class="circle-outer" data-stat="str"><div class="circle-inner" style="--color: var(--str-col); --fill: 75%;"><div class="circle-data"><div class="c-name">STR</div><div class="c-pct" id="strPct">75%</div><div class="c-val" id="strVal">16</div><div class="stat-controls"><button class="stat-btn" data-stat="str" data-delta="-1">−</button><button class="stat-btn" data-stat="str" data-delta="1">+</button></div></div></div></div>
-            <div class="circle-outer" data-stat="int"><div class="circle-inner" style="--color: var(--int-col); --fill: 55%;"><div class="circle-data"><div class="c-name">INT</div><div class="c-pct" id="intPct">55%</div><div class="c-val" id="intVal">12</div><div class="stat-controls"><button class="stat-btn" data-stat="int" data-delta="-1">−</button><button class="stat-btn" data-stat="int" data-delta="1">+</button></div></div></div></div>
-            <div class="circle-outer" data-stat="dex"><div class="circle-inner" style="--color: var(--dex-col); --fill: 90%;"><div class="circle-data"><div class="c-name">DEX</div><div class="c-pct" id="dexPct">90%</div><div class="c-val" id="dexVal">18</div><div class="stat-controls"><button class="stat-btn" data-stat="dex" data-delta="-1">−</button><button class="stat-btn" data-stat="dex" data-delta="1">+</button></div></div></div></div>
-            <div class="circle-outer" data-stat="wis"><div class="circle-inner" style="--color: var(--wis-col); --fill: 80%;"><div class="circle-data"><div class="c-name">WIS</div><div class="c-pct" id="wisPct">80%</div><div class="c-val" id="wisVal">16</div><div class="stat-controls"><button class="stat-btn" data-stat="wis" data-delta="-1">−</button><button class="stat-btn" data-stat="wis" data-delta="1">+</button></div></div></div></div>
-            <div class="circle-outer" data-stat="con"><div class="circle-inner" style="--color: var(--con-col); --fill: 65%;"><div class="circle-data"><div class="c-name">CON</div><div class="c-pct" id="conPct">65%</div><div class="c-val" id="conVal">14</div><div class="stat-controls"><button class="stat-btn" data-stat="con" data-delta="-1">−</button><button class="stat-btn" data-stat="con" data-delta="1">+</button></div></div></div></div>
-            <div class="circle-outer" data-stat="cha"><div class="circle-inner" style="--color: var(--cha-col); --fill: 45%;"><div class="circle-data"><div class="c-name">CHA</div><div class="c-pct" id="chaPct">45%</div><div class="c-val" id="chaVal">10</div><div class="stat-controls"><button class="stat-btn" data-stat="cha" data-delta="-1">−</button><button class="stat-btn" data-stat="cha" data-delta="1">+</button></div></div></div></div>
+        <!-- IDENTITY MODULE -->
+        <div id="identityModule" class="module-view">
+            <div class="identity-container">
+                <div class="identity-header">CHARACTER IDENTITY</div>
+                <div class="identity-field"><label>NAME</label><input type="text" id="charNameInput" class="equipment-input" placeholder="Character name" style="width:100%"></div>
+                <div class="identity-field"><label>APPEARANCE</label><textarea id="charAppearance" rows="3" placeholder="Physical description..."></textarea></div>
+                <div class="identity-field"><label>BIOGRAPHY</label><textarea id="charBio" rows="4" placeholder="Backstory, goals, personality..."></textarea></div>
+                <div class="identity-field"><label>PORTRAIT URL</label><input type="text" id="portraitUrlInput" class="equipment-input" placeholder="https://i.imgur.com/example.jpg" style="width:100%"><div class="portrait-preview" id="portraitPreviewContainer"></div></div>
+            </div>
         </div>
 
-        <!-- RIGHT SIDEBAR (TBD) -->
+        <!-- FEATS MODULE -->
+        <div id="featsModule" class="module-view">
+            <div class="feats-container">
+                <div class="feats-header">FEATS & ABILITIES</div>
+                <ul class="feats-list" id="featsList"></ul>
+                <div class="equipment-controls"><select id="srdFeatSelect" class="equipment-input" style="flex:2;"><option value="">-- Choose SRD Feat --</option></select><button id="addSrdFeatBtn">Add SRD Feat</button></div>
+                <div class="equipment-controls"><input type="text" id="newFeatName" class="equipment-input" placeholder="Custom feat name" style="flex:2;"><button id="addFeatBtn">Add Custom Feat</button></div>
+            </div>
+        </div>
+
+        <!-- GEAR MODULE (with currency) -->
+        <div id="invenModule" class="module-view">
+            <div class="equipment-container">
+                <div class="equipment-header">INVENTORY & EQUIPMENT</div>
+                <div class="inventory-section">
+                    <h3>💰 CURRENCY</h3>
+                    <div class="currency-row">
+                        <div class="currency-item">CP: <input type="number" id="cp" class="equipment-input" value="0" style="width:70px"></div>
+                        <div class="currency-item">SP: <input type="number" id="sp" class="equipment-input" value="0" style="width:70px"></div>
+                        <div class="currency-item">GP: <input type="number" id="gp" class="equipment-input" value="10" style="width:70px"></div>
+                        <div class="currency-item">PP: <input type="number" id="pp" class="equipment-input" value="0" style="width:70px"></div>
+                    </div>
+                </div>
+                <div class="inventory-section">
+                    <h3>⚔️ EQUIPPED GEAR</h3>
+                    <div><strong>Armor:</strong> <span id="equippedArmorName">None</span> <button id="unequipArmorBtn">Unequip</button></div>
+                    <div><strong>Shield:</strong> <span id="equippedShieldName">None</span> <button id="unequipShieldBtn">Unequip</button></div>
+                </div>
+                <div class="inventory-section">
+                    <h3>🎒 BACKPACK</h3>
+                    <ul class="equipment-list" id="backpackList"></ul>
+                </div>
+                <div class="inventory-section">
+                    <h3>➕ ADD ITEM</h3>
+                    <div class="equipment-controls"><select id="srdItemSelect" class="equipment-input"><option value="">-- SRD Item --</option></select><input type="number" id="srdItemQty" placeholder="Qty" value="1" style="width:60px"><button id="addSrdItemBtn">Add SRD Item</button></div>
+                    <div class="equipment-controls"><input type="text" id="customItemName" placeholder="Custom item name"><input type="number" id="customItemQty" placeholder="Qty" value="1" style="width:60px"><button id="addCustomItemBtn">Add Custom Item</button></div>
+                    <div class="equipment-controls"><input type="text" id="customArmorName" placeholder="Custom armor name"><input type="number" id="customArmorBase" placeholder="Base AC" value="10" style="width:60px"><input type="number" id="customArmorDexCap" placeholder="DEX cap" value="99" style="width:80px"><button id="addCustomArmorBtn">Add Custom Armor</button></div>
+                </div>
+                <button id="longRestBtn" style="margin-top: 15px; width: 100%;">🔄 LONG REST (Restore All)</button>
+            </div>
+        </div>
+
+        <!-- SKILLS MODULE -->
+        <div id="skillsModule" class="module-view">
+            <div class="skills-container">
+                <div class="skills-header">SKILLS & PROFICIENCIES</div>
+                <div class="two-columns">
+                    <div class="skills-col"><div style="font-size: 14px; margin-bottom: 8px;">SKILLS (Proficient = add PB)</div><ul class="skills-list" id="skillsList"></ul></div>
+                    <div class="saves-col"><div style="font-size: 14px; margin-bottom: 8px;">SAVING THROWS</div><ul class="saves-list" id="savesList"></ul></div>
+                </div>
+                <div class="prof-section"><h4>🔧 TOOL PROFICIENCIES</h4><div class="prof-list" id="toolProfsList"></div><h4>🗣️ LANGUAGE PROFICIENCIES</h4><div class="prof-list" id="langProfsList"></div><h4>⚔️ COMBAT PROFICIENCIES</h4><div class="prof-list" id="combatProfsList"></div></div>
+            </div>
+        </div>
+
+        <!-- SPELLS MODULE (with slot tracking) -->
+        <div id="spellsModule" class="module-view">
+            <div class="spells-container">
+                <div class="spells-header">SPELLCASTING</div>
+                <div id="spellcastingInfo" style="margin-bottom: 15px; font-size: 13px;"></div>
+                <div><strong>Spell Slots</strong>
+                    <table class="spell-slots-table">
+                        <thead><tr><th>Level</th><th>Max</th><th>Used</th><th></th></tr></thead>
+                        <tbody id="spellSlotsBody"></tbody>
+                    </table>
+                </div>
+                <div><strong>Spells Known</strong><ul class="spells-list" id="spellsList"></ul>
+                <div class="spell-filter-row"><select id="srdSpellSelect" class="equipment-input" style="flex:2;"><option value="">-- Select SRD Spell --</option></select><button id="addSrdSpellBtn">Add SRD Spell</button></div>
+                <div class="equipment-controls"><input type="text" id="newSpellName" placeholder="Custom spell name" style="flex:2;"><input type="number" id="newSpellLevel" placeholder="Level" value="1" min="0" max="9" style="width:70px"><button id="addSpellBtn">Add Custom Spell</button></div>
+                <div class="spell-info" id="spellInfoDisplay"></div></div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR -->
         <div class="sidebar right">
-            <div class="nav-group">
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">SPECIES.SEL</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">ROLE.SEL</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">STAT.ROLL</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">HISTORY.SEL</div></div>
-            </div>
-            <div class="nav-group bottom">
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">NEXT</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">PREV</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">DIAG</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">ABILITIES</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">SKILLS</div></div>
-                <div class="btn"><div class="btn-box"></div><div class="btn-text">COMMIT</div></div>
-            </div>
+            <div class="nav-group"><div class="btn" id="exportBtnRight"><div class="btn-box"></div><div class="btn-text">EXPORT</div></div><div class="btn" id="importBtnRight"><div class="btn-box"></div><div class="btn-text">IMPORT</div></div></div>
+            <div class="nav-group bottom"><div class="btn"><div class="btn-box"></div><div class="btn-text">NEXT</div></div><div class="btn"><div class="btn-box"></div><div class="btn-text">PREV</div></div><div class="btn"><div class="btn-box"></div><div class="btn-text">DIAG</div></div><div class="btn" id="spellsNavBtn"><div class="btn-box"></div><div class="btn-text">SPELLS</div></div><div class="btn" id="skillsNavBtn"><div class="btn-box"></div><div class="btn-text">SKILLS</div></div><div class="btn" id="commitBtn"><div class="btn-box"></div><div class="btn-text">COMMIT</div></div></div>
         </div>
     </div>
 
-    <!-- BOTTOM BAR with page selector -->
     <div class="bottom-bar">
-        <button class="page-btn" data-page="1">1</button>
-        <button class="page-btn" data-page="2">2</button>
-        <button class="page-btn" data-page="3">3</button>
-        <button class="page-btn" data-page="4">4</button>
-        <button class="page-btn" data-page="5">5</button>
-        <button class="page-btn" data-page="6">6</button>
-        <button class="page-btn" data-page="7">7</button>
-        <button class="page-btn" data-page="8">8</button>
-        <button class="page-btn" data-page="9">9</button>
-        <button class="page-btn" data-page="10">0</button>
-        <div class="level-selector" id="levelUpBtn">LEVEL.UP <div style="font-size: 20px;">⬆️</div></div>
+        <button class="page-btn" data-page="1">1</button><button class="page-btn" data-page="2">2</button><button class="page-btn" data-page="3">3</button>
+        <div class="level-selector" id="levelUpBtn">LEVEL.UP ⬆️</div>
     </div>
 </div>
+
+<input type="file" id="importFileInput" accept=".json">
+<div id="autosaveToast" class="autosave-toast">⌾ AUTOSAVE</div>
 
 <!-- MODALS -->
-<!-- Species Modal -->
-<div id="speciesModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">SPECIES EDITOR // SRD</div>
-        <div class="modal-row"><label>SPECIES</label><select id="speciesSelect"></select></div>
-        <div class="modal-row"><label>SUBRACE</label><select id="subraceSelect"></select></div>
-        <div class="modal-buttons"><button class="modal-btn" id="speciesModalCancel">CANCEL</button><button class="modal-btn" id="speciesModalSave">SAVE</button></div>
-    </div>
-</div>
-
-<!-- Role Modal (Class) -->
-<div id="roleModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">ROLE EDITOR // SRD CLASSES</div>
-        <div class="modal-row"><label>CLASS</label><select id="classSelect"></select></div>
-        <div class="modal-buttons"><button class="modal-btn" id="roleModalCancel">CANCEL</button><button class="modal-btn" id="roleModalSave">SAVE</button></div>
-    </div>
-</div>
-
-<!-- Affinity Modal (Alignment) -->
-<div id="affinityModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">AFFINITY EDITOR // ALIGNMENT</div>
-        <div class="modal-row"><label>ETHICAL AXIS</label><select id="ethicalSelect"><option>Lawful</option><option>Neutral</option><option>Chaotic</option></select></div>
-        <div class="modal-row"><label>MORAL AXIS</label><select id="moralSelect"><option>Good</option><option>Neutral</option><option>Evil</option></select></div>
-        <div class="modal-buttons"><button class="modal-btn" id="affinityModalCancel">CANCEL</button><button class="modal-btn" id="affinityModalSave">SAVE</button></div>
-    </div>
-</div>
-
-<!-- History Modal (Background) -->
-<div id="historyModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">HISTORY EDITOR // SRD BACKGROUNDS</div>
-        <div class="modal-row"><label>BACKGROUND</label><select id="backgroundSelect"></select></div>
-        <div class="modal-buttons"><button class="modal-btn" id="historyModalCancel">CANCEL</button><button class="modal-btn" id="historyModalSave">SAVE</button></div>
-    </div>
-</div>
+<div id="speciesModal" class="modal"><div class="modal-content"><div class="modal-header">SPECIES</div><div class="modal-row"><label>Species</label><select id="speciesSelect"></select></div><div class="modal-row"><label>Subrace</label><select id="subraceSelect"></select></div><div class="modal-buttons"><button class="modal-btn" id="speciesModalCancel">CANCEL</button><button class="modal-btn" id="speciesModalSave">SAVE</button></div></div></div>
+<div id="roleModal" class="modal"><div class="modal-content"><div class="modal-header">ROLE & SUBCLASS</div><div class="modal-row"><label>Class</label><select id="classSelect"></select></div><div class="modal-row"><label>Specialization</label><select id="subclassSelect"></select></div><div class="modal-buttons"><button class="modal-btn" id="roleModalCancel">CANCEL</button><button class="modal-btn" id="roleModalSave">SAVE</button></div></div></div>
+<div id="affinityModal" class="modal"><div class="modal-content"><div class="modal-header">ALIGNMENT</div><div class="modal-row"><select id="ethicalSelect"><option>Lawful</option><option>Neutral</option><option>Chaotic</option></select></div><div class="modal-row"><select id="moralSelect"><option>Good</option><option>Neutral</option><option>Evil</option></select></div><div class="modal-buttons"><button class="modal-btn" id="affinityModalCancel">CANCEL</button><button class="modal-btn" id="affinityModalSave">SAVE</button></div></div></div>
+<div id="historyModal" class="modal"><div class="modal-content"><div class="modal-header">BACKGROUND</div><div class="modal-row"><select id="backgroundSelect"></select></div><div class="modal-buttons"><button class="modal-btn" id="historyModalCancel">CANCEL</button><button class="modal-btn" id="historyModalSave">SAVE</button></div></div></div>
+<div id="armorModal" class="modal"><div class="modal-content"><div class="modal-header">ARMOR</div><div class="modal-row"><select id="armorSelect"><option value="unarmored">Unarmored (10+DEX)</option><option value="leather">Leather (11+DEX)</option><option value="studded">Studded (12+DEX)</option><option value="chain_shirt">Chain Shirt (13+DEX max2)</option><option value="half_plate">Half Plate (15+DEX max2)</option><option value="plate">Plate (18 no DEX)</option></select></div><div class="modal-buttons"><button class="modal-btn" id="armorModalCancel">CANCEL</button><button class="modal-btn" id="armorModalSave">EQUIP</button></div></div></div>
+<div id="levelUpModal" class="modal"><div class="modal-content"><div class="modal-header">LEVEL UP</div><div id="levelUpMessage"></div><div class="modal-buttons"><button class="modal-btn" id="levelUpConfirm">CONFIRM</button><button class="modal-btn" id="levelUpCancel">CANCEL</button></div></div></div>
 
 <script>
-    // ---------- SRD Data ----------
-    const speciesData = {
-        "Dwarf": { subraces: ["Hill Dwarf", "Mountain Dwarf"], traits: "Darkvision, Dwarven Resilience, Dwarven Combat Training, Tool Proficiency, Stonecunning" },
-        "Elf": { subraces: ["High Elf", "Wood Elf", "Dark Elf (Drow)"], traits: "Darkvision, Keen Senses, Fey Ancestry, Trance" },
-        "Halfling": { subraces: ["Lightfoot", "Stout"], traits: "Lucky, Brave, Halfling Nimbleness" },
-        "Human": { subraces: ["Standard", "Variant (Feat)"], traits: "Versatile, Extra Language" },
-        "Dragonborn": { subraces: ["Chromatic", "Metallic"], traits: "Draconic Ancestry, Breath Weapon, Damage Resistance" },
-        "Gnome": { subraces: ["Forest Gnome", "Rock Gnome"], traits: "Darkvision, Gnome Cunning" },
-        "Half-Elf": { subraces: ["Standard"], traits: "Darkvision, Fey Ancestry, Skill Versatility" },
-        "Half-Orc": { subraces: ["Standard"], traits: "Darkvision, Menacing, Relentless Endurance, Savage Attacks" },
-        "Tiefling": { subraces: ["Asmodeus", "Other Infernal"], traits: "Darkvision, Hellish Resistance, Infernal Legacy" }
-    };
-    const classesSRD = ["Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard"];
-    const backgroundsSRD = ["Acolyte", "Charlatan", "Criminal", "Entertainer", "Folk Hero", "Guild Artisan", "Hermit", "Noble", "Outlander", "Sage", "Sailor", "Soldier", "Urchin", "Gladiator", "Spy"];
+// =============================================
+// PHASE 7: COMPLETE SCRIPT
+// =============================================
 
-    // Current selections
-    let currentSpecies = "Elf";
-    let currentSubrace = "Wood Elf";
-    let currentClass = "Ranger";
-    let currentBackground = "Outlander";
-    let currentEthical = "Chaotic";
-    let currentMoral = "Good";
+// ---------- SRD DATA ----------
+const speciesData = {
+    Dwarf: { subraces: ["Hill Dwarf","Mountain Dwarf"], traits: "Darkvision, Dwarven Resilience", skillProfs: [], toolProfs: ["Smith's Tools","Brewer's Supplies"], langProfs: ["Dwarvish"], armorProfs: ["light","medium"], weaponProfs: ["battleaxe","handaxe","throwing hammer","warhammer"] },
+    Elf: { subraces: ["High Elf","Wood Elf","Dark Elf (Drow)"], traits: "Darkvision, Keen Senses", skillProfs: ["Perception"], toolProfs: [], langProfs: ["Elvish"], armorProfs: [], weaponProfs: ["longsword","shortsword","longbow","shortbow"] },
+    Halfling: { subraces: ["Lightfoot","Stout"], traits: "Lucky, Brave", skillProfs: ["Stealth"], toolProfs: [], langProfs: ["Halfling"], armorProfs: [], weaponProfs: [] },
+    Human: { subraces: ["Standard","Variant (Feat)"], traits: "Versatile", skillProfs: [], toolProfs: [], langProfs: ["Common","one extra"], armorProfs: [], weaponProfs: [] },
+    Dragonborn: { subraces: ["Chromatic","Metallic"], traits: "Breath Weapon", skillProfs: [], toolProfs: [], langProfs: ["Common","Draconic"], armorProfs: [], weaponProfs: [] },
+    Gnome: { subraces: ["Forest Gnome","Rock Gnome"], traits: "Gnome Cunning", skillProfs: [], toolProfs: ["Tinker's Tools"], langProfs: ["Gnomish"], armorProfs: [], weaponProfs: [] },
+    HalfElf: { subraces: ["Standard"], traits: "Skill Versatility", skillProfs: [], toolProfs: [], langProfs: ["Common","Elvish","one extra"], armorProfs: [], weaponProfs: [] },
+    HalfOrc: { subraces: ["Standard"], traits: "Relentless Endurance", skillProfs: ["Intimidation"], toolProfs: [], langProfs: ["Common","Orc"], armorProfs: [], weaponProfs: [] },
+    Tiefling: { subraces: ["Asmodeus","Other Infernal"], traits: "Hellish Resistance", skillProfs: [], toolProfs: [], langProfs: ["Common","Infernal"], armorProfs: [], weaponProfs: [] },
+    Aasimar: { subraces: ["Protector","Scourge","Fallen"], traits: "Darkvision, Celestial Resistance", skillProfs: [], toolProfs: [], langProfs: ["Common","Celestial"], armorProfs: [], weaponProfs: [] },
+    Genasi: { subraces: ["Air","Earth","Fire","Water"], traits: "Darkvision, Elemental Resistance", skillProfs: [], toolProfs: [], langProfs: ["Common","Primordial"], armorProfs: [], weaponProfs: [] },
+    Goliath: { subraces: ["Standard"], traits: "Natural Athlete, Stone's Endurance", skillProfs: ["Athletics"], toolProfs: [], langProfs: ["Common","Giant"], armorProfs: [], weaponProfs: [] },
+    Tabaxi: { subraces: ["Standard"], traits: "Darkvision, Feline Agility", skillProfs: ["Perception","Stealth"], toolProfs: [], langProfs: ["Common","Tabaxi"], armorProfs: [], weaponProfs: [] }
+};
+const backgroundsSRD = {
+    Acolyte: { skillProfs: ["Insight","Religion"], toolProfs: [], langProfs: ["two of choice"], gear: ["Holy Symbol","Prayer Book","5 sticks incense","vestments","Common clothes","15gp"] },
+    Criminal: { skillProfs: ["Deception","Stealth"], toolProfs: ["Thieves' Tools"], langProfs: [], gear: ["Crowbar","Dark common clothes","15gp"] },
+    FolkHero: { skillProfs: ["Animal Handling","Survival"], toolProfs: ["Smith's Tools","Brewer's Supplies","Vehicles (Land)"], langProfs: [], gear: ["Shovel","Iron pot","Common clothes","10gp"] },
+    Noble: { skillProfs: ["History","Persuasion"], toolProfs: [], langProfs: ["one of choice"], gear: ["Fine clothes","Signet ring","Scroll of pedigree","25gp"] },
+    Outlander: { skillProfs: ["Athletics","Survival"], toolProfs: [], langProfs: ["one of choice"], gear: ["Staff","Hunting trap","Animal trophy","Common clothes","10gp"] },
+    Sage: { skillProfs: ["Arcana","History"], toolProfs: [], langProfs: ["two of choice"], gear: ["Bottle of ink","Ink pen","10 sheets paper","Little bag of sand","Common clothes","10gp"] },
+    Soldier: { skillProfs: ["Athletics","Intimidation"], toolProfs: ["Vehicles (Land)","Gaming set"], langProfs: [], gear: ["Rank insignia","Trophy","Bone dice","Common clothes","10gp"] },
+    Urchin: { skillProfs: ["Sleight of Hand","Stealth"], toolProfs: ["Thieves' Tools","Disguise Kit"], langProfs: [], gear: ["Small knife","Map of city","Pet mouse","Common clothes","10gp"] },
+    Villager: { skillProfs: ["Animal Handling","Nature"], toolProfs: ["Herbalism Kit"], langProfs: [], gear: ["Staff","Common clothes","5gp","Rations (5)"] },
+    Charlatan: { skillProfs: ["Deception","Sleight of Hand"], toolProfs: ["Disguise Kit","Forgery Kit"], langProfs: [], gear: ["Fine clothes","Disguise kit","15gp"] },
+    Entertainer: { skillProfs: ["Acrobatics","Performance"], toolProfs: ["Disguise Kit","Musical instrument"], langProfs: [], gear: ["Musical instrument","Costume","15gp"] },
+    GuildArtisan: { skillProfs: ["Insight","Persuasion"], toolProfs: ["Artisan's tools"], langProfs: [], gear: ["Artisan's tools","Letter of membership","Common clothes","15gp"] },
+    Hermit: { skillProfs: ["Medicine","Religion"], toolProfs: ["Herbalism Kit"], langProfs: ["one of choice"], gear: ["Scroll case","Winter blanket","Common clothes","5gp"] }
+};
+const classData = {
+    Commoner: { armorProfs: [], weaponProfs: ["club","dagger","quarterstaff","sling"], toolProfs: [], skillChoices: [], skillChoicesCount: 0, gear: ["Common clothes","5gp"] },
+    Barbarian: { armorProfs: ["light","medium","shields"], weaponProfs: ["simple","martial"], toolProfs: [], skillChoices: ["Animal Handling","Athletics","Intimidation","Nature","Perception","Survival"], skillChoicesCount: 2, gear: ["Greataxe","Explorer's Pack","4 javelins","10gp"] },
+    Bard: { armorProfs: ["light"], weaponProfs: ["simple","hand crossbow","longsword","rapier","shortsword"], toolProfs: ["three musical instruments"], skillChoices: ["Acrobatics","Animal Handling","Arcana","Athletics","Deception","History","Insight","Intimidation","Investigation","Medicine","Nature","Perception","Performance","Persuasion","Religion","Sleight of Hand","Stealth","Survival"], skillChoicesCount: 3, gear: ["Rapier","Diplomat's Pack","Lute","Leather armor","Dagger","10gp"] },
+    Cleric: { armorProfs: ["light","medium","shields"], weaponProfs: ["simple"], toolProfs: [], skillChoices: ["History","Insight","Medicine","Persuasion","Religion"], skillChoicesCount: 2, gear: ["Mace","Chain shirt","Priest's pack","Shield","Holy symbol","10gp"] },
+    Druid: { armorProfs: ["light","medium","shields (nonmetal)"], weaponProfs: ["club","dagger","dart","javelin","mace","quarterstaff","scimitar","sickle","sling","spear"], toolProfs: ["Herbalism Kit"], skillChoices: ["Arcana","Animal Handling","Insight","Medicine","Nature","Perception","Religion","Survival"], skillChoicesCount: 2, gear: ["Wooden shield","Scimitar","Explorer's pack","Druidic focus","10gp"] },
+    Fighter: { armorProfs: ["all","shields"], weaponProfs: ["simple","martial"], toolProfs: [], skillChoices: ["Acrobatics","Animal Handling","Athletics","History","Insight","Intimidation","Perception","Survival"], skillChoicesCount: 2, gear: ["Chain mail","Longsword","Shield","Explorer's pack","10gp"] },
+    Monk: { armorProfs: [], weaponProfs: ["simple","shortsword"], toolProfs: ["calligrapher's supplies","woodcarver's tools"], skillChoices: ["Acrobatics","Athletics","History","Insight","Religion","Stealth"], skillChoicesCount: 2, gear: ["Dart (10)","Explorer's pack","10gp"] },
+    Paladin: { armorProfs: ["all","shields"], weaponProfs: ["simple","martial"], toolProfs: [], skillChoices: ["Athletics","Insight","Intimidation","Medicine","Persuasion","Religion"], skillChoicesCount: 2, gear: ["Chain mail","Longsword","Shield","Explorer's pack","Holy symbol","10gp"] },
+    Ranger: { armorProfs: ["light","medium","shields"], weaponProfs: ["simple","martial"], toolProfs: [], skillChoices: ["Animal Handling","Athletics","Insight","Investigation","Nature","Perception","Stealth","Survival"], skillChoicesCount: 3, gear: ["Longbow","Quiver (20 arrows)","Explorer's pack","Leather armor","10gp"] },
+    Rogue: { armorProfs: ["light"], weaponProfs: ["simple","hand crossbow","longsword","rapier","shortsword"], toolProfs: ["Thieves' Tools"], skillChoices: ["Acrobatics","Athletics","Deception","Insight","Intimidation","Investigation","Perception","Performance","Persuasion","Sleight of Hand","Stealth"], skillChoicesCount: 4, gear: ["Rapier","Shortbow","Quiver (20 arrows)","Burglar's pack","Leather armor","Two daggers","10gp"] },
+    Sorcerer: { armorProfs: [], weaponProfs: ["dagger","dart","quarterstaff","sling"], toolProfs: [], skillChoices: ["Arcana","Deception","Insight","Intimidation","Persuasion","Religion"], skillChoicesCount: 2, gear: ["Two daggers","Arcane focus","Explorer's pack","10gp"] },
+    Warlock: { armorProfs: ["light"], weaponProfs: ["simple"], toolProfs: [], skillChoices: ["Arcana","Deception","History","Intimidation","Investigation","Nature","Religion"], skillChoicesCount: 2, gear: ["Leather armor","Simple weapon","Arcane focus","Dungeoneer's pack","10gp"] },
+    Wizard: { armorProfs: [], weaponProfs: ["dagger","dart","quarterstaff","sling"], toolProfs: [], skillChoices: ["Arcana","History","Insight","Investigation","Medicine","Religion"], skillChoicesCount: 2, gear: ["Spellbook","Quarterstaff","Component pouch","Scholar's pack","10gp"] }
+};
+const classSaveProfs = {
+    Commoner:[], Barbarian:["str","con"], Bard:["dex","cha"], Cleric:["wis","cha"], Druid:["int","wis"],
+    Fighter:["str","con"], Monk:["str","dex"], Paladin:["wis","cha"], Ranger:["str","dex"],
+    Rogue:["dex","int"], Sorcerer:["con","cha"], Warlock:["wis","cha"], Wizard:["int","wis"]
+};
+const skillList = [
+    {name:"Acrobatics",ability:"dex"},{name:"Animal Handling",ability:"wis"},{name:"Arcana",ability:"int"},{name:"Athletics",ability:"str"},
+    {name:"Deception",ability:"cha"},{name:"History",ability:"int"},{name:"Insight",ability:"wis"},{name:"Intimidation",ability:"cha"},
+    {name:"Investigation",ability:"int"},{name:"Medicine",ability:"wis"},{name:"Nature",ability:"int"},{name:"Perception",ability:"wis"},
+    {name:"Performance",ability:"cha"},{name:"Persuasion",ability:"cha"},{name:"Religion",ability:"int"},{name:"Sleight of Hand",ability:"dex"},
+    {name:"Stealth",ability:"dex"},{name:"Survival",ability:"wis"}
+];
+const subclassesSRD = {
+    Commoner:["None"], Barbarian:["Berserker","Totem Warrior"], Bard:["Lore","Valor"], Cleric:["Life","Light","War"], Druid:["Land","Moon"],
+    Fighter:["Champion","Battle Master"], Monk:["Open Hand","Shadow"], Paladin:["Devotion","Ancients"], Ranger:["Hunter","Beast Master"],
+    Rogue:["Thief","Assassin"], Sorcerer:["Draconic","Wild"], Warlock:["Archfey","Fiend"], Wizard:["Evocation","Abjuration"]
+};
+const srdEquipment = {
+    weapons: ["Club","Dagger","Shortsword","Longsword","Greatsword","Shortbow","Longbow","Quarterstaff"],
+    armor: [{ name:"Leather Armor", type:"armor", baseAC:11, dexCap:null },{ name:"Studded Leather", type:"armor", baseAC:12, dexCap:null },{ name:"Chain Shirt", type:"armor", baseAC:13, dexCap:2 },{ name:"Half Plate", type:"armor", baseAC:15, dexCap:2 },{ name:"Plate Armor", type:"armor", baseAC:18, dexCap:0 },{ name:"Shield", type:"shield", acBonus:2 }],
+    packs: ["Explorer's Pack","Dungeoneer's Pack","Priest's Pack"],
+    tools: ["Thieves' Tools","Disguise Kit","Herbalism Kit","Smith's Tools"],
+    misc: ["Rations (10)","Waterskin","Torch","Bedroll","Rope (50ft)","Grappling Hook","Crowbar","Hammer"]
+};
+const srdFeatsList = ["Alert","Athlete","Actor","Charger","Crossbow Expert","Defensive Duelist","Dual Wielder","Dungeon Delver","Durable","Elemental Adept","Grappler","Great Weapon Master","Heavily Armored","Heavy Armor Master","Inspiring Leader","Keen Mind","Lightly Armored","Linguist","Lucky","Mage Slayer","Magic Initiate","Martial Adept","Medium Armor Master","Mobile","Moderately Armored","Mounted Combatant","Observant","Polearm Master","Resilient","Ritual Caster","Savage Attacker","Sentinel","Sharpshooter","Shield Master","Skilled","Skulker","Spell Sniper","Tavern Brawler","Tough","War Caster","Weapon Master"];
+const srdSpellsList = [
+    { name: "Acid Splash", level: 0, school: "Conjuration", classes: ["Sorcerer","Wizard"] },
+    { name: "Fire Bolt", level: 0, school: "Evocation", classes: ["Sorcerer","Wizard"] },
+    { name: "Light", level: 0, school: "Evocation", classes: ["Bard","Cleric","Sorcerer","Wizard"] },
+    { name: "Mage Hand", level: 0, school: "Transmutation", classes: ["Bard","Sorcerer","Warlock","Wizard"] },
+    { name: "Cure Wounds", level: 1, school: "Evocation", classes: ["Bard","Cleric","Druid","Paladin","Ranger"] },
+    { name: "Magic Missile", level: 1, school: "Evocation", classes: ["Sorcerer","Wizard"] },
+    { name: "Shield", level: 1, school: "Abjuration", classes: ["Sorcerer","Wizard"] },
+    { name: "Bless", level: 1, school: "Enchantment", classes: ["Cleric","Paladin"] },
+    { name: "Fireball", level: 3, school: "Evocation", classes: ["Sorcerer","Wizard"] },
+    { name: "Lightning Bolt", level: 3, school: "Evocation", classes: ["Sorcerer","Wizard"] },
+    { name: "Healing Word", level: 1, school: "Evocation", classes: ["Bard","Cleric","Druid"] },
+    { name: "Invisibility", level: 2, school: "Illusion", classes: ["Bard","Sorcerer","Warlock","Wizard"] },
+    { name: "Misty Step", level: 2, school: "Conjuration", classes: ["Sorcerer","Warlock","Wizard"] },
+    { name: "Counterspell", level: 3, school: "Abjuration", classes: ["Sorcerer","Warlock","Wizard"] },
+    { name: "Fly", level: 3, school: "Transmutation", classes: ["Sorcerer","Warlock","Wizard"] },
+    { name: "Haste", level: 3, school: "Transmutation", classes: ["Sorcerer","Wizard"] },
+    { name: "Revivify", level: 3, school: "Necromancy", classes: ["Cleric","Paladin"] },
+    { name: "Dimension Door", level: 4, school: "Conjuration", classes: ["Bard","Sorcerer","Warlock","Wizard"] }
+];
 
-    // Populate species dropdown
-    const speciesSelect = document.getElementById('speciesSelect');
-    const subraceSelect = document.getElementById('subraceSelect');
-    for (let s in speciesData) speciesSelect.appendChild(new Option(s, s));
-    function updateSubraceOptions() {
-        subraceSelect.innerHTML = '';
-        let subs = speciesData[currentSpecies].subraces;
-        subs.forEach(sub => subraceSelect.appendChild(new Option(sub, sub)));
-        if (subs.includes(currentSubrace)) subraceSelect.value = currentSubrace;
-        else subraceSelect.value = subs[0];
+// ---------- GLOBAL STATE ----------
+let scores = { str:10, dex:10, con:10, int:10, wis:10, cha:10 };
+let characterLevel = 1;
+let currentSpecies = "Human";
+let currentSubrace = "Standard";
+let currentClass = "Commoner";
+let currentSubclass = "None";
+let currentBackground = "Villager";
+let currentEthical = "Neutral";
+let currentMoral = "Neutral";
+let backpack = [];
+let equippedArmor = null;
+let equippedShield = false;
+let characterName = "Unnamed";
+let characterAppearance = "";
+let characterBio = "";
+let portraitURL = "";
+let variantHumanChoices = null;
+let halfElfChoices = null;
+let prevSpecies = "Human";
+let prevSubrace = "Standard";
+let spellsList = [];
+let knownFeats = [];
+let skillProficiencies = {};
+skillList.forEach(s=>skillProficiencies[s.name]=false);
+let saveProficiencies = { str:false,dex:false,con:false,int:false,wis:false,cha:false };
+let toolProficiencies = [];
+let languageProficiencies = [];
+let armorProficiencies = [];
+let weaponProficiencies = [];
+let currency = { cp:0, sp:0, gp:10, pp:0 };
+let hitDiceRemaining = 1;
+let spellSlotsUsed = [0,0,0,0,0,0,0,0,0];
+let activeModule = 'prof';
+
+// ---------- UTILITIES ----------
+function mod(score) { return Math.floor((score-10)/2); }
+function getProficiencyBonus(lvl) { return lvl<=4?2:lvl<=8?3:lvl<=12?4:lvl<=16?5:6; }
+function recalcHP() {
+    let conMod = mod(scores.con);
+    let base = { Commoner:4, Barbarian:7, Bard:5, Cleric:5, Druid:5, Fighter:6, Monk:5, Paladin:6, Ranger:6, Rogue:5, Sorcerer:4, Warlock:5, Wizard:4 }[currentClass] || 5;
+    let total = base + conMod;
+    for(let i=2; i<=characterLevel; i++) total += base + conMod;
+    return total;
+}
+function computeAC() {
+    let dexMod = mod(scores.dex);
+    let baseAC = 10;
+    let dexCap = null;
+    if (equippedArmor) { baseAC = equippedArmor.baseAC; dexCap = equippedArmor.dexCap; }
+    let dexContrib = (dexCap === null) ? dexMod : Math.min(dexMod, dexCap);
+    let ac = baseAC + dexContrib;
+    if (equippedShield) ac += 2;
+    return ac;
+}
+function getRacialMods(species,subrace,vc,hec) {
+    let mods = {};
+    if(species==="Human" && subrace==="Variant (Feat)" && vc) { mods[vc.stat1]=1; mods[vc.stat2]=1; }
+    else if(species==="HalfElf" && hec) { mods.cha=2; mods[hec.stat1]=1; mods[hec.stat2]=1; }
+    else {
+        let base = { Dwarf:{con:2}, Elf:{dex:2}, Halfling:{dex:2}, Human:{str:1,dex:1,con:1,int:1,wis:1,cha:1}, Dragonborn:{str:2,cha:1}, Gnome:{int:2}, HalfElf:{cha:2}, HalfOrc:{str:2,con:1}, Tiefling:{cha:2,int:1} }[species];
+        if(base) mods = {...base};
     }
-    speciesSelect.addEventListener('change', () => {
-        currentSpecies = speciesSelect.value;
-        updateSubraceOptions();
-    });
-
-    // Populate class dropdown
-    const classSelect = document.getElementById('classSelect');
-    classesSRD.forEach(c => classSelect.appendChild(new Option(c, c)));
-
-    // Populate background dropdown
-    const backgroundSelect = document.getElementById('backgroundSelect');
-    backgroundsSRD.forEach(b => backgroundSelect.appendChild(new Option(b, b)));
-
-    // Update UI displays
-    function updateSpeciesDisplay() {
-        const traits = speciesData[currentSpecies].traits;
-        document.getElementById('speciesContent').innerHTML = `
-            <div>DESIGNATION: <span class="highlight">${currentSpecies} (${currentSubrace})</span></div>
-            <div>SUBSTRATE: ${currentSubrace.toUpperCase()}</div>
-            <div>TRAITS: ${traits}</div>
-        `;
+    let subMod = { HillDwarf:{wis:1}, MountainDwarf:{str:2}, HighElf:{int:1}, WoodElf:{wis:1}, "Dark Elf (Drow)":{cha:1}, Lightfoot:{cha:1}, Stout:{con:1}, ForestGnome:{dex:1}, RockGnome:{con:1}, Chromatic:{int:1}, Metallic:{wis:1}, Asmodeus:{int:1} }[subrace];
+    if(subMod) for(let[k,v]of Object.entries(subMod)) mods[k] = (mods[k]||0)+v;
+    return mods;
+}
+function applyRacialAdjustments(ns,nsr,vc,hec) {
+    let old = getRacialMods(prevSpecies,prevSubrace,variantHumanChoices,halfElfChoices);
+    let neu = getRacialMods(ns,nsr,vc,hec);
+    for(let s of ['str','dex','con','int','wis','cha']) {
+        let diff = (neu[s]||0) - (old[s]||0);
+        if(diff !== 0) scores[s] = Math.min(20,Math.max(3,scores[s]+diff));
     }
-    function updateRoleDisplay() {
-        document.getElementById('roleContent').innerHTML = `
-            <div>PRIMARY: <span class="highlight">${currentClass}</span></div>
-            <div>SPECIALIZATION: NONE</div>
-            <div>ABILITIES: NOMINAL</div>
-        `;
+    variantHumanChoices = (ns==="Human" && nsr==="Variant (Feat)" && vc) ? vc : null;
+    halfElfChoices = (ns==="HalfElf" && hec) ? hec : null;
+    prevSpecies = ns; prevSubrace = nsr;
+    refreshAllUI();
+}
+function getMaxHitDice() { return characterLevel; }
+function getSpellSlotsMax() {
+    if (!["Bard","Cleric","Druid","Paladin","Ranger","Sorcerer","Warlock","Wizard"].includes(currentClass)) return [0,0,0,0,0,0,0,0,0];
+    let slots = (currentClass==="Ranger"||currentClass==="Paladin") ? [[0,0,0,0,0,0,0,0,0],[2,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,0],[4,2,0,0,0,0,0,0,0]][Math.min(4,characterLevel)]||[4,3,2,0,0,0,0,0,0] : [[2,0,0,0,0,0,0,0,0],[3,0,0,0,0,0,0,0,0],[4,2,0,0,0,0,0,0,0],[4,3,0,0,0,0,0,0,0],[4,3,2,0,0,0,0,0,0],[4,3,3,0,0,0,0,0,0],[4,3,3,1,0,0,0,0,0],[4,3,3,2,0,0,0,0,0],[4,3,3,3,1,0,0,0,0],[4,3,3,3,2,0,0,0,0],[4,3,3,3,2,1,0,0,0],[4,3,3,3,2,1,0,0,0],[4,3,3,3,2,1,1,0,0],[4,3,3,3,2,1,1,0,0],[4,3,3,3,2,1,1,1,0],[4,3,3,3,2,1,1,1,0],[4,3,3,3,2,1,1,1,1],[4,3,3,3,2,1,1,1,1],[4,3,3,3,2,1,1,1,1],[4,3,3,3,2,1,1,1,1]][characterLevel-1]||[0,0,0,0,0,0,0,0,0];
+    return slots;
+}
+
+// ---------- UI RENDERING ----------
+function updateInfoPanels() {
+    document.getElementById('speciesContent').innerHTML = `<div>DESIGNATION: <span class="highlight">${currentSpecies} (${currentSubrace})</span></div><div>SUBSTRATE: ${currentSubrace}</div><div>TRAITS: ${speciesData[currentSpecies]?.traits || "VERSATILE"}</div>`;
+    document.getElementById('roleContent').innerHTML = `<div>PRIMARY: <span class="highlight">${currentClass}</span></div><div>SPECIALIZATION: <span id="subclassDisplay">${currentSubclass}</span></div><div>ABILITIES: ${currentClass==='Commoner' ? 'NONE' : 'BASIC'}</div>`;
+    document.getElementById('affinityContent').innerHTML = `<div>ETHICAL: <span class="highlight">${currentEthical}</span></div><div>MORAL: ${currentMoral}</div><div>DRIVERS: SURVIVAL</div>`;
+    document.getElementById('historyContent').innerHTML = `<div>ORIGIN: <span class="highlight">${currentBackground}</span></div><div>PROFICIENCIES: SEE SKILLS TAB</div><div>GEAR: SIMPLE</div>`;
+    document.getElementById('armorNameDisplay').innerText = equippedArmor ? equippedArmor.name : "Unarmored";
+    document.getElementById('armorFormulaDisplay').innerText = computeAC() + " AC";
+}
+function refreshUI() {
+    for(let s of ['str','dex','con','int','wis','cha']) {
+        let val = scores[s];
+        document.getElementById(`${s}Val`).innerText = val;
+        document.getElementById(`${s}Pct`).innerText = Math.round(val/20*100)+'%';
+        let circ = document.querySelector(`.circle-outer[data-stat="${s}"] .circle-inner`);
+        if(circ) circ.style.setProperty('--fill', `${val/20*100}%`);
     }
-    function updateAffinityDisplay() {
-        document.getElementById('affinityContent').innerHTML = `
-            <div>ETHICAL: <span class="highlight">${currentEthical}</span></div>
-            <div>MORAL: ${currentMoral}</div>
-            <div>DRIVERS: FREEDOM, INDEPENDENCE</div>
-        `;
-    }
-    function updateHistoryDisplay() {
-        document.getElementById('historyContent').innerHTML = `
-            <div>ORIGIN: <span class="highlight">${currentBackground}</span></div>
-            <div>PROFICIENCIES: NOMINAL</div>
-            <div>GEAR: NOMINAL</div>
-        `;
-    }
-
-    // Modal handling
-    const speciesModal = document.getElementById('speciesModal');
-    const roleModal = document.getElementById('roleModal');
-    const affinityModal = document.getElementById('affinityModal');
-    const historyModal = document.getElementById('historyModal');
-    function openModal(m) { m.style.display = 'flex'; }
-    function closeModal(m) { m.style.display = 'none'; }
-
-    document.getElementById('speciesLabelBtn').addEventListener('click', () => {
-        speciesSelect.value = currentSpecies;
-        updateSubraceOptions();
-        subraceSelect.value = currentSubrace;
-        openModal(speciesModal);
-    });
-    document.getElementById('speciesModalCancel').addEventListener('click', () => closeModal(speciesModal));
-    document.getElementById('speciesModalSave').addEventListener('click', () => {
-        currentSpecies = speciesSelect.value;
-        currentSubrace = subraceSelect.value;
-        updateSpeciesDisplay();
-        closeModal(speciesModal);
-    });
-
-    document.getElementById('roleLabelBtn').addEventListener('click', () => {
-        classSelect.value = currentClass;
-        openModal(roleModal);
-    });
-    document.getElementById('roleModalCancel').addEventListener('click', () => closeModal(roleModal));
-    document.getElementById('roleModalSave').addEventListener('click', () => {
-        currentClass = classSelect.value;
-        updateRoleDisplay();
-        closeModal(roleModal);
-    });
-
-    document.getElementById('affinityLabelBtn').addEventListener('click', () => {
-        document.getElementById('ethicalSelect').value = currentEthical;
-        document.getElementById('moralSelect').value = currentMoral;
-        openModal(affinityModal);
-    });
-    document.getElementById('affinityModalCancel').addEventListener('click', () => closeModal(affinityModal));
-    document.getElementById('affinityModalSave').addEventListener('click', () => {
-        currentEthical = document.getElementById('ethicalSelect').value;
-        currentMoral = document.getElementById('moralSelect').value;
-        updateAffinityDisplay();
-        closeModal(affinityModal);
-    });
-
-    document.getElementById('historyLabelBtn').addEventListener('click', () => {
-        backgroundSelect.value = currentBackground;
-        openModal(historyModal);
-    });
-    document.getElementById('historyModalCancel').addEventListener('click', () => closeModal(historyModal));
-    document.getElementById('historyModalSave').addEventListener('click', () => {
-        currentBackground = backgroundSelect.value;
-        updateHistoryDisplay();
-        closeModal(historyModal);
-    });
-
-    window.addEventListener('click', (e) => {
-        if (e.target === speciesModal) closeModal(speciesModal);
-        if (e.target === roleModal) closeModal(roleModal);
-        if (e.target === affinityModal) closeModal(affinityModal);
-        if (e.target === historyModal) closeModal(historyModal);
-    });
-
-    // ---------- Page Selector Logic ----------
-    let totalPages = 1;   // only one page exists currently
-    let currentPage = 1;
-    const pageButtons = document.querySelectorAll('.page-btn');
-    function updatePageButtons() {
-        pageButtons.forEach(btn => {
-            let page = parseInt(btn.getAttribute('data-page'), 10);
-            if (page <= totalPages) {
-                btn.classList.remove('inactive');
-                btn.classList.add('active');
-                if (page === currentPage) btn.style.borderBottomColor = 'var(--page-active)';
-                else btn.style.borderBottomColor = 'var(--border)';
-                btn.style.cursor = 'pointer';
-                btn.disabled = false;
-            } else {
-                btn.classList.add('inactive');
-                btn.classList.remove('active');
-                btn.style.borderBottomColor = 'var(--page-inactive)';
-                btn.style.cursor = 'not-allowed';
-                btn.disabled = true;
-            }
-        });
-        // highlight current page
-        pageButtons.forEach(btn => {
-            if (parseInt(btn.getAttribute('data-page'), 10) === currentPage && currentPage <= totalPages) {
-                btn.style.borderBottomColor = 'var(--page-active)';
-                btn.style.color = 'var(--page-active)';
-            } else if (parseInt(btn.getAttribute('data-page'), 10) <= totalPages) {
-                btn.style.borderBottomColor = 'var(--border)';
-                btn.style.color = 'var(--text-bright)';
-            }
-        });
-    }
-    pageButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            let page = parseInt(btn.getAttribute('data-page'), 10);
-            if (page <= totalPages && page !== currentPage) {
-                currentPage = page;
-                updatePageButtons();
-                console.log(`Switched to page ${currentPage} (future content)`);
-                // Here you would load different content for each page
-            }
-        });
-    });
-    updatePageButtons();
-
-    // ---------- Stat system (unchanged) ----------
-    let scores = { str: 16, dex: 18, con: 14, int: 12, wis: 16, cha: 10 };
-    function mod(score) { return Math.floor((score - 10) / 2); }
-    function refreshUI() {
-        for (let stat of ['str', 'dex', 'con', 'int', 'wis', 'cha']) {
-            let val = scores[stat];
-            let percent = (val / 20) * 100;
-            document.getElementById(`${stat}Val`).innerText = val;
-            document.getElementById(`${stat}Pct`).innerText = `${Math.round(percent)}%`;
-            let circleInner = document.querySelector(`.circle-outer[data-stat="${stat}"] .circle-inner`);
-            if (circleInner) circleInner.style.setProperty('--fill', `${percent}%`);
+    let ac = computeAC(), pb = getProficiencyBonus(characterLevel), hp = recalcHP();
+    document.getElementById('acValue').innerText = ac;
+    document.getElementById('initValue').innerText = (mod(scores.dex)>=0?'+':'')+mod(scores.dex);
+    document.getElementById('hpValue').innerText = hp;
+    document.getElementById('profBonusValue').innerText = `+${pb}`;
+    document.getElementById('passivePerception').innerText = 10+mod(scores.wis);
+    document.getElementById('spellDC').innerText = 8+pb+mod(scores.int);
+    let saves = ["str","dex","con","int","wis","cha"].map(s=>`${s.toUpperCase()}${mod(scores[s])>=0?'+':''}${mod(scores[s])}`).join('/');
+    document.getElementById('savingThrowDisplay').innerText = saves;
+    document.getElementById('levelDisplay').innerText = `LVL.${String(characterLevel).padStart(3,'0')}`;
+    let hitDieSize = { Commoner:'d6', Barbarian:'d12', Fighter:'d10', Paladin:'d10', Ranger:'d10', Bard:'d8', Cleric:'d8', Druid:'d8', Monk:'d8', Rogue:'d8', Warlock:'d8', Sorcerer:'d6', Wizard:'d6' }[currentClass] || 'd8';
+    document.getElementById('hitDiceDisplay').innerText = `${characterLevel}${hitDieSize}`;
+    let maxHD = getMaxHitDice();
+    document.getElementById('hitDiceRemaining').innerText = `(${hitDiceRemaining}/${maxHD} ${hitDieSize})`;
+    updateInfoPanels();
+    renderSkillsAndSaves();
+    if(activeModule === 'spells') updateSpellcastingUI();
+}
+function renderSkillsAndSaves() {
+    let pb = getProficiencyBonus(characterLevel);
+    let sc = document.getElementById('skillsList'); if(sc) {
+        sc.innerHTML = '';
+        for(let sk of skillList) {
+            let total = mod(scores[sk.ability]) + (skillProficiencies[sk.name] ? pb : 0);
+            let li = document.createElement('li');
+            li.innerHTML = `<span class="skill-name">${sk.name} (${sk.ability.toUpperCase()})</span><div class="skill-control"><span class="skill-total">${total>=0?'+':''}${total}</span><button class="toggle-proficiency ${skillProficiencies[sk.name]?'active':''}" data-skill="${sk.name}">PROF</button></div>`;
+            sc.appendChild(li);
         }
-        let strMod = mod(scores.str), dexMod = mod(scores.dex), conMod = mod(scores.con);
-        let intMod = mod(scores.int), wisMod = mod(scores.wis), chaMod = mod(scores.cha);
-        let ac = 10 + dexMod;
-        let init = dexMod;
-        let hp = 10 + conMod;
-        let passivePerception = 10 + wisMod;
-        let spellDC = 8 + 2 + intMod;
-        let savingThrowDisplay = `STR${strMod>=0?'+':''}${strMod}/DEX${dexMod>=0?'+':''}${dexMod}/CON${conMod>=0?'+':''}${conMod}/INT${intMod>=0?'+':''}${intMod}/WIS${wisMod>=0?'+':''}${wisMod}/CHA${chaMod>=0?'+':''}${chaMod}`;
-        document.getElementById('acValue').innerText = ac;
-        document.getElementById('initValue').innerText = (init >= 0 ? '+' : '') + init;
-        document.getElementById('hpValue').innerText = hp;
-        document.getElementById('passivePerception').innerText = passivePerception;
-        document.getElementById('spellDC').innerText = spellDC;
-        document.getElementById('savingThrowDisplay').innerText = savingThrowDisplay;
+        document.querySelectorAll('.toggle-proficiency[data-skill]').forEach(btn=>btn.addEventListener('click',(e)=>{ let s = e.currentTarget.dataset.skill; skillProficiencies[s] = !skillProficiencies[s]; renderSkillsAndSaves(); saveCharacterState(); }));
     }
-    function adjustStat(stat, delta) {
-        let newVal = scores[stat] + delta;
-        if (newVal < 3) newVal = 3;
-        if (newVal > 20) newVal = 20;
-        if (newVal !== scores[stat]) {
-            scores[stat] = newVal;
-            refreshUI();
+    let sv = document.getElementById('savesList'); if(sv) {
+        sv.innerHTML = '';
+        for(let ab of ['str','dex','con','int','wis','cha']) {
+            let total = mod(scores[ab]) + (saveProficiencies[ab] ? pb : 0);
+            let li = document.createElement('li');
+            li.innerHTML = `<span class="save-name">${ab.toUpperCase()}</span><div class="save-control"><span class="save-total">${total>=0?'+':''}${total}</span><button class="toggle-proficiency ${saveProficiencies[ab]?'active':''}" data-save="${ab}">PROF</button></div>`;
+            sv.appendChild(li);
+        }
+        document.querySelectorAll('.toggle-proficiency[data-save]').forEach(btn=>btn.addEventListener('click',(e)=>{ let s = e.currentTarget.dataset.save; saveProficiencies[s] = !saveProficiencies[s]; renderSkillsAndSaves(); saveCharacterState(); }));
+    }
+}
+function updateSpellcastingUI() {
+    let infoDiv = document.getElementById('spellcastingInfo');
+    if(!infoDiv) return;
+    if(!["Bard","Cleric","Druid","Paladin","Ranger","Sorcerer","Warlock","Wizard"].includes(currentClass)) {
+        infoDiv.innerHTML = "<span style='color:#ff8888'>This class does not support spellcasting.</span>";
+        return;
+    }
+    let ability = (currentClass==="Bard"||currentClass==="Paladin"||currentClass==="Sorcerer"||currentClass==="Warlock")?"cha":(currentClass==="Cleric"||currentClass==="Druid"||currentClass==="Ranger")?"wis":"int";
+    let abilityMod = mod(scores[ability]);
+    let profBonus = getProficiencyBonus(characterLevel);
+    let saveDC = 8 + profBonus + abilityMod;
+    infoDiv.innerHTML = `<strong>Spellcasting Ability:</strong> ${ability.toUpperCase()} (mod ${abilityMod>=0?'+':''}${abilityMod}) &nbsp;|&nbsp; <strong>Spell Save DC:</strong> ${saveDC} &nbsp;|&nbsp; <strong>Spell Attack:</strong> +${profBonus+abilityMod}`;
+    let maxSlots = getSpellSlotsMax();
+    let tbody = document.getElementById('spellSlotsBody');
+    if(tbody) {
+        tbody.innerHTML = '';
+        for (let i=1; i<=9; i++) {
+            let max = maxSlots[i-1];
+            let used = spellSlotsUsed[i-1] || 0;
+            if (max === 0 && used === 0) continue;
+            let row = document.createElement('tr');
+            row.innerHTML = `<td>Level ${i}</td><td>${max}</td><td>${used}</td><td class="slot-counter"><button class="slot-used-inc" data-level="${i}">+</button><button class="slot-used-dec" data-level="${i}">-</button></td>`;
+            tbody.appendChild(row);
+        }
+        document.querySelectorAll('.slot-used-inc').forEach(btn => btn.addEventListener('click', (e) => { let lvl = parseInt(btn.dataset.level) - 1; let max = maxSlots[lvl]; if (spellSlotsUsed[lvl] < max) { spellSlotsUsed[lvl]++; updateSpellSlotsUI(); saveCharacterState(); } }));
+        document.querySelectorAll('.slot-used-dec').forEach(btn => btn.addEventListener('click', (e) => { let lvl = parseInt(btn.dataset.level) - 1; if (spellSlotsUsed[lvl] > 0) { spellSlotsUsed[lvl]--; updateSpellSlotsUI(); saveCharacterState(); } }));
+    }
+    renderSpellsList();
+}
+function renderSpellsList() {
+    let container = document.getElementById('spellsList');
+    if(!container) return;
+    container.innerHTML = '';
+    spellsList.forEach((spell,idx)=>{
+        let li = document.createElement('li');
+        li.innerHTML = `<span class="spell-name">${spell.name} (lvl ${spell.level})${spell.prepared ? ' ✓' : ''}</span><div><button class="toggle-spell-prep" data-idx="${idx}">${spell.prepared ? 'UNPREPARE' : 'PREPARE'}</button><button class="remove-spell" data-idx="${idx}">REMOVE</button></div>`;
+        container.appendChild(li);
+    });
+    document.querySelectorAll('.toggle-spell-prep').forEach(btn=>btn.addEventListener('click',(e)=>{ let i = parseInt(btn.dataset.idx); if(!isNaN(i) && spellsList[i]) { spellsList[i].prepared = !spellsList[i].prepared; renderSpellsList(); saveCharacterState(); } }));
+    document.querySelectorAll('.remove-spell').forEach(btn=>btn.addEventListener('click',(e)=>{ let i = parseInt(e.currentTarget.dataset.idx); if(!isNaN(i)) spellsList.splice(i,1); renderSpellsList(); saveCharacterState(); }));
+}
+function renderFeatsList() {
+    let container = document.getElementById('featsList');
+    if(!container) return;
+    container.innerHTML = '';
+    knownFeats.forEach((feat,idx)=>{
+        let li = document.createElement('li');
+        li.innerHTML = `<span class="feat-name">${feat}</span><button class="remove-feat" data-idx="${idx}">REMOVE</button>`;
+        container.appendChild(li);
+    });
+    document.querySelectorAll('.remove-feat').forEach(btn=>btn.addEventListener('click',(e)=>{ let i = parseInt(e.currentTarget.dataset.idx); if(!isNaN(i)) knownFeats.splice(i,1); renderFeatsList(); saveCharacterState(); }));
+}
+function renderGearUI() {
+    document.getElementById('equippedArmorName').innerText = equippedArmor ? equippedArmor.name : "None";
+    document.getElementById('equippedShieldName').innerText = equippedShield ? "Shield" : "None";
+    let backpackList = document.getElementById('backpackList');
+    backpackList.innerHTML = '';
+    for (let i=0; i<backpack.length; i++) {
+        let item = backpack[i];
+        let li = document.createElement('li');
+        li.innerHTML = `<span>${item.name} x${item.qty}</span><div>${item.type === 'armor' ? `<button class="equip-armor-btn" data-idx="${i}">EQUIP ARMOR</button>` : ''}${item.type === 'shield' ? `<button class="equip-shield-btn" data-idx="${i}">EQUIP SHIELD</button>` : ''}<button class="remove-backpack-item" data-idx="${i}">REMOVE</button></div>`;
+        backpackList.appendChild(li);
+    }
+    document.querySelectorAll('.equip-armor-btn').forEach(btn=>btn.addEventListener('click',(e)=>{ let idx = parseInt(btn.dataset.idx); let item = backpack[idx]; if(item && item.type === 'armor') { equippedArmor = { name: item.name, baseAC: item.baseAC, dexCap: item.dexCap }; refreshUI(); renderGearUI(); saveCharacterState(); } }));
+    document.querySelectorAll('.equip-shield-btn').forEach(btn=>btn.addEventListener('click',(e)=>{ let idx = parseInt(btn.dataset.idx); let item = backpack[idx]; if(item && item.type === 'shield') { equippedShield = true; refreshUI(); renderGearUI(); saveCharacterState(); } }));
+    document.querySelectorAll('.remove-backpack-item').forEach(btn=>btn.addEventListener('click',(e)=>{ let idx = parseInt(btn.dataset.idx); backpack.splice(idx,1); renderGearUI(); saveCharacterState(); }));
+    document.getElementById('cp').value = currency.cp;
+    document.getElementById('sp').value = currency.sp;
+    document.getElementById('gp').value = currency.gp;
+    document.getElementById('pp').value = currency.pp;
+}
+function renderProficienciesUI() {
+    let toolDiv = document.getElementById('toolProfsList');
+    if (toolDiv) toolDiv.innerHTML = toolProficiencies.map(p => `<span class="prof-tag">${p}</span>`).join('');
+    let langDiv = document.getElementById('langProfsList');
+    if (langDiv) langDiv.innerHTML = languageProficiencies.map(p => `<span class="prof-tag">${p}</span>`).join('');
+    let combatDiv = document.getElementById('combatProfsList');
+    if (combatDiv) {
+        let all = [...armorProficiencies.map(a => `Armor: ${a}`), ...weaponProficiencies.map(w => `Weapon: ${w}`)];
+        combatDiv.innerHTML = all.map(p => `<span class="prof-tag">${p}</span>`).join('');
+    }
+}
+function applyAllProficiencies() {
+    skillList.forEach(s=>skillProficiencies[s.name]=false);
+    toolProficiencies = []; languageProficiencies = []; armorProficiencies = []; weaponProficiencies = [];
+    let race = speciesData[currentSpecies];
+    if (race) {
+        race.skillProfs.forEach(s => { if (skillProficiencies[s] !== undefined) skillProficiencies[s] = true; });
+        toolProficiencies.push(...race.toolProfs); languageProficiencies.push(...race.langProfs);
+        armorProficiencies.push(...race.armorProfs); weaponProficiencies.push(...race.weaponProfs);
+    }
+    let bg = backgroundsSRD[currentBackground];
+    if (bg) {
+        bg.skillProfs.forEach(s => { if (skillProficiencies[s] !== undefined) skillProficiencies[s] = true; });
+        toolProficiencies.push(...bg.toolProfs); languageProficiencies.push(...bg.langProfs);
+        if (bg.gear) {
+            bg.gear.forEach(item => { if (!backpack.some(i => i.name === item && i.type !== 'custom')) backpack.push({ name: item, qty: 1, isCustom: false, type: 'background' }); });
         }
     }
-    function bindButtons() {
-        document.querySelectorAll('.stat-btn').forEach(btn => {
-            btn.removeEventListener('click', btnHandler);
-            btn.addEventListener('click', btnHandler);
-        });
+    let cls = classData[currentClass];
+    if (cls) {
+        armorProficiencies.push(...cls.armorProfs); weaponProficiencies.push(...cls.weaponProfs); toolProficiencies.push(...cls.toolProfs);
+        if (cls.skillChoicesCount > 0 && cls.skillChoices) {
+            let chosen = 0;
+            for (let sk of cls.skillChoices) {
+                if (chosen < cls.skillChoicesCount && skillProficiencies[sk] !== undefined) { skillProficiencies[sk] = true; chosen++; }
+            }
+        }
+        if (cls.gear) {
+            cls.gear.forEach(item => { if (!backpack.some(i => i.name === item && i.type !== 'custom')) backpack.push({ name: item, qty: 1, isCustom: false, type: 'class' }); });
+        }
     }
-    function btnHandler(e) {
-        e.stopPropagation();
-        let stat = e.currentTarget.getAttribute('data-stat');
-        let delta = parseInt(e.currentTarget.getAttribute('data-delta'), 10);
-        adjustStat(stat, delta);
-    }
-    document.getElementById('levelUpBtn').addEventListener('click', () => alert("[S.C.O.P.E.] Level up coming soon."));
-    bindButtons();
+    toolProficiencies = [...new Set(toolProficiencies)]; languageProficiencies = [...new Set(languageProficiencies)];
+    armorProficiencies = [...new Set(armorProficiencies)]; weaponProficiencies = [...new Set(weaponProficiencies)];
+    renderSkillsAndSaves(); renderProficienciesUI(); renderGearUI(); saveCharacterState();
+}
+function refreshAllUI() {
     refreshUI();
-    updateSpeciesDisplay();
-    updateRoleDisplay();
-    updateAffinityDisplay();
-    updateHistoryDisplay();
+    if(activeModule === 'inven') renderGearUI();
+    if(activeModule === 'spells') { updateSpellcastingUI(); renderSpellsList(); }
+    if(activeModule === 'feats') renderFeatsList();
+    if(activeModule === 'skills') { renderSkillsAndSaves(); renderProficienciesUI(); }
+    updateIdentityUI();
+}
+function updateIdentityUI() {
+    document.getElementById('charNameInput').value = characterName;
+    document.getElementById('charAppearance').value = characterAppearance;
+    document.getElementById('charBio').value = characterBio;
+    document.getElementById('portraitUrlInput').value = portraitURL;
+    document.getElementById('charNameHeader').innerText = characterName.toUpperCase();
+    let preview = document.getElementById('portraitPreviewContainer');
+    if(preview) { if(portraitURL && portraitURL.trim() !== "") { preview.innerHTML = `<img src="${portraitURL}" onerror="this.style.display='none'; this.nextSibling.style.display='block';"><div style="display:none;">Invalid URL</div>`; } else { preview.innerHTML = `<div>No portrait</div>`; } }
+}
+function bindIdentityEvents() {
+    document.getElementById('charNameInput').addEventListener('input', (e) => { characterName = e.target.value; updateIdentityUI(); saveCharacterState(); });
+    document.getElementById('charAppearance').addEventListener('input', (e) => { characterAppearance = e.target.value; saveCharacterState(); });
+    document.getElementById('charBio').addEventListener('input', (e) => { characterBio = e.target.value; saveCharacterState(); });
+    document.getElementById('portraitUrlInput').addEventListener('input', (e) => { portraitURL = e.target.value; updateIdentityUI(); saveCharacterState(); });
+}
+function setActiveModule(module) {
+    let modules = ['profModule','identityModule','featsModule','invenModule','skillsModule','spellsModule'];
+    for(let m of modules) { let el = document.getElementById(m); if(el) { el.classList.remove('active-module'); el.style.display = 'none'; } }
+    let newMod = document.getElementById(`${module}Module`);
+    if(newMod) {
+        newMod.style.display = (module === 'prof') ? 'flex' : 'block';
+        newMod.classList.add('active-module');
+        activeModule = module;
+        if(module === 'prof') refreshUI();
+        if(module === 'inven') renderGearUI();
+        if(module === 'skills') { renderSkillsAndSaves(); renderProficienciesUI(); }
+        if(module === 'spells') { updateSpellcastingUI(); renderSpellsList(); }
+        if(module === 'feats') renderFeatsList();
+        if(module === 'identity') updateIdentityUI();
+        saveCharacterState();
+    }
+}
+function updateSpellSlotsUI() {
+    let maxSlots = getSpellSlotsMax();
+    let tbody = document.getElementById('spellSlotsBody');
+    if(tbody) {
+        tbody.innerHTML = '';
+        for (let i=1; i<=9; i++) {
+            let max = maxSlots[i-1];
+            let used = spellSlotsUsed[i-1] || 0;
+            if (max === 0 && used === 0) continue;
+            let row = document.createElement('tr');
+            row.innerHTML = `<td>Level ${i}</td><td>${max}</td><td>${used}</td><td class="slot-counter"><button class="slot-used-inc" data-level="${i}">+</button><button class="slot-used-dec" data-level="${i}">-</button></td>`;
+            tbody.appendChild(row);
+        }
+        document.querySelectorAll('.slot-used-inc').forEach(btn => btn.addEventListener('click', (e) => { let lvl = parseInt(btn.dataset.level) - 1; let max = maxSlots[lvl]; if (spellSlotsUsed[lvl] < max) { spellSlotsUsed[lvl]++; updateSpellSlotsUI(); saveCharacterState(); } }));
+        document.querySelectorAll('.slot-used-dec').forEach(btn => btn.addEventListener('click', (e) => { let lvl = parseInt(btn.dataset.level) - 1; if (spellSlotsUsed[lvl] > 0) { spellSlotsUsed[lvl]--; updateSpellSlotsUI(); saveCharacterState(); } }));
+    }
+}
+function longRest() {
+    spellSlotsUsed = [0,0,0,0,0,0,0,0,0];
+    hitDiceRemaining = getMaxHitDice();
+    updateSpellSlotsUI();
+    refreshUI();
+    saveCharacterState();
+    alert("Long rest completed: spell slots and hit dice restored.");
+}
+
+// ---------- DROPDOWN POPULATORS ----------
+function populateSpeciesDropdown() {
+    let sel = document.getElementById('speciesSelect');
+    sel.innerHTML = '';
+    for(let s in speciesData) sel.appendChild(new Option(s,s));
+    sel.value = currentSpecies;
+    updateSubraceDropdown();
+    sel.onchange = () => updateSubraceDropdown();
+}
+function updateSubraceDropdown() {
+    let speciesSel = document.getElementById('speciesSelect');
+    let subraceSel = document.getElementById('subraceSelect');
+    if(!speciesSel || !subraceSel) return;
+    let subs = speciesData[speciesSel.value]?.subraces || ["Standard"];
+    subraceSel.innerHTML = '';
+    subs.forEach(sub => subraceSel.appendChild(new Option(sub,sub)));
+    if(subs.includes(currentSubrace)) subraceSel.value = currentSubrace;
+    else { subraceSel.value = subs[0]; currentSubrace = subs[0]; }
+}
+function populateClassDropdown() {
+    let sel = document.getElementById('classSelect');
+    sel.innerHTML = '';
+    for(let c in classData) sel.appendChild(new Option(c,c));
+    sel.value = currentClass;
+    updateSubclassDropdown();
+    sel.onchange = () => updateSubclassDropdown();
+}
+function updateSubclassDropdown() {
+    let classSel = document.getElementById('classSelect');
+    let subclassSel = document.getElementById('subclassSelect');
+    if(!classSel || !subclassSel) return;
+    let subs = subclassesSRD[classSel.value] || ["None"];
+    subclassSel.innerHTML = '';
+    subs.forEach(sub => subclassSel.appendChild(new Option(sub,sub)));
+    if(subs.includes(currentSubclass)) subclassSel.value = currentSubclass;
+    else { subclassSel.value = subs[0]; currentSubclass = subs[0]; }
+}
+function populateBackgroundDropdown() {
+    let sel = document.getElementById('backgroundSelect');
+    sel.innerHTML = '';
+    for(let bg in backgroundsSRD) sel.appendChild(new Option(bg,bg));
+    sel.value = currentBackground;
+}
+function populateSRDItemDropdown() {
+    let sel = document.getElementById('srdItemSelect');
+    sel.innerHTML = '<option value="">-- SRD Item --</option>';
+    let weapons = document.createElement('optgroup'); weapons.label = "Weapons";
+    srdEquipment.weapons.forEach(w=>weapons.appendChild(new Option(w,JSON.stringify({type:"weapon",name:w}))));
+    sel.appendChild(weapons);
+    let armor = document.createElement('optgroup'); armor.label = "Armor";
+    srdEquipment.armor.forEach(a=>armor.appendChild(new Option(a.name,JSON.stringify({type:a.type,name:a.name,baseAC:a.baseAC,dexCap:a.dexCap}))));
+    sel.appendChild(armor);
+    let packs = document.createElement('optgroup'); packs.label = "Packs";
+    srdEquipment.packs.forEach(p=>packs.appendChild(new Option(p,JSON.stringify({type:"pack",name:p}))));
+    sel.appendChild(packs);
+    let tools = document.createElement('optgroup'); tools.label = "Tools";
+    srdEquipment.tools.forEach(t=>tools.appendChild(new Option(t,JSON.stringify({type:"tool",name:t}))));
+    sel.appendChild(tools);
+    let misc = document.createElement('optgroup'); misc.label = "Misc";
+    srdEquipment.misc.forEach(m=>misc.appendChild(new Option(m,JSON.stringify({type:"misc",name:m}))));
+    sel.appendChild(misc);
+}
+function populateSRDFeatsDropdown() {
+    let sel = document.getElementById('srdFeatSelect');
+    sel.innerHTML = '<option value="">-- Choose SRD Feat --</option>';
+    srdFeatsList.forEach(f=>sel.appendChild(new Option(f,f)));
+}
+function populateSRDSpellsDropdown() {
+    let sel = document.getElementById('srdSpellSelect');
+    sel.innerHTML = '<option value="">-- Select SRD Spell --</option>';
+    let byLevel = {};
+    srdSpellsList.forEach(s=>{ if(!byLevel[s.level]) byLevel[s.level]=[]; byLevel[s.level].push(s); });
+    for(let l=0;l<=9;l++){
+        if(byLevel[l]){
+            let group = document.createElement('optgroup');
+            group.label = l===0?"Cantrips":`Level ${l}`;
+            byLevel[l].forEach(sp=>group.appendChild(new Option(`${sp.name} (${sp.school})`,JSON.stringify(sp))));
+            sel.appendChild(group);
+        }
+    }
+    sel.onchange = function(){
+        let val = sel.value;
+        let info = document.getElementById('spellInfoDisplay');
+        if(val){
+            try{
+                let sp = JSON.parse(val);
+                info.innerHTML = `<strong>${sp.name}</strong> (lvl ${sp.level}) - ${sp.school}<br>Available to: ${sp.classes.join(", ")}`;
+            } catch(e){ info.innerHTML = ""; }
+        } else { info.innerHTML = ""; }
+    };
+}
+function openModal(m){ m.style.display='flex'; }
+function closeModal(m){ m.style.display='none'; }
+
+// ---------- AUTOSAVE ----------
+const STORAGE_KEY = "cosmos_phase7_final";
+function flashAutosave() { let t=document.getElementById('autosaveToast'); if(t){ t.style.opacity='1'; setTimeout(()=>t.style.opacity='0',400); } }
+function saveCharacterState() {
+    let state = { scores,characterLevel,currentSpecies,currentSubrace,currentClass,currentSubclass,currentBackground,currentEthical,currentMoral,backpack,equippedArmor,equippedShield,spellsList,knownFeats,skillProficiencies,saveProficiencies,toolProficiencies,languageProficiencies,armorProficiencies,weaponProficiencies,variantHumanChoices,halfElfChoices,activeModule,prevSpecies,prevSubrace,characterName,characterAppearance,characterBio,portraitURL,currency,hitDiceRemaining,spellSlotsUsed };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    flashAutosave();
+}
+function restoreCharacterState(state) {
+    if(!state || !state.scores) return false;
+    scores = state.scores; characterLevel = state.characterLevel; currentSpecies = state.currentSpecies; currentSubrace = state.currentSubrace;
+    currentClass = state.currentClass; currentSubclass = state.currentSubclass || "None"; currentBackground = state.currentBackground;
+    currentEthical = state.currentEthical; currentMoral = state.currentMoral;
+    if(state.backpack) backpack = state.backpack;
+    if(state.equippedArmor) equippedArmor = state.equippedArmor;
+    if(state.equippedShield !== undefined) equippedShield = state.equippedShield;
+    if(state.spellsList) spellsList = state.spellsList;
+    if(state.knownFeats) knownFeats = state.knownFeats;
+    if(state.skillProficiencies) skillProficiencies = state.skillProficiencies;
+    if(state.saveProficiencies) saveProficiencies = state.saveProficiencies;
+    if(state.toolProficiencies) toolProficiencies = state.toolProficiencies;
+    if(state.languageProficiencies) languageProficiencies = state.languageProficiencies;
+    if(state.armorProficiencies) armorProficiencies = state.armorProficiencies;
+    if(state.weaponProficiencies) weaponProficiencies = state.weaponProficiencies;
+    if(state.currency) currency = state.currency;
+    if(state.hitDiceRemaining !== undefined) hitDiceRemaining = state.hitDiceRemaining;
+    if(state.spellSlotsUsed) spellSlotsUsed = state.spellSlotsUsed;
+    variantHumanChoices = state.variantHumanChoices || null; halfElfChoices = state.halfElfChoices || null;
+    activeModule = state.activeModule || 'prof';
+    prevSpecies = state.prevSpecies || currentSpecies; prevSubrace = state.prevSubrace || currentSubrace;
+    characterName = state.characterName || "Unnamed"; characterAppearance = state.characterAppearance || "";
+    characterBio = state.characterBio || ""; portraitURL = state.portraitURL || "";
+    refreshAllUI(); setActiveModule(activeModule);
+    return true;
+}
+function resetToDefault() {
+    scores = { str:10, dex:10, con:10, int:10, wis:10, cha:10 };
+    characterLevel = 1; currentSpecies="Human"; currentSubrace="Standard"; currentClass="Commoner"; currentSubclass="None";
+    currentBackground="Villager"; currentEthical="Neutral"; currentMoral="Neutral";
+    backpack = []; equippedArmor = null; equippedShield = false;
+    spellsList = []; knownFeats = [];
+    skillProficiencies = {}; skillList.forEach(s=>skillProficiencies[s.name]=false);
+    saveProficiencies = { str:false,dex:false,con:false,int:false,wis:false,cha:false };
+    toolProficiencies = []; languageProficiencies = []; armorProficiencies = []; weaponProficiencies = [];
+    currency = { cp:0, sp:0, gp:10, pp:0 };
+    hitDiceRemaining = getMaxHitDice();
+    spellSlotsUsed = [0,0,0,0,0,0,0,0,0];
+    variantHumanChoices = null; halfElfChoices = null;
+    prevSpecies = currentSpecies; prevSubrace = currentSubrace;
+    activeModule = 'prof';
+    characterName = "Unnamed"; characterAppearance = ""; characterBio = ""; portraitURL = "";
+    applyAllProficiencies();
+    refreshAllUI(); setActiveModule('prof'); saveCharacterState();
+}
+function loadFromStorage() { let raw = localStorage.getItem(STORAGE_KEY); if(raw){ try{ let data = JSON.parse(raw); restoreCharacterState(data); } catch(e){} } }
+
+// ---------- EVENT BINDINGS ----------
+document.querySelectorAll('.stat-btn').forEach(btn=>btn.addEventListener('click',()=>{ let stat=btn.dataset.stat, delta=parseInt(btn.dataset.delta); let newV=scores[stat]+delta; if(newV>=3&&newV<=20){ scores[stat]=newV; refreshUI(); saveCharacterState(); } }));
+document.getElementById('levelUpConfirm').addEventListener('click',()=>{ if(characterLevel<20){ characterLevel++; hitDiceRemaining = getMaxHitDice(); refreshAllUI(); saveCharacterState(); } closeModal(document.getElementById('levelUpModal')); });
+document.getElementById('addFeatBtn').addEventListener('click',()=>{ let feat=document.getElementById('newFeatName').value.trim(); if(feat && !knownFeats.includes(feat)){ knownFeats.push(feat); renderFeatsList(); saveCharacterState(); document.getElementById('newFeatName').value=''; } else if(feat) alert("Feat already known"); });
+document.getElementById('addSrdFeatBtn').addEventListener('click',()=>{ let sel=document.getElementById('srdFeatSelect'); let feat=sel.value; if(feat && !knownFeats.includes(feat)){ knownFeats.push(feat); renderFeatsList(); saveCharacterState(); sel.value=''; } else if(feat) alert("Feat already known"); });
+document.getElementById('addSpellBtn').addEventListener('click',()=>{ let name=document.getElementById('newSpellName').value.trim(); let lvl=parseInt(document.getElementById('newSpellLevel').value); if(name){ spellsList.push({name,level:Math.min(9,Math.max(0,lvl)),prepared:true}); renderSpellsList(); saveCharacterState(); document.getElementById('newSpellName').value=''; document.getElementById('newSpellLevel').value='1'; } });
+document.getElementById('addSrdSpellBtn').addEventListener('click',()=>{ let sel=document.getElementById('srdSpellSelect'); let val=sel.value; if(val){ let sp=JSON.parse(val); if(!spellsList.some(s=>s.name===sp.name)){ spellsList.push({name:sp.name,level:sp.level,prepared:true}); renderSpellsList(); saveCharacterState(); sel.value=''; document.getElementById('spellInfoDisplay').innerHTML=''; } else alert("Spell already known"); } });
+document.getElementById('addSrdItemBtn').addEventListener('click',()=>{ let sel=document.getElementById('srdItemSelect'); let val=sel.value; if(val){ let data=JSON.parse(val); let qty=parseInt(document.getElementById('srdItemQty').value)||1; let newItem={name:data.name,qty:qty,isCustom:false}; if(data.type==='armor'||data.type==='shield'){ newItem.type=data.type; newItem.baseAC=data.baseAC; newItem.dexCap=data.dexCap; } else { newItem.type=data.type||'misc'; } backpack.push(newItem); renderGearUI(); saveCharacterState(); sel.value=''; document.getElementById('srdItemQty').value='1'; } });
+document.getElementById('addCustomItemBtn').addEventListener('click',()=>{ let name=document.getElementById('customItemName').value.trim(); let qty=parseInt(document.getElementById('customItemQty').value)||1; if(name){ backpack.push({name,qty,isCustom:true,type:'custom'}); renderGearUI(); saveCharacterState(); document.getElementById('customItemName').value=''; document.getElementById('customItemQty').value='1'; } });
+document.getElementById('addCustomArmorBtn').addEventListener('click',()=>{ let name=document.getElementById('customArmorName').value.trim(); let baseAC=parseInt(document.getElementById('customArmorBase').value)||10; let dexCap=parseInt(document.getElementById('customArmorDexCap').value); if(isNaN(dexCap)) dexCap=null; if(name){ backpack.push({name,qty:1,isCustom:true,type:'armor',baseAC,dexCap}); renderGearUI(); saveCharacterState(); document.getElementById('customArmorName').value=''; document.getElementById('customArmorBase').value='10'; document.getElementById('customArmorDexCap').value=''; } });
+document.getElementById('unequipArmorBtn').addEventListener('click',()=>{ equippedArmor=null; refreshUI(); renderGearUI(); saveCharacterState(); });
+document.getElementById('unequipShieldBtn').addEventListener('click',()=>{ equippedShield=false; refreshUI(); renderGearUI(); saveCharacterState(); });
+document.getElementById('hitDiceUseBtn').addEventListener('click',()=>{ if(hitDiceRemaining > 0) { hitDiceRemaining--; refreshUI(); saveCharacterState(); } });
+document.getElementById('hitDiceRestoreBtn').addEventListener('click',()=>{ let maxHD = getMaxHitDice(); if(hitDiceRemaining < maxHD) { hitDiceRemaining++; refreshUI(); saveCharacterState(); } });
+document.getElementById('longRestBtn').addEventListener('click',()=>{ longRest(); });
+document.getElementById('cp').addEventListener('input', (e) => { currency.cp = Math.max(0, parseInt(e.target.value) || 0); updateCurrencyUI(); saveCharacterState(); });
+document.getElementById('sp').addEventListener('input', (e) => { currency.sp = Math.max(0, parseInt(e.target.value) || 0); updateCurrencyUI(); saveCharacterState(); });
+document.getElementById('gp').addEventListener('input', (e) => { currency.gp = Math.max(0, parseInt(e.target.value) || 0); updateCurrencyUI(); saveCharacterState(); });
+document.getElementById('pp').addEventListener('input', (e) => { currency.pp = Math.max(0, parseInt(e.target.value) || 0); updateCurrencyUI(); saveCharacterState(); });
+function updateCurrencyUI() {
+    document.getElementById('cp').value = currency.cp;
+    document.getElementById('sp').value = currency.sp;
+    document.getElementById('gp').value = currency.gp;
+    document.getElementById('pp').value = currency.pp;
+}
+document.getElementById('speciesModalSave').addEventListener('click',()=>{ let ns=document.getElementById('speciesSelect').value; let nsr=document.getElementById('subraceSelect').value; applyRacialAdjustments(ns,nsr,null,null); currentSpecies=ns; currentSubrace=nsr; applyAllProficiencies(); refreshAllUI(); saveCharacterState(); closeModal(document.getElementById('speciesModal')); });
+document.getElementById('roleModalSave').addEventListener('click',()=>{ currentClass=document.getElementById('classSelect').value; currentSubclass=document.getElementById('subclassSelect').value; let profs=classSaveProfs[currentClass]||[]; ['str','dex','con','int','wis','cha'].forEach(a=>saveProficiencies[a]=profs.includes(a)); applyAllProficiencies(); refreshAllUI(); saveCharacterState(); closeModal(document.getElementById('roleModal')); });
+document.getElementById('affinityModalSave').addEventListener('click',()=>{ currentEthical=document.getElementById('ethicalSelect').value; currentMoral=document.getElementById('moralSelect').value; refreshAllUI(); saveCharacterState(); closeModal(document.getElementById('affinityModal')); });
+document.getElementById('historyModalSave').addEventListener('click',()=>{ currentBackground=document.getElementById('backgroundSelect').value; applyAllProficiencies(); refreshAllUI(); saveCharacterState(); closeModal(document.getElementById('historyModal')); });
+document.getElementById('armorModalSave').addEventListener('click',()=>{ closeModal(document.getElementById('armorModal')); });
+document.getElementById('scanNewBtn').addEventListener('click',()=>{ if(confirm("Reset all data?")) resetToDefault(); });
+document.getElementById('recallBtn').addEventListener('click',()=>loadFromStorage());
+document.getElementById('exportBtnRight').addEventListener('click',()=>{ let data=JSON.stringify({scores,characterLevel,currentSpecies,currentSubrace,currentClass,currentSubclass,currentBackground,currentEthical,currentMoral,backpack,equippedArmor,equippedShield,spellsList,knownFeats,skillProficiencies,saveProficiencies,toolProficiencies,languageProficiencies,armorProficiencies,weaponProficiencies,characterName,characterAppearance,characterBio,portraitURL,currency,hitDiceRemaining,spellSlotsUsed}); let a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data])); a.download="character_phase7.json"; a.click(); URL.revokeObjectURL(a.href); });
+document.getElementById('importBtnRight').addEventListener('click',()=>document.getElementById('importFileInput').click());
+document.getElementById('importFileInput').addEventListener('change',e=>{ if(!e.target.files.length) return; let fr=new FileReader(); fr.onload=ev=>{ try{ let data=JSON.parse(ev.target.result); if(data.scores) restoreCharacterState(data); else alert("Invalid"); saveCharacterState(); } catch(err){ alert("Import error"); } e.target.value=''; }; fr.readAsText(e.target.files[0]); });
+document.getElementById('levelUpBtn').addEventListener('click',()=>{ if(characterLevel>=20) alert("Max level"); else{ document.getElementById('levelUpMessage').innerHTML=`Increase to level ${characterLevel+1}?`; openModal(document.getElementById('levelUpModal')); } });
+document.getElementById('profBtn').addEventListener('click',()=>setActiveModule('prof'));
+document.getElementById('identityBtn').addEventListener('click',()=>setActiveModule('identity'));
+document.getElementById('featsBtn').addEventListener('click',()=>setActiveModule('feats'));
+document.getElementById('invenBtn').addEventListener('click',()=>setActiveModule('inven'));
+document.getElementById('skillsNavBtn').addEventListener('click',()=>setActiveModule('skills'));
+document.getElementById('spellsNavBtn').addEventListener('click',()=>setActiveModule('spells'));
+document.querySelectorAll('.page-btn').forEach(btn=>btn.addEventListener('click',()=>{ let p=parseInt(btn.dataset.page); if(activeModule==='inven' && p>=1 && p<=3 && p!==currentEquipPage){ currentEquipPage=p; renderEquipmentPage(); updatePageButtons(); saveCharacterState(); } })); // legacy, not used
+document.getElementById('speciesLabelBtn').addEventListener('click',()=>{ populateSpeciesDropdown(); updateSubraceDropdown(); openModal(document.getElementById('speciesModal')); });
+document.getElementById('roleLabelBtn').addEventListener('click',()=>{ populateClassDropdown(); updateSubclassDropdown(); openModal(document.getElementById('roleModal')); });
+document.getElementById('affinityLabelBtn').addEventListener('click',()=>openModal(document.getElementById('affinityModal')));
+document.getElementById('historyLabelBtn').addEventListener('click',()=>{ populateBackgroundDropdown(); openModal(document.getElementById('historyModal')); });
+document.getElementById('armorLabelBtn').addEventListener('click',()=>openModal(document.getElementById('armorModal')));
+document.getElementById('speciesModalCancel').addEventListener('click',()=>closeModal(document.getElementById('speciesModal')));
+document.getElementById('roleModalCancel').addEventListener('click',()=>closeModal(document.getElementById('roleModal')));
+document.getElementById('affinityModalCancel').addEventListener('click',()=>closeModal(document.getElementById('affinityModal')));
+document.getElementById('historyModalCancel').addEventListener('click',()=>closeModal(document.getElementById('historyModal')));
+document.getElementById('armorModalCancel').addEventListener('click',()=>closeModal(document.getElementById('armorModal')));
+document.getElementById('levelUpCancel').addEventListener('click',()=>closeModal(document.getElementById('levelUpModal')));
+document.getElementById('commitBtn').addEventListener('click',()=>document.getElementById('exportBtnRight').click());
+bindIdentityEvents();
+
+// ---------- INITIALIZATION ----------
+populateSpeciesDropdown(); populateClassDropdown(); populateBackgroundDropdown(); populateSRDItemDropdown(); populateSRDFeatsDropdown(); populateSRDSpellsDropdown();
+if(!localStorage.getItem(STORAGE_KEY)) resetToDefault(); else loadFromStorage();
+setActiveModule(activeModule);
 </script>
 </body>
 </html>

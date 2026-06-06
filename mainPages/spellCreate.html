@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COSM.OS // S.P.H.E.R.E. Terminal</title>
+    <style>
+        :root {
+            --bg-color: #08080a;
+            --panel-bg: #121215;
+            --primary-amber: #ff9f1c;
+            --dim-amber: #aa6a13;
+            --dark-amber: #442a08;
+            --telemetry-blue: #5275a1;
+            --border-style: 1px solid var(--primary-amber);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--primary-amber);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 15px;
+            gap: 15px;
+        }
+
+        /* --- Header Section --- */
+        header {
+            border: var(--border-style);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--panel-bg);
+            box-shadow: 0 0 10px var(--dark-amber);
+        }
+
+        header h1 { font-size: 1.25rem; letter-spacing: 3px; font-weight: bold; }
+        header .system-status { font-size: 0.75rem; color: var(--telemetry-blue); letter-spacing: 1px; }
+
+        /* --- Main Workspace --- */
+        .workspace {
+            display: flex;
+            flex: 1;
+            gap: 15px;
+            height: calc(100% - 70px);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            width: 360px; /* Widened for better balance */
+            border: var(--border-style);
+            background: var(--panel-bg);
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            gap: 12px;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            border: 1px solid var(--dark-amber);
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .panel-section h2 {
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--dim-amber);
+            padding-bottom: 4px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .control-group {
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        label { font-size: 0.7rem; color: var(--dim-amber); text-transform: uppercase; }
+
+        input[type="text"], input[type="number"], select {
+            background: var(--bg-color);
+            border: 1px solid var(--dim-amber);
+            padding: 6px 8px;
+            color: var(--primary-amber);
+            outline: none;
+            width: 100%;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            transition: border-color 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary-amber);
+            box-shadow: inset 0 0 5px rgba(255, 159, 28, 0.2);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+        }
+        
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            color: var(--primary-amber);
+            font-size: 0.75rem;
+        }
+
+        /* Buttons */
+        .btn {
+            background: transparent;
+            border: 1px solid var(--dim-amber);
+            padding: 10px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            text-align: center;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: var(--dark-amber);
+            border-color: var(--primary-amber);
+            box-shadow: 0 0 8px var(--dim-amber);
+        }
+        
+        .btn.recording {
+            border-color: #ff3333;
+            color: #ff3333;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(255, 51, 51, 0.5); }
+            50% { box-shadow: 0 0 15px rgba(255, 51, 51, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(255, 51, 51, 0.5); }
+        }
+
+        /* Viewport Canvas */
+        .viewport-container {
+            flex: 1;
+            border: var(--border-style);
+            background: var(--panel-bg);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000000;
+            box-shadow: inset 0 0 40px rgba(255, 159, 28, 0.05);
+        }
+
+        .telemetry-overlay {
+            position: absolute;
+            pointer-events: none;
+            font-size: 0.7rem;
+            color: var(--dim-amber);
+            width: 100%;
+            height: 100%;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .footer-spec-table {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            border-top: var(--border-style);
+            background: var(--panel-bg);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            font-size: 0.7rem;
+            padding: 6px 12px;
+        }
+
+        .spec-cell { border-right: 1px solid var(--dark-amber); padding: 2px 8px; }
+        .spec-cell:last-child { border-right: none; }
+
+        #dynamicOrbitals {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        select option { font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>COSM.OS // S.P.H.E.R.E. TERMINAL V3.0</h1>
+        <div class="system-status">SYS.LOC // SPELL PROJECTION HEURISTICS & ELEMENTAL ROUTING ENGINE</div>
+    </header>
+
+    <div class="workspace">
+        <div class="control-panel">
+            
+            <div class="panel-section">
+                <h2>[01] Arcane Foundation</h2>
+                <div class="control-group">
+                    <label>Designation (Spell Name)</label>
+                    <input type="text" id="spellName" value="FIREBALL" oninput="compileMatrix()">
+                </div>
+                <div class="grid-2">
+                    <div class="control-group">
+                        <label>Sub-Orbitals (0-9)</label>
+                        <input type="number" id="spellLevel" value="3" min="0" max="9" onchange="generateOrbitalDropdowns(); compileMatrix()" oninput="generateOrbitalDropdowns(); compileMatrix()">
+                    </div>
+                    <div class="control-group">
+                        <label>Focal Core (School)</label>
+                        <select id="spellSchool" onchange="compileMatrix()">
+                            <option value="護">Abj [🛡️]</option>
+                            <option value="召">Con [🌀]</option>
+                            <option value="視">Div [👁️]</option>
+                            <option value="魅">Enc [✨]</option>
+                            <option value="滅" selected>Evo [🔥]</option>
+                            <option value="幻">Ill [🌫️]</option>
+                            <option value="死">Nec [💀]</option>
+                            <option value="変">Tra [⚗️]</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h2>[02] Execution Parameters</h2>
+                <div class="grid-2">
+                    <div class="control-group">
+                        <label>Casting Time</label>
+                        <select id="spellCast" onchange="compileMatrix()">
+                            <option value="Action">Action</option>
+                            <option value="Bonus">Bonus Action</option>
+                            <option value="Reaction">Reaction</option>
+                            <option value="Ritual">Ritual / Longer</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Max Duration</label>
+                        <select id="spellDuration" onchange="compileMatrix()">
+                            <option value="Instant">Instantaneous</option>
+                            <option value="Minute">Minutes</option>
+                            <option value="Hour">Hours</option>
+                            <option value="Perm">Permanent</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="control-group">
+                        <label>Range Target</label>
+                        <select id="spellRange" onchange="compileMatrix()">
+                            <option value="Touch">Touch / Self</option>
+                            <option value="Short">30ft / 60ft</option>
+                            <option value="Long" selected>120ft / Unlim.</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Area of Effect</label>
+                        <select id="spellShape" onchange="compileMatrix()">
+                            <option value="None">None</option>
+                            <option value="Sphere" selected>Sphere</option>
+                            <option value="Cone">Cone</option>
+                            <option value="Cube">Cube</option>
+                            <option value="Line">Line</option>
+                            <option value="Cylinder">Cylinder</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Components</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="compV" onchange="compileMatrix()" checked> Verbal</label>
+                        <label><input type="checkbox" id="compS" onchange="compileMatrix()" checked> Somatic</label>
+                        <label><input type="checkbox" id="compM" onchange="compileMatrix()" checked> Material</label>
+                    </div>
+                </div>
+                
+                <div class="control-group" style="margin-top: 5px;">
+                    <label>Upcasting Injection</label>
+                    <select id="spellUpcast" onchange="compileMatrix()">
+                        <option value="0">Base Level</option>
+                        <option value="1">+1 Level</option>
+                        <option value="2">+2 Levels</option>
+                        <option value="3">+3 Levels</option>
+                        <option value="4">+4 Levels</option>
+                        <option value="5">+5 Levels</option>
+                        <option value="6">+6 Levels</option>
+                        <option value="7">+7 Levels</option>
+                        <option value="8">+8 Levels</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h2>[03] Celestial Typology</h2>
+                <div id="dynamicOrbitals">
+                    </div>
+            </div>
+
+            <div class="panel-section" style="margin-top: auto;">
+                <h2>[04] Export Directives</h2>
+                <div class="grid-2">
+                    <button class="btn" style="border-color: var(--telemetry-blue); color: var(--telemetry-blue);" onclick="exportStaticWebP()">Static (.WebP)</button>
+                    <button class="btn" id="btnRecord" style="border-color: var(--primary-amber);" onclick="toggleRecording()">Anim (.WebM)</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="viewport-container">
+            <div class="telemetry-overlay">
+                <div id="overlayName">SYS_REF: FIREBALL // LVL 3</div>
+                <div style="text-align: right;">PLATFORM: COSM.OS // ENG: S.P.H.E.R.E.</div>
+            </div>
+            
+            <canvas id="sigilCanvas" width="800" height="800"></canvas>
+
+            <div class="footer-spec-table">
+                <div class="spec-cell">PROJECT: DND_SCIFI_CAMPAIGN</div>
+                <div class="spec-cell" id="footerNodes">NODES: 8</div>
+                <div class="spec-cell" id="footerOrbits">ORBITS: 3</div>
+                <div class="spec-cell" style="color: var(--telemetry-blue);">STATUS: LIVE</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('sigilCanvas');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+        let globalTime = 0;
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        let state = {
+            name: "FIREBALL",
+            level: 3,
+            school: "滅",
+            duration: "Instant",
+            cast: "Action",
+            range: "Long",
+            shape: "Sphere",
+            upcast: 0,
+            compV: true,
+            compS: true,
+            compM: true,
+            orbitalTypes: ["Gaseous", "Terrestrial", "Wastes"] 
+        };
+
+        function generateOrbitalDropdowns() {
+            let level = parseInt(document.getElementById('spellLevel').value);
+            if (isNaN(level) || level < 0) level = 0;
+            if (level > 9) level = 9;
+            document.getElementById('spellLevel').value = level;
+
+            const container = document.getElementById('dynamicOrbitals');
+            container.innerHTML = ''; 
+            let newTypes = [];
+
+            if (level === 0) {
+                container.innerHTML = '<span style="font-size: 0.75rem; color: var(--telemetry-blue);">CANTRIP: NO SUB-ORBITALS DETECTED</span>';
+            } else {
+                for (let i = 0; i < level; i++) {
+                    let existingVal = state.orbitalTypes[i] || 'Terrestrial';
+                    newTypes.push(existingVal);
+
+                    let group = document.createElement('div');
+                    group.className = 'control-group';
+                    group.innerHTML = `
+                        <label>Orbital ${i + 1}</label>
+                        <select id="orbSelect_${i}" onchange="updateOrbitalTypes()">
+                            <option value="Terrestrial" ${existingVal === 'Terrestrial' ? 'selected' : ''}>Terrestrial (Physical)</option>
+                            <option value="Gaseous" ${existingVal === 'Gaseous' ? 'selected' : ''}>Gaseous (Elemental)</option>
+                            <option value="Nebular" ${existingVal === 'Nebular' ? 'selected' : ''}>Nebular (Expansion)</option>
+                            <option value="Minor" ${existingVal === 'Minor' ? 'selected' : ''}>Minor (Density)</option>
+                            <option value="Anomaly" ${existingVal === 'Anomaly' ? 'selected' : ''}>Anomaly (Chaos)</option>
+                            <option value="Proto" ${existingVal === 'Proto' ? 'selected' : ''}>Proto (Creation)</option>
+                            <option value="Wastes" ${existingVal === 'Wastes' ? 'selected' : ''}>Wastes (Destruction)</option>
+                        </select>
+                    `;
+                    container.appendChild(group);
+                }
+            }
+            state.orbitalTypes = newTypes;
+        }
+
+        function updateOrbitalTypes() {
+            for (let i = 0; i < state.level; i++) {
+                let select = document.getElementById(`orbSelect_${i}`);
+                if (select) state.orbitalTypes[i] = select.value;
+            }
+        }
+
+        function compileMatrix() {
+            state.name = document.getElementById('spellName').value.trim().toUpperCase() || "VOID";
+            state.level = parseInt(document.getElementById('spellLevel').value);
+            state.school = document.getElementById('spellSchool').value;
+            state.duration = document.getElementById('spellDuration').value;
+            state.cast = document.getElementById('spellCast').value;
+            state.range = document.getElementById('spellRange').value;
+            state.shape = document.getElementById('spellShape').value;
+            state.upcast = parseInt(document.getElementById('spellUpcast').value);
+            
+            state.compV = document.getElementById('compV').checked;
+            state.compS = document.getElementById('compS').checked;
+            state.compM = document.getElementById('compM').checked;
+
+            document.getElementById('overlayName').innerText = `SYS_REF: ${state.name} // LVL ${state.level}`;
+            const nodeCount = state.name.replace(/\s+/g, '').length;
+            document.getElementById('footerNodes').innerText = `NODES: ${nodeCount}`;
+            document.getElementById('footerOrbits').innerText = `ORBITS: ${state.level}`;
+
+            if (!animationId) animate();
+        }
+
+        function exportStaticWebP() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.fillStyle = '#000000';
+            tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tCtx.drawImage(canvas, 0, 0);
+
+            const link = document.createElement('a');
+            link.download = `COSMOS_SPHERE_${state.name.replace(/\s+/g, '_')}_LVL${state.level}.webp`;
+            link.href = tempCanvas.toDataURL('image/webp', 1.0);
+            link.click();
+        }
+
+        function toggleRecording() {
+            const btn = document.getElementById('btnRecord');
+            if (mediaRecorder && mediaRecorder.state === "recording") return;
+
+            recordedChunks = [];
+            const stream = canvas.captureStream(30); 
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+            mediaRecorder.ondataavailable = function(e) {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = function() {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `COSMOS_SPHERE_ANIM_${state.name.replace(/\s+/g, '_')}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+                
+                btn.classList.remove('recording');
+                btn.innerText = "Anim (.WebM)";
+            };
+
+            mediaRecorder.start();
+            btn.classList.add('recording');
+            btn.innerText = "REC (5S)";
+
+            setTimeout(() => { if (mediaRecorder.state === "recording") mediaRecorder.stop(); }, 5000);
+        }
+
+        function drawProceduralRune(ctx, char, cx, cy, size) {
+            let code = char.charCodeAt(0);
+            if (char === " ") return;
+
+            ctx.save();
+            ctx.strokeStyle = '#ff9f1c';
+            ctx.lineWidth = 1.5;
+            ctx.lineCap = 'square';
+            
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(cx, cy, size + 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            for(let i=0; i<=6; i++) {
+                let a = (i * 60) * Math.PI/180;
+                let x = cx + Math.cos(a) * size;
+                let y = cy + Math.sin(a) * size;
+                if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            }
+            ctx.stroke();
+
+            ctx.beginPath();
+            for(let i=0; i<6; i++) {
+                if ((code >> i) & 1) { 
+                    let a1 = (i * 60) * Math.PI/180;
+                    let a2 = (((i+3)%6) * 60) * Math.PI/180; 
+                    ctx.moveTo(cx + Math.cos(a1)*size, cy + Math.sin(a1)*size);
+                    ctx.lineTo(cx + Math.cos(a2)*size, cy + Math.sin(a2)*size);
+                }
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function animate() {
+            // Slower, elegant pacing
+            globalTime += 0.001; 
+            drawFrame();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function drawFrame() {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const coreR = 40;
+            const outerR = 280;
+            const innerR = 250;
+            const durR = 340;
+            const ritR = 360;
+            
+            ctx.strokeStyle = '#ff9f1c';
+            ctx.lineWidth = 1.5;
+
+            // Faint alignment grid
+            ctx.strokeStyle = 'rgba(68, 42, 8, 0.4)';
+            ctx.beginPath();
+            ctx.moveTo(cx - 380, cy); ctx.lineTo(cx + 380, cy);
+            ctx.moveTo(cx, cy - 380); ctx.lineTo(cx, cy + 380);
+            ctx.stroke();
+
+            // ==========================================
+            // D&D MECHANICS: RANGE (Exterior Arrows / Touch Chevrons)
+            // ==========================================
+            ctx.fillStyle = 'rgba(255, 159, 28, 0.8)';
+            
+            if (state.range === "Long") {
+                // Outward arrows outside the primary ring
+                let arrR = outerR + 25;
+                for(let i=0; i<4; i++) {
+                    let a = i * Math.PI/2;
+                    ctx.beginPath();
+                    ctx.moveTo(cx + Math.cos(a)*(arrR+15), cy + Math.sin(a)*(arrR+15)); // Tip
+                    ctx.lineTo(cx + Math.cos(a-0.05)*arrR, cy + Math.sin(a-0.05)*arrR); // Corner 1
+                    ctx.lineTo(cx + Math.cos(a+0.05)*arrR, cy + Math.sin(a+0.05)*arrR); // Corner 2
+                    ctx.fill();
+                }
+            } else if (state.range === "Short") {
+                // Outward chevrons on outer ring
+                for(let i=0; i<4; i++) {
+                    let a = i * Math.PI/2;
+                    ctx.beginPath();
+                    ctx.moveTo(cx + Math.cos(a)*outerR, cy + Math.sin(a)*outerR);
+                    ctx.lineTo(cx + Math.cos(a-0.05)*(outerR+10), cy + Math.sin(a-0.05)*(outerR+10));
+                    ctx.lineTo(cx + Math.cos(a+0.05)*(outerR+10), cy + Math.sin(a+0.05)*(outerR+10));
+                    ctx.fill();
+                }
+            } else if (state.range === "Touch") {
+                // Inward chevrons on inner ring
+                for(let i=0; i<4; i++) {
+                    let a = i * Math.PI/2;
+                    ctx.beginPath();
+                    ctx.moveTo(cx + Math.cos(a)*innerR, cy + Math.sin(a)*innerR);
+                    ctx.lineTo(cx + Math.cos(a-0.05)*(innerR-10), cy + Math.sin(a-0.05)*(innerR-10));
+                    ctx.lineTo(cx + Math.cos(a+0.05)*(innerR-10), cy + Math.sin(a+0.05)*(innerR-10));
+                    ctx.fill();
+                }
+            }
+
+            // ==========================================
+            // D&D MECHANICS: CASTING TIME (Ritual)
+            // ==========================================
+            if (state.cast === "Ritual") {
+                ctx.strokeStyle = 'rgba(255, 159, 28, 0.7)';
+                ctx.lineWidth = 4;
+                for(let i=0; i<4; i++) {
+                    let a = (i * Math.PI/2) + Math.PI/4;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, ritR, a - 0.15, a + 0.15);
+                    ctx.stroke();
+                }
+            }
+
+            // ==========================================
+            // DURATION RING (Outer Segmented Tracks - STATIC)
+            // ==========================================
+            ctx.strokeStyle = '#5275a1';
+            ctx.fillStyle = '#5275a1';
+            ctx.lineWidth = 2;
+            
+            if (state.duration !== "Instant") {
+                let segments = 0;
+                if (state.duration === "Minute") segments = 4;
+                if (state.duration === "Hour") segments = 8;
+                
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                if (state.duration === "Perm") {
+                    ctx.beginPath(); ctx.arc(0, 0, durR, 0, Math.PI * 2); ctx.stroke();
+                    for(let i=0; i<4; i++) {
+                        let a = i * Math.PI/2;
+                        drawArrow(ctx, Math.cos(a)*durR, Math.sin(a)*durR, a);
+                    }
+                } else {
+                    let gap = 0.15; 
+                    let slice = (Math.PI * 2) / segments;
+                    for (let i = 0; i < segments; i++) {
+                        let startAngle = (i * slice) + gap/2;
+                        let endAngle = ((i+1) * slice) - gap/2;
+                        
+                        ctx.beginPath();
+                        ctx.arc(0, 0, durR, startAngle, endAngle);
+                        ctx.stroke();
+
+                        let midAngle = (startAngle + endAngle) / 2;
+                        drawArrow(ctx, Math.cos(midAngle)*durR, Math.sin(midAngle)*durR, midAngle);
+                    }
+                }
+                ctx.restore();
+            }
+
+            function drawArrow(context, ax, ay, angle) {
+                context.save();
+                context.translate(ax, ay);
+                context.rotate(angle + Math.PI/2);
+                context.beginPath();
+                context.moveTo(0, -6);
+                context.lineTo(-4, 4);
+                context.lineTo(4, 4);
+                context.closePath();
+                context.fill();
+                context.restore();
+            }
+
+            // ==========================================
+            // SOMATIC COMPONENT (Outer Gestures - STATIC)
+            // ==========================================
+            if (state.compS) {
+                const sR = 310;
+                ctx.strokeStyle = 'rgba(255, 159, 28, 0.6)';
+                ctx.lineWidth = 1;
+                for(let i=0; i<4; i++) {
+                    let angle = (i * Math.PI/2) + Math.PI/4; 
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, sR, angle - 0.2, angle + 0.2);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(cx + Math.cos(angle)*sR, cy + Math.sin(angle)*sR);
+                    ctx.lineTo(cx + Math.cos(angle - 0.05)*(sR+15), cy + Math.sin(angle - 0.05)*(sR+15));
+                    ctx.lineTo(cx + Math.cos(angle + 0.05)*(sR+15), cy + Math.sin(angle + 0.05)*(sR+15));
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+            }
+
+            // ==========================================
+            // 1. PRIMARY RINGS (STATIC)
+            // ==========================================
+            ctx.strokeStyle = '#ff9f1c';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, Math.PI * 2); ctx.stroke();
+
+            // D&D MECHANICS: Casting Time (Bonus Action / Reaction)
+            if (state.cast === "Bonus") {
+                ctx.strokeStyle = 'rgba(255, 159, 28, 0.3)';
+                ctx.beginPath();
+                for(let a=0; a<=Math.PI*2; a+=0.1) {
+                    let r = innerR - 5 + (Math.sin(a * 40) * 4);
+                    if(a===0) ctx.moveTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+                    else ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+                }
+                ctx.stroke();
+            } else if (state.cast === "Reaction") {
+                ctx.strokeStyle = 'rgba(255, 159, 28, 0.5)';
+                for(let a=0; a<Math.PI*2; a+=Math.PI/12) {
+                    ctx.beginPath();
+                    ctx.moveTo(cx+Math.cos(a)*outerR, cy+Math.sin(a)*outerR);
+                    ctx.lineTo(cx+Math.cos(a)*(outerR+8), cy+Math.sin(a)*(outerR+8));
+                    ctx.stroke();
+                }
+            }
+
+            // D&D MECHANICS: Upcasting
+            if (state.upcast > 0) {
+                ctx.fillStyle = '#ff9f1c';
+                let slice = Math.PI / (state.upcast + 1);
+                for(let i=1; i<=state.upcast; i++) {
+                    let a1 = Math.PI + (i * slice);
+                    let a2 = (i * slice);
+                    
+                    ctx.beginPath(); ctx.arc(cx + Math.cos(a1)*(outerR+6), cy + Math.sin(a1)*(outerR+6), 3, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(cx + Math.cos(a2)*(outerR+6), cy + Math.sin(a2)*(outerR+6), 3, 0, Math.PI*2); ctx.fill();
+                }
+            }
+
+            // Telemetry ticks
+            ctx.strokeStyle = 'rgba(255, 159, 28, 0.6)';
+            for (let a = 0; a < 360; a += 5) {
+                let rad = a * Math.PI / 180; 
+                if (a % 45 === 0) {
+                    ctx.save();
+                    ctx.translate(cx + Math.cos(rad) * ((outerR + innerR)/2), cy + Math.sin(rad) * ((outerR + innerR)/2));
+                    ctx.rotate(rad + Math.PI/2);
+                    ctx.font = "12px 'Courier New'";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText("[#]", 0, 0);
+                    ctx.restore();
+                    continue; 
+                }
+                let tickLen = (a % 15 === 0) ? innerR + 20 : innerR + 10;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(rad) * innerR, cy + Math.sin(rad) * innerR);
+                ctx.lineTo(cx + Math.cos(rad) * tickLen, cy + Math.sin(rad) * tickLen);
+                ctx.stroke();
+            }
+
+            // ==========================================
+            // 2. SUB-ORBITALS & TRACKING DATA (DYNAMIC)
+            // ==========================================
+            let orbitalData = []; 
+            let lvlCount = Math.max(1, state.level); 
+
+            let availableRadius = innerR - coreR - 20; 
+            let stepSize = availableRadius / lvlCount;
+
+            if (state.level > 0) {
+                for (let i = 1; i <= state.level; i++) {
+                    ctx.beginPath();
+                    
+                    let orbitR = 30 + (i * stepSize * 0.6); 
+                    let maxOff = stepSize * 0.4;
+                    
+                    let sysAngle = (i * 2.4) + (globalTime * (1.5/i)); 
+                    let offX = Math.cos(sysAngle) * (maxOff * (1 + i*0.1));
+                    let offY = Math.sin(sysAngle) * (maxOff * (1 + i*0.1));
+                    
+                    let ox = cx + offX;
+                    let oy = cy + offY;
+
+                    let aspect = state.orbitalTypes[i-1] || 'Terrestrial';
+                    ctx.strokeStyle = '#5275a1'; 
+                    ctx.setLineDash([]);
+                    ctx.lineWidth = 1.5;
+
+                    if (aspect === 'Terrestrial') {
+                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
+                    } 
+                    else if (aspect === 'Gaseous') {
+                        ctx.setLineDash([2, 4]); 
+                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
+                        ctx.setLineDash([]);
+                    } 
+                    else if (aspect === 'Nebular') {
+                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
+                    } 
+                    else if (aspect === 'Minor') {
+                        ctx.setLineDash([4, 8]); 
+                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                    else if (aspect === 'Anomaly') {
+                        ctx.beginPath();
+                        for(let a=0; a<=Math.PI*2.01; a+=0.05) {
+                            let rWave = orbitR + Math.sin(a * 12 + globalTime * 5) * 4; 
+                            let wx = ox + Math.cos(a) * rWave;
+                            let wy = oy + Math.sin(a) * rWave;
+                            if(a===0) ctx.moveTo(wx, wy); else ctx.lineTo(wx, wy);
+                        }
+                        ctx.stroke();
+                    }
+                    else if (aspect === 'Proto') {
+                        ctx.setLineDash([2, 6]);
+                        ctx.beginPath(); ctx.arc(ox, oy, orbitR - 3, 0, Math.PI * 2); ctx.stroke();
+                        ctx.setLineDash([3, 5]);
+                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
+                        ctx.setLineDash([1, 7]);
+                        ctx.beginPath(); ctx.arc(ox, oy, orbitR + 3, 0, Math.PI * 2); ctx.stroke();
+                        ctx.setLineDash([]); 
+                    }
+                    else if (aspect === 'Wastes') {
+                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
+                    }
+
+                    // SATELLITE NODE & TRAIL LOGIC
+                    let satSpeed = 1.5 + (1 / i);
+                    let satAngle = (i * 45 * Math.PI/180) + (globalTime * satSpeed);
+                    let satX = ox + Math.cos(satAngle) * orbitR;
+                    let satY = oy + Math.sin(satAngle) * orbitR;
+                    
+                    if (aspect === 'Anomaly' || aspect === 'Wastes') {
+                        let trailLength = Math.PI * 1.5; 
+                        let particleCount = aspect === 'Wastes' ? 80 : 40;
+                        
+                        for (let t = 0; t < particleCount; t++) {
+                            let fade = 1 - (t / particleCount);
+                            let tAngle = satAngle - (t / particleCount) * trailLength;
+                            
+                            let scatterBase = Math.sin(t * 12.34) * 15;
+                            let rScatter = aspect === 'Wastes' ? scatterBase : scatterBase * 0.5;
+                            
+                            let px = ox + Math.cos(tAngle) * (orbitR + rScatter);
+                            let py = oy + Math.sin(tAngle) * (orbitR + rScatter);
+
+                            ctx.fillStyle = `rgba(82, 117, 161, ${fade * 0.7})`;
+                            ctx.beginPath();
+                            ctx.arc(px, py, aspect==='Wastes' ? 1.5 : 1, 0, Math.PI*2);
+                            ctx.fill();
+                        }
+                    }
+                    
+                    ctx.fillStyle = '#5275a1';
+                    ctx.strokeStyle = '#5275a1';
+
+                    if (aspect === 'Nebular') {
+                        ctx.setLineDash([2, 2]);
+                        ctx.beginPath(); ctx.arc(satX, satY, 6, 0, Math.PI*2); ctx.stroke();
+                        ctx.setLineDash([]);
+                        ctx.beginPath(); ctx.arc(satX, satY, 1, 0, Math.PI*2); ctx.fill(); 
+                    } 
+                    else if (aspect === 'Anomaly') {
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(satX - 4, satY - 4); ctx.lineTo(satX + 4, satY + 4);
+                        ctx.moveTo(satX + 4, satY - 4); ctx.lineTo(satX - 4, satY + 4);
+                        ctx.moveTo(satX - 5, satY); ctx.lineTo(satX + 5, satY);
+                        ctx.stroke();
+                    } 
+                    else if (aspect === 'Wastes') {
+                        const debris = [[0,0], [-3,-2], [3,-1], [-1,3], [2,3], [-4,1]];
+                        debris.forEach(off => {
+                            ctx.beginPath(); ctx.arc(satX + off[0], satY + off[1], 1.5, 0, Math.PI*2); ctx.fill();
+                        });
+                    } 
+                    else {
+                        ctx.beginPath(); ctx.arc(satX, satY, 3, 0, Math.PI*2); ctx.fill();
+                    }
+
+                    orbitalData.push({ ox, oy, r: orbitR, satX, satY });
+                }
+            }
+
+            // ==========================================
+            // 3. NAME MATRIX (Static Nodes & Dynamic Webs)
+            // ==========================================
+            ctx.setLineDash([]);
+            const cleanName = state.name.replace(/\s+/g, '');
+            const points = [];
+
+            for (let i = 0; i < cleanName.length; i++) {
+                let charCode = cleanName.charCodeAt(i) - 64; 
+                if (charCode < 1 || charCode > 26) charCode = 15; 
+                
+                let angle = (charCode * 13.84 + (i * 45)) * (Math.PI / 180); 
+                let px = cx + Math.cos(angle) * innerR;
+                let py = cy + Math.sin(angle) * innerR;
+                
+                points.push({x: px, y: py, char: cleanName[i], a: angle});
+            }
+
+            if (points.length > 1) {
+                ctx.strokeStyle = 'rgba(255, 159, 28, 0.15)'; 
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.closePath(); 
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#ff9f1c';
+            ctx.lineWidth = 1.5;
+
+            for (let i = 0; i < points.length; i++) {
+                let pt = points[i];
+                ctx.beginPath();
+                ctx.moveTo(pt.x, pt.y);
+
+                if (orbitalData.length > 0) {
+                    let targetOrbit = orbitalData[i % orbitalData.length];
+                    ctx.lineTo(targetOrbit.satX, targetOrbit.satY);
+                } else {
+                    let angleToCenter = Math.atan2(cy - pt.y, cx - pt.x);
+                    ctx.lineTo(cx - Math.cos(angleToCenter) * coreR, cy - Math.sin(angleToCenter) * coreR);
+                }
+                ctx.stroke();
+            }
+
+            points.forEach(pt => {
+                drawProceduralRune(ctx, pt.char, pt.x, pt.y, 8);
+                
+                if (state.compM) {
+                    let mx = pt.x + Math.cos(pt.a)*15;
+                    let my = pt.y + Math.sin(pt.a)*15;
+                    ctx.fillStyle = '#aa6a13';
+                    ctx.beginPath();
+                    ctx.moveTo(mx, my - 4);
+                    ctx.lineTo(mx + 3, my);
+                    ctx.lineTo(mx, my + 4);
+                    ctx.lineTo(mx - 3, my);
+                    ctx.fill();
+                }
+            });
+
+            // ==========================================
+            // VERBAL COMPONENT (Solar Flares behind core)
+            // ==========================================
+            if (state.compV) {
+                ctx.strokeStyle = 'rgba(255, 159, 28, 0.6)';
+                ctx.lineWidth = 2;
+                let flareCount = 36;
+                let flareRot = globalTime * 3;
+
+                for (let i = 0; i < flareCount; i++) {
+                    let a = (i * (Math.PI * 2) / flareCount) + flareRot;
+                    let lengthOsc = Math.sin(globalTime * 8 + i * 2) * 12;
+                    let flareR = coreR + 10 + Math.max(0, lengthOsc); 
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(cx + Math.cos(a) * coreR, cy + Math.sin(a) * coreR);
+                    ctx.lineTo(cx + Math.cos(a) * flareR, cy + Math.sin(a) * flareR);
+                    ctx.stroke();
+                }
+            }
+
+            // ==========================================
+            // 4. THE SCHOOL OF MAGIC (Center Core - STATIC)
+            // ==========================================
+            ctx.strokeStyle = '#ff9f1c';
+            ctx.lineWidth = 2;
+            
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // D&D MECHANICS: AREA OF EFFECT (Internal Shape Overlay)
+            ctx.strokeStyle = 'rgba(82, 117, 161, 0.7)'; // Telemetry blue for AoE
+            ctx.lineWidth = 1.5;
+            let shapeR = 26; 
+            
+            if (state.shape === "Sphere") {
+                ctx.beginPath(); ctx.arc(cx, cy, shapeR, 0, Math.PI * 2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx, cy, shapeR - 6, 0, Math.PI * 2); ctx.stroke();
+            } else if (state.shape === "Cube") {
+                ctx.strokeRect(cx - shapeR*0.8, cy - shapeR*0.8, shapeR*1.6, shapeR*1.6);
+            } else if (state.shape === "Cone") {
+                ctx.beginPath();
+                for(let i=0; i<3; i++) {
+                    let a = (i * Math.PI*2/3) - Math.PI/2;
+                    if(i===0) ctx.moveTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
+                    else ctx.lineTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
+                }
+                ctx.closePath(); ctx.stroke();
+            } else if (state.shape === "Line") {
+                ctx.beginPath();
+                ctx.moveTo(cx - shapeR, cy - shapeR/3); ctx.lineTo(cx + shapeR, cy - shapeR/3);
+                ctx.moveTo(cx - shapeR, cy + shapeR/3); ctx.lineTo(cx + shapeR, cy + shapeR/3);
+                ctx.stroke();
+            } else if (state.shape === "Cylinder") {
+                ctx.beginPath();
+                for(let i=0; i<6; i++) {
+                    let a = (i * Math.PI*2/6);
+                    if(i===0) ctx.moveTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
+                    else ctx.lineTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
+                }
+                ctx.closePath(); ctx.stroke();
+            }
+
+            // Core Text (School Kanji)
+            ctx.font = "36px 'Courier New'";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = '#ff9f1c';
+            ctx.fillText(state.school, cx, cy + 2); 
+        }
+
+        generateOrbitalDropdowns();
+        compileMatrix(); 
+    </script>
+</body>
+</html>
