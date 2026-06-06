@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COSM.OS // S.P.H.E.R.E. Terminal</title>
+    <title>COSM.OS // S.P.H.E.R.E. Terminal V3.3</title>
     <style>
         :root {
             --bg-color: #08080a;
@@ -33,7 +33,6 @@
             gap: 15px;
         }
 
-        /* --- Header Section --- */
         header {
             border: var(--border-style);
             padding: 12px 20px;
@@ -47,7 +46,6 @@
         header h1 { font-size: 1.25rem; letter-spacing: 3px; font-weight: bold; }
         header .system-status { font-size: 0.75rem; color: var(--telemetry-blue); letter-spacing: 1px; }
 
-        /* --- Main Workspace --- */
         .workspace {
             display: flex;
             flex: 1;
@@ -55,9 +53,8 @@
             height: calc(100% - 70px);
         }
 
-        /* Control Panel */
         .control-panel {
-            width: 360px; /* Widened for better balance */
+            width: 360px;
             border: var(--border-style);
             background: var(--panel-bg);
             display: flex;
@@ -108,11 +105,7 @@
             box-shadow: inset 0 0 5px rgba(255, 159, 28, 0.2);
         }
 
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
         .checkbox-group {
             display: flex;
@@ -130,7 +123,6 @@
             font-size: 0.75rem;
         }
 
-        /* Buttons */
         .btn {
             background: transparent;
             border: 1px solid var(--dim-amber);
@@ -149,20 +141,7 @@
             border-color: var(--primary-amber);
             box-shadow: 0 0 8px var(--dim-amber);
         }
-        
-        .btn.recording {
-            border-color: #ff3333;
-            color: #ff3333;
-            animation: pulse 1s infinite;
-        }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 5px rgba(255, 51, 51, 0.5); }
-            50% { box-shadow: 0 0 15px rgba(255, 51, 51, 0.8); }
-            100% { box-shadow: 0 0 5px rgba(255, 51, 51, 0.5); }
-        }
-
-        /* Viewport Canvas */
         .viewport-container {
             flex: 1;
             border: var(--border-style);
@@ -206,18 +185,41 @@
         .spec-cell { border-right: 1px solid var(--dark-amber); padding: 2px 8px; }
         .spec-cell:last-child { border-right: none; }
 
-        #dynamicOrbitals {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+        #dynamicOrbitals { display: flex; flex-direction: column; gap: 8px; }
         select option { font-size: 0.8rem; }
+
+        /* --- Lore Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000; backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background: var(--panel-bg);
+            border: var(--border-style);
+            box-shadow: 0 0 20px var(--dark-amber);
+            width: 700px; max-width: 90%; max-height: 90%;
+            display: flex; flex-direction: column;
+        }
+        .modal-header {
+            border-bottom: var(--border-style);
+            padding: 15px; display: flex; justify-content: space-between;
+            background: rgba(255, 159, 28, 0.05);
+        }
+        .modal-body {
+            padding: 20px; overflow-y: auto; line-height: 1.6; font-size: 0.85rem;
+        }
+        .modal-body h3 { color: var(--telemetry-blue); margin: 15px 0 5px 0; font-size: 1rem; }
+        .modal-body p { margin-bottom: 10px; color: #d4a373; }
+        .modal-body ul { margin-left: 20px; margin-bottom: 15px; color: #d4a373; }
+        .modal-body li { margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>COSM.OS // S.P.H.E.R.E. TERMINAL V3.0</h1>
+        <h1>COSM.OS // S.P.H.E.R.E. TERMINAL V3.3</h1>
         <div class="system-status">SYS.LOC // SPELL PROJECTION HEURISTICS & ELEMENTAL ROUTING ENGINE</div>
     </header>
 
@@ -238,14 +240,14 @@
                     <div class="control-group">
                         <label>Focal Core (School)</label>
                         <select id="spellSchool" onchange="compileMatrix()">
-                            <option value="護">Abj [🛡️]</option>
-                            <option value="召">Con [🌀]</option>
-                            <option value="視">Div [👁️]</option>
-                            <option value="魅">Enc [✨]</option>
-                            <option value="滅" selected>Evo [🔥]</option>
-                            <option value="幻">Ill [🌫️]</option>
-                            <option value="死">Nec [💀]</option>
-                            <option value="変">Tra [⚗️]</option>
+                            <option value="Abjuration">Abjuration</option>
+                            <option value="Conjuration">Conjuration</option>
+                            <option value="Divination">Divination</option>
+                            <option value="Enchantment">Enchantment</option>
+                            <option value="Evocation" selected>Evocation</option>
+                            <option value="Illusion">Illusion</option>
+                            <option value="Necromancy">Necromancy</option>
+                            <option value="Transmutation">Transmutation</option>
                         </select>
                     </div>
                 </div>
@@ -327,10 +329,10 @@
             </div>
 
             <div class="panel-section" style="margin-top: auto;">
-                <h2>[04] Export Directives</h2>
+                <button class="btn" style="border-color: var(--telemetry-blue); color: var(--telemetry-blue); margin-bottom: 10px;" onclick="toggleLore(true)">[ DATABANK / LORE ]</button>
                 <div class="grid-2">
-                    <button class="btn" style="border-color: var(--telemetry-blue); color: var(--telemetry-blue);" onclick="exportStaticWebP()">Static (.WebP)</button>
-                    <button class="btn" id="btnRecord" style="border-color: var(--primary-amber);" onclick="toggleRecording()">Anim (.WebM)</button>
+                    <button class="btn" onclick="exportStaticWebP()">Static (.WebP)</button>
+                    <button class="btn" id="btnRecord" onclick="toggleRecording()">Anim (.WebM)</button>
                 </div>
             </div>
         </div>
@@ -344,10 +346,34 @@
             <canvas id="sigilCanvas" width="800" height="800"></canvas>
 
             <div class="footer-spec-table">
-                <div class="spec-cell">PROJECT: DND_SCIFI_CAMPAIGN</div>
+                <div class="spec-cell" id="footerRatio">V/C RATIO: 1.00</div>
                 <div class="spec-cell" id="footerNodes">NODES: 8</div>
                 <div class="spec-cell" id="footerOrbits">ORBITS: 3</div>
                 <div class="spec-cell" style="color: var(--telemetry-blue);">STATUS: LIVE</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="loreModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>COSM.OS ARCANE DATABANK</h2>
+                <button class="btn" style="width: auto; padding: 2px 10px; margin: 0;" onclick="toggleLore(false)">X</button>
+            </div>
+            <div class="modal-body">
+                <h3>THE CELESTIAL SIGIL</h3>
+                <p>A Celestial Sigil is an ultra-sensitive magical schematic. They are notoriously finicky; constructing one that properly channels arcane energy is a delicate balance of strict mathematics, astronomical science, deep intuition, and sheer chance. Because they are modeled directly after the mechanics of solar systems, scholars are astounded to find that disconnected species, separated by thousands of lightyears, have developed the exact same fundamentals of magic without ever interacting.</p>
+                <p>An enduring mystery of the cosmos: Why are there no traces of Celestial Sigils natively developing on Earth? Theories abound regarding "Proto-Sigils," less volatile, ancient formats that may have predated the celestial model, but definitive proof remains elusive.</p>
+
+                <h3>SIGIL COMPONENTS</h3>
+                <ul>
+                    <li><strong>Primary Ring & Range Anchors:</strong> The absolute boundary of the spell. Stationary locks arrayed at the cardinal directions dictate the spell's physical Range (Touch, Short, Long).</li>
+                    <li><strong>Chronos Track:</strong> The outermost segmented ring, calculating Duration. Instant spells are solid; Minutes/Hours are tracked in segmented celestial geometry.</li>
+                    <li><strong>Focal Core (The School):</strong> The central anchor. An intricate geometric emblem identifying the specific school of magic (Evocation, Abjuration, etc.), layered over the Area of Effect sigils.</li>
+                    <li><strong>Sub-Orbitals:</strong> The mechanical properties of the spell (Damage types, Chaos, Duration). Their alignment and systemic starting angles are mathematically determined by the ratio of the spell's true designation.</li>
+                    <li><strong>Nodes & Tethers:</strong> The letters of the spell. Spaced with absolute mathematical perfection along the inner boundary to ensure nodes never overlap. Glowing tethers physically pull energy from the rotating orbitals into the static spell name.</li>
+                    <li><strong>Arcane Starfield:</strong> The resonant background energy. A field of ambient arcane geometries dictated by the exact spelling of the sigil.</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -363,7 +389,7 @@
         let state = {
             name: "FIREBALL",
             level: 3,
-            school: "滅",
+            school: "Evocation",
             duration: "Instant",
             cast: "Action",
             range: "Long",
@@ -372,8 +398,41 @@
             compV: true,
             compS: true,
             compM: true,
-            orbitalTypes: ["Gaseous", "Terrestrial", "Wastes"] 
+            orbitalTypes: ["Gaseous", "Terrestrial", "Wastes"],
+            vcRatio: 1.0
         };
+
+        // --- Lore Modal Toggle ---
+        function toggleLore(show) {
+            document.getElementById('loreModal').style.display = show ? 'flex' : 'none';
+        }
+
+        // --- PRNG for Consistent Background Stars ---
+        function mulberry32(a) {
+            return function() {
+                var t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = Math.imul(31, hash) + str.charCodeAt(i) | 0;
+            }
+            return hash;
+        }
+
+        // --- Linguistic Analytics ---
+        function calculateVCRatio(str) {
+            let clean = str.toUpperCase().replace(/[^A-Z]/g, '');
+            if (clean.length === 0) return 1.0;
+            let vowels = (clean.match(/[AEIOUY]/g) || []).length;
+            let cons = (clean.match(/[^AEIOUY]/g) || []).length;
+            if (cons === 0) return vowels; // Avoid div by zero
+            return vowels / cons;
+        }
 
         function generateOrbitalDropdowns() {
             let level = parseInt(document.getElementById('spellLevel').value);
@@ -432,11 +491,13 @@
             state.compV = document.getElementById('compV').checked;
             state.compS = document.getElementById('compS').checked;
             state.compM = document.getElementById('compM').checked;
+            state.vcRatio = calculateVCRatio(state.name);
 
             document.getElementById('overlayName').innerText = `SYS_REF: ${state.name} // LVL ${state.level}`;
             const nodeCount = state.name.replace(/\s+/g, '').length;
             document.getElementById('footerNodes').innerText = `NODES: ${nodeCount}`;
             document.getElementById('footerOrbits').innerText = `ORBITS: ${state.level}`;
+            document.getElementById('footerRatio').innerText = `V/C RATIO: ${state.vcRatio.toFixed(2)}`;
 
             if (!animationId) animate();
         }
@@ -448,7 +509,11 @@
             const tCtx = tempCanvas.getContext('2d');
             tCtx.fillStyle = '#000000';
             tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-            tCtx.drawImage(canvas, 0, 0);
+            
+            let savedTime = globalTime;
+            globalTime = 0;
+            drawFrame(tCtx);
+            globalTime = savedTime;
 
             const link = document.createElement('a');
             link.download = `COSMOS_SPHERE_${state.name.replace(/\s+/g, '_')}_LVL${state.level}.webp`;
@@ -486,30 +551,38 @@
             mediaRecorder.start();
             btn.classList.add('recording');
             btn.innerText = "REC (5S)";
-
             setTimeout(() => { if (mediaRecorder.state === "recording") mediaRecorder.stop(); }, 5000);
         }
 
-        function drawProceduralRune(ctx, char, cx, cy, size) {
+        function setGlow(context, blur = 8, color = 'rgba(255, 159, 28, 0.8)') {
+            context.shadowBlur = blur;
+            context.shadowColor = color;
+        }
+        function resetGlow(context) {
+            context.shadowBlur = 0;
+        }
+
+        // --- PROCEDURAL RUNES & SIGILS ---
+        function drawProceduralRune(ctx, char, cx, cy, size, isBackground = false) {
             let code = char.charCodeAt(0);
             if (char === " ") return;
 
             ctx.save();
-            ctx.strokeStyle = '#ff9f1c';
-            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = isBackground ? 'rgba(200, 220, 255, 0.2)' : '#ff9f1c';
+            ctx.lineWidth = isBackground ? 1 : 1.5;
             ctx.lineCap = 'square';
             
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(cx, cy, size + 2, 0, Math.PI * 2);
-            ctx.fill();
+            if (!isBackground) {
+                ctx.fillStyle = '#000000';
+                ctx.beginPath(); ctx.arc(cx, cy, size + 2, 0, Math.PI * 2); ctx.fill();
+                setGlow(ctx, 4);
+            }
 
             ctx.beginPath();
             for(let i=0; i<=6; i++) {
                 let a = (i * 60) * Math.PI/180;
-                let x = cx + Math.cos(a) * size;
-                let y = cy + Math.sin(a) * size;
-                if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+                if(i===0) ctx.moveTo(cx + Math.cos(a) * size, cy + Math.sin(a) * size); 
+                else ctx.lineTo(cx + Math.cos(a) * size, cy + Math.sin(a) * size);
             }
             ctx.stroke();
 
@@ -523,19 +596,121 @@
                 }
             }
             ctx.stroke();
+            resetGlow(ctx);
+            ctx.restore();
+        }
+
+        // Arcane Symbols for the Starfield
+        function drawArcaneSymbol(ctx, typeIndex, cx, cy, size) {
+            ctx.beginPath();
+            switch(typeIndex % 4) {
+                case 0: // Diamond
+                    ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size*0.8, cy); 
+                    ctx.lineTo(cx, cy + size); ctx.lineTo(cx - size*0.8, cy); break;
+                case 1: // 4-Point Star
+                    ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size*0.3, cy - size*0.3);
+                    ctx.lineTo(cx + size, cy); ctx.lineTo(cx + size*0.3, cy + size*0.3);
+                    ctx.lineTo(cx, cy + size); ctx.lineTo(cx - size*0.3, cy + size*0.3);
+                    ctx.lineTo(cx - size, cy); ctx.lineTo(cx - size*0.3, cy - size*0.3); break;
+                case 2: // Cross
+                    ctx.moveTo(cx, cy - size); ctx.lineTo(cx, cy + size);
+                    ctx.moveTo(cx - size, cy); ctx.lineTo(cx + size, cy); break;
+                case 3: // Tri-force
+                    ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size*0.8, cy + size*0.6); 
+                    ctx.lineTo(cx - size*0.8, cy + size*0.6); break;
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        // Witch Hat Atelier style core emblems
+        function drawSchoolSigil(ctx, school, cx, cy, r) {
+            ctx.save();
+            ctx.strokeStyle = '#ff9f1c';
+            ctx.lineWidth = 1.5;
+            ctx.translate(cx, cy);
+
+            switch(school) {
+                case "Abjuration":
+                    ctx.beginPath();
+                    for(let i=0; i<=6; i++) {
+                        let a = (i * 60) * Math.PI/180;
+                        if(i===0) ctx.moveTo(Math.cos(a)*r*0.8, Math.sin(a)*r*0.8);
+                        else ctx.lineTo(Math.cos(a)*r*0.8, Math.sin(a)*r*0.8);
+                    }
+                    ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, 0, r*0.5, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, 0, r*0.3, 0, Math.PI*2); ctx.stroke();
+                    break;
+                case "Conjuration":
+                    ctx.beginPath(); ctx.arc(-r*0.3, 0, r*0.5, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(r*0.3, 0, r*0.5, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, -r*0.3, r*0.5, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, r*0.3, r*0.5, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, 0, r*0.8, 0, Math.PI*2); ctx.stroke();
+                    break;
+                case "Divination":
+                    ctx.beginPath(); ctx.ellipse(0, 0, r*0.8, r*0.4, 0, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, 0, r*0.3, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, 0, r*0.1, 0, Math.PI*2); ctx.fill();
+                    for(let i=0; i<8; i++) {
+                        let a = (i*45)*Math.PI/180;
+                        ctx.beginPath(); ctx.moveTo(Math.cos(a)*r*0.4, Math.sin(a)*r*0.4); ctx.lineTo(Math.cos(a)*r*0.8, Math.sin(a)*r*0.8); ctx.stroke();
+                    }
+                    break;
+                case "Enchantment":
+                    ctx.beginPath();
+                    ctx.bezierCurveTo(-r, -r*0.8, -r, r*0.8, 0, 0);
+                    ctx.bezierCurveTo(r, -r*0.8, r, r*0.8, 0, 0);
+                    ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, 0, r*0.6, Math.PI, Math.PI*2); ctx.stroke();
+                    break;
+                case "Evocation":
+                    ctx.beginPath();
+                    for(let i=0; i<16; i++) {
+                        let a = (i * 22.5) * Math.PI/180;
+                        let dist = (i % 2 === 0) ? r*0.9 : r*0.3;
+                        if(i===0) ctx.moveTo(Math.cos(a)*dist, Math.sin(a)*dist);
+                        else ctx.lineTo(Math.cos(a)*dist, Math.sin(a)*dist);
+                    }
+                    ctx.closePath(); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, 0, r*0.2, 0, Math.PI*2); ctx.stroke();
+                    break;
+                case "Illusion":
+                    ctx.beginPath();
+                    ctx.moveTo(0, -r*0.7); ctx.lineTo(-r*0.6, r*0.5); ctx.lineTo(r*0.6, r*0.5); ctx.closePath(); ctx.stroke();
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(0, r*0.7); ctx.lineTo(-r*0.6, -r*0.5); ctx.lineTo(r*0.6, -r*0.5); ctx.closePath(); ctx.stroke();
+                    ctx.setLineDash([]);
+                    break;
+                case "Necromancy":
+                    ctx.beginPath();
+                    ctx.moveTo(-r*0.5, -r*0.7); ctx.lineTo(r*0.5, -r*0.7);
+                    ctx.lineTo(-r*0.5, r*0.7); ctx.lineTo(r*0.5, r*0.7);
+                    ctx.closePath(); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, r*0.9); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(-r*0.2, r*0.4); ctx.lineTo(0, r*0.9); ctx.lineTo(r*0.2, r*0.4); ctx.stroke();
+                    break;
+                case "Transmutation":
+                    ctx.beginPath(); ctx.arc(0, 0, r*0.8, 0, Math.PI*2); ctx.stroke();
+                    ctx.strokeRect(-r*0.56, -r*0.56, r*1.12, r*1.12);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -r*0.56); ctx.lineTo(-r*0.56, r*0.56); ctx.lineTo(r*0.56, r*0.56); ctx.closePath(); ctx.stroke();
+                    break;
+            }
             ctx.restore();
         }
 
         function animate() {
-            // Slower, elegant pacing
-            globalTime += 0.001; 
-            drawFrame();
+            globalTime += 0.0007; 
+            drawFrame(ctx);
             animationId = requestAnimationFrame(animate);
         }
 
-        function drawFrame() {
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function drawFrame(renderCtx) {
+            renderCtx.fillStyle = '#000000';
+            renderCtx.fillRect(0, 0, canvas.width, canvas.height);
             
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
@@ -545,88 +720,104 @@
             const durR = 340;
             const ritR = 360;
             
-            ctx.strokeStyle = '#ff9f1c';
-            ctx.lineWidth = 1.5;
-
-            // Faint alignment grid
-            ctx.strokeStyle = 'rgba(68, 42, 8, 0.4)';
-            ctx.beginPath();
-            ctx.moveTo(cx - 380, cy); ctx.lineTo(cx + 380, cy);
-            ctx.moveTo(cx, cy - 380); ctx.lineTo(cx, cy + 380);
-            ctx.stroke();
+            resetGlow(renderCtx);
 
             // ==========================================
-            // D&D MECHANICS: RANGE (Exterior Arrows / Touch Chevrons)
+            // ARCANE STARFIELD (Seeded Geomtery)
             // ==========================================
-            ctx.fillStyle = 'rgba(255, 159, 28, 0.8)';
+            let prng = mulberry32(hashString(state.name + state.school));
+            let starCount = 40 + (state.level * 10);
             
+            renderCtx.save();
+            renderCtx.beginPath();
+            renderCtx.arc(cx, cy, innerR - 2, 0, Math.PI * 2);
+            renderCtx.clip(); 
+            
+            for (let s = 0; s < starCount; s++) {
+                let r = prng() * (innerR - coreR - 10) + coreR + 10;
+                let a = prng() * Math.PI * 2;
+                let sx = cx + Math.cos(a) * r;
+                let sy = cy + Math.sin(a) * r;
+                
+                let symbolType = Math.floor(prng() * 4);
+                
+                // Smooth slow pulsing instead of flickering
+                let baseAlpha = 0.3 + (prng() * 0.4); 
+                let pulse = Math.sin(globalTime * (2 + prng()*3) + prng()*100) * 0.2;
+                let alpha = Math.max(0.1, Math.min(1, baseAlpha + pulse));
+                
+                renderCtx.strokeStyle = `rgba(200, 220, 255, ${alpha})`;
+                renderCtx.lineWidth = 1;
+                drawArcaneSymbol(renderCtx, symbolType, sx, sy, 3 + prng()*2);
+            }
+            renderCtx.restore();
+
+            // ==========================================
+            // ALIGNMENT GRID (Faint)
+            // ==========================================
+            renderCtx.strokeStyle = 'rgba(68, 42, 8, 0.4)';
+            renderCtx.lineWidth = 1.5;
+            renderCtx.beginPath();
+            renderCtx.moveTo(cx - 380, cy); renderCtx.lineTo(cx + 380, cy);
+            renderCtx.moveTo(cx, cy - 380); renderCtx.lineTo(cx, cy + 380);
+            renderCtx.stroke();
+
+            // ==========================================
+            // RANGE ARROWS / TOUCH CHEVRONS (CARDINAL STATIC)
+            // ==========================================
+            renderCtx.fillStyle = 'rgba(255, 159, 28, 0.6)';
+
             if (state.range === "Long") {
-                // Outward arrows outside the primary ring
-                let arrR = outerR + 25;
+                let arrR = outerR + 20;
                 for(let i=0; i<4; i++) {
                     let a = i * Math.PI/2;
-                    ctx.beginPath();
-                    ctx.moveTo(cx + Math.cos(a)*(arrR+15), cy + Math.sin(a)*(arrR+15)); // Tip
-                    ctx.lineTo(cx + Math.cos(a-0.05)*arrR, cy + Math.sin(a-0.05)*arrR); // Corner 1
-                    ctx.lineTo(cx + Math.cos(a+0.05)*arrR, cy + Math.sin(a+0.05)*arrR); // Corner 2
-                    ctx.fill();
+                    renderCtx.beginPath();
+                    renderCtx.moveTo(cx + Math.cos(a)*(arrR+15), cy + Math.sin(a)*(arrR+15)); 
+                    renderCtx.lineTo(cx + Math.cos(a-0.05)*arrR, cy + Math.sin(a-0.05)*arrR); 
+                    renderCtx.lineTo(cx + Math.cos(a+0.05)*arrR, cy + Math.sin(a+0.05)*arrR); 
+                    renderCtx.fill();
                 }
             } else if (state.range === "Short") {
-                // Outward chevrons on outer ring
                 for(let i=0; i<4; i++) {
                     let a = i * Math.PI/2;
-                    ctx.beginPath();
-                    ctx.moveTo(cx + Math.cos(a)*outerR, cy + Math.sin(a)*outerR);
-                    ctx.lineTo(cx + Math.cos(a-0.05)*(outerR+10), cy + Math.sin(a-0.05)*(outerR+10));
-                    ctx.lineTo(cx + Math.cos(a+0.05)*(outerR+10), cy + Math.sin(a+0.05)*(outerR+10));
-                    ctx.fill();
+                    renderCtx.beginPath();
+                    renderCtx.moveTo(cx + Math.cos(a)*outerR, cy + Math.sin(a)*outerR);
+                    renderCtx.lineTo(cx + Math.cos(a-0.05)*(outerR+10), cy + Math.sin(a-0.05)*(outerR+10));
+                    renderCtx.lineTo(cx + Math.cos(a+0.05)*(outerR+10), cy + Math.sin(a+0.05)*(outerR+10));
+                    renderCtx.fill();
                 }
             } else if (state.range === "Touch") {
-                // Inward chevrons on inner ring
                 for(let i=0; i<4; i++) {
                     let a = i * Math.PI/2;
-                    ctx.beginPath();
-                    ctx.moveTo(cx + Math.cos(a)*innerR, cy + Math.sin(a)*innerR);
-                    ctx.lineTo(cx + Math.cos(a-0.05)*(innerR-10), cy + Math.sin(a-0.05)*(innerR-10));
-                    ctx.lineTo(cx + Math.cos(a+0.05)*(innerR-10), cy + Math.sin(a+0.05)*(innerR-10));
-                    ctx.fill();
+                    renderCtx.beginPath();
+                    renderCtx.moveTo(cx + Math.cos(a)*innerR, cy + Math.sin(a)*innerR);
+                    renderCtx.lineTo(cx + Math.cos(a-0.05)*(innerR-10), cy + Math.sin(a-0.05)*(innerR-10));
+                    renderCtx.lineTo(cx + Math.cos(a+0.05)*(innerR-10), cy + Math.sin(a+0.05)*(innerR-10));
+                    renderCtx.fill();
                 }
             }
 
             // ==========================================
-            // D&D MECHANICS: CASTING TIME (Ritual)
+            // DURATION RING (Rotating Segmented Tracks)
             // ==========================================
-            if (state.cast === "Ritual") {
-                ctx.strokeStyle = 'rgba(255, 159, 28, 0.7)';
-                ctx.lineWidth = 4;
-                for(let i=0; i<4; i++) {
-                    let a = (i * Math.PI/2) + Math.PI/4;
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, ritR, a - 0.15, a + 0.15);
-                    ctx.stroke();
-                }
-            }
-
-            // ==========================================
-            // DURATION RING (Outer Segmented Tracks - STATIC)
-            // ==========================================
-            ctx.strokeStyle = '#5275a1';
-            ctx.fillStyle = '#5275a1';
-            ctx.lineWidth = 2;
+            renderCtx.strokeStyle = '#5275a1';
+            renderCtx.fillStyle = '#5275a1';
+            renderCtx.lineWidth = 2;
             
             if (state.duration !== "Instant") {
                 let segments = 0;
                 if (state.duration === "Minute") segments = 4;
                 if (state.duration === "Hour") segments = 8;
                 
-                ctx.save();
-                ctx.translate(cx, cy);
+                renderCtx.save();
+                renderCtx.translate(cx, cy);
+                renderCtx.rotate(globalTime * -0.5); 
 
                 if (state.duration === "Perm") {
-                    ctx.beginPath(); ctx.arc(0, 0, durR, 0, Math.PI * 2); ctx.stroke();
+                    renderCtx.beginPath(); renderCtx.arc(0, 0, durR, 0, Math.PI * 2); renderCtx.stroke();
                     for(let i=0; i<4; i++) {
                         let a = i * Math.PI/2;
-                        drawArrow(ctx, Math.cos(a)*durR, Math.sin(a)*durR, a);
+                        drawArrow(renderCtx, Math.cos(a)*durR, Math.sin(a)*durR, a);
                     }
                 } else {
                     let gap = 0.15; 
@@ -635,15 +826,15 @@
                         let startAngle = (i * slice) + gap/2;
                         let endAngle = ((i+1) * slice) - gap/2;
                         
-                        ctx.beginPath();
-                        ctx.arc(0, 0, durR, startAngle, endAngle);
-                        ctx.stroke();
+                        renderCtx.beginPath();
+                        renderCtx.arc(0, 0, durR, startAngle, endAngle);
+                        renderCtx.stroke();
 
                         let midAngle = (startAngle + endAngle) / 2;
-                        drawArrow(ctx, Math.cos(midAngle)*durR, Math.sin(midAngle)*durR, midAngle);
+                        drawArrow(renderCtx, Math.cos(midAngle)*durR, Math.sin(midAngle)*durR, midAngle);
                     }
                 }
-                ctx.restore();
+                renderCtx.restore();
             }
 
             function drawArrow(context, ax, ay, angle) {
@@ -651,236 +842,233 @@
                 context.translate(ax, ay);
                 context.rotate(angle + Math.PI/2);
                 context.beginPath();
-                context.moveTo(0, -6);
-                context.lineTo(-4, 4);
-                context.lineTo(4, 4);
-                context.closePath();
-                context.fill();
+                context.moveTo(0, -6); context.lineTo(-4, 4); context.lineTo(4, 4);
+                context.closePath(); context.fill();
                 context.restore();
             }
 
             // ==========================================
-            // SOMATIC COMPONENT (Outer Gestures - STATIC)
+            // SOMATIC GESTURES (Rotating outer brackets)
             // ==========================================
             if (state.compS) {
                 const sR = 310;
-                ctx.strokeStyle = 'rgba(255, 159, 28, 0.6)';
-                ctx.lineWidth = 1;
+                renderCtx.strokeStyle = 'rgba(255, 159, 28, 0.6)';
+                renderCtx.lineWidth = 1.5;
                 for(let i=0; i<4; i++) {
-                    let angle = (i * Math.PI/2) + Math.PI/4; 
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, sR, angle - 0.2, angle + 0.2);
-                    ctx.stroke();
+                    let angle = (i * Math.PI/2) + Math.PI/4 + (globalTime * 0.3); 
+                    renderCtx.beginPath();
+                    renderCtx.arc(cx, cy, sR, angle - 0.2, angle + 0.2);
+                    renderCtx.stroke();
                     
-                    ctx.beginPath();
-                    ctx.moveTo(cx + Math.cos(angle)*sR, cy + Math.sin(angle)*sR);
-                    ctx.lineTo(cx + Math.cos(angle - 0.05)*(sR+15), cy + Math.sin(angle - 0.05)*(sR+15));
-                    ctx.lineTo(cx + Math.cos(angle + 0.05)*(sR+15), cy + Math.sin(angle + 0.05)*(sR+15));
-                    ctx.closePath();
-                    ctx.stroke();
+                    renderCtx.beginPath();
+                    renderCtx.moveTo(cx + Math.cos(angle)*sR, cy + Math.sin(angle)*sR);
+                    renderCtx.lineTo(cx + Math.cos(angle - 0.05)*(sR+15), cy + Math.sin(angle - 0.05)*(sR+15));
+                    renderCtx.lineTo(cx + Math.cos(angle + 0.05)*(sR+15), cy + Math.sin(angle + 0.05)*(sR+15));
+                    renderCtx.closePath();
+                    renderCtx.stroke();
                 }
             }
 
             // ==========================================
-            // 1. PRIMARY RINGS (STATIC)
+            // PRIMARY RINGS (STATIC BOUNDARY)
             // ==========================================
-            ctx.strokeStyle = '#ff9f1c';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, Math.PI * 2); ctx.stroke();
-            ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, Math.PI * 2); ctx.stroke();
+            renderCtx.strokeStyle = '#ff9f1c';
+            renderCtx.lineWidth = 1.5;
+            setGlow(renderCtx, 5);
+            renderCtx.beginPath(); renderCtx.arc(cx, cy, outerR, 0, Math.PI * 2); renderCtx.stroke();
+            renderCtx.beginPath(); renderCtx.arc(cx, cy, innerR, 0, Math.PI * 2); renderCtx.stroke();
+            resetGlow(renderCtx);
 
-            // D&D MECHANICS: Casting Time (Bonus Action / Reaction)
-            if (state.cast === "Bonus") {
-                ctx.strokeStyle = 'rgba(255, 159, 28, 0.3)';
-                ctx.beginPath();
-                for(let a=0; a<=Math.PI*2; a+=0.1) {
-                    let r = innerR - 5 + (Math.sin(a * 40) * 4);
-                    if(a===0) ctx.moveTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
-                    else ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
-                }
-                ctx.stroke();
-            } else if (state.cast === "Reaction") {
-                ctx.strokeStyle = 'rgba(255, 159, 28, 0.5)';
-                for(let a=0; a<Math.PI*2; a+=Math.PI/12) {
-                    ctx.beginPath();
-                    ctx.moveTo(cx+Math.cos(a)*outerR, cy+Math.sin(a)*outerR);
-                    ctx.lineTo(cx+Math.cos(a)*(outerR+8), cy+Math.sin(a)*(outerR+8));
-                    ctx.stroke();
-                }
-            }
-
-            // D&D MECHANICS: Upcasting
+            // Upcasting (Static Outer Nodes)
             if (state.upcast > 0) {
-                ctx.fillStyle = '#ff9f1c';
+                renderCtx.fillStyle = '#ff9f1c';
                 let slice = Math.PI / (state.upcast + 1);
                 for(let i=1; i<=state.upcast; i++) {
                     let a1 = Math.PI + (i * slice);
                     let a2 = (i * slice);
-                    
-                    ctx.beginPath(); ctx.arc(cx + Math.cos(a1)*(outerR+6), cy + Math.sin(a1)*(outerR+6), 3, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(cx + Math.cos(a2)*(outerR+6), cy + Math.sin(a2)*(outerR+6), 3, 0, Math.PI*2); ctx.fill();
+                    renderCtx.beginPath(); renderCtx.arc(cx + Math.cos(a1)*(outerR+6), cy + Math.sin(a1)*(outerR+6), 3, 0, Math.PI*2); renderCtx.fill();
+                    renderCtx.beginPath(); renderCtx.arc(cx + Math.cos(a2)*(outerR+6), cy + Math.sin(a2)*(outerR+6), 3, 0, Math.PI*2); renderCtx.fill();
                 }
             }
 
-            // Telemetry ticks
-            ctx.strokeStyle = 'rgba(255, 159, 28, 0.6)';
+            // Procedural Telemetry Ticks & Runes (Static)
+            renderCtx.strokeStyle = 'rgba(255, 159, 28, 0.6)';
             for (let a = 0; a < 360; a += 5) {
                 let rad = a * Math.PI / 180; 
                 if (a % 45 === 0) {
-                    ctx.save();
-                    ctx.translate(cx + Math.cos(rad) * ((outerR + innerR)/2), cy + Math.sin(rad) * ((outerR + innerR)/2));
-                    ctx.rotate(rad + Math.PI/2);
-                    ctx.font = "12px 'Courier New'";
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText("[#]", 0, 0);
-                    ctx.restore();
+                    let rx = cx + Math.cos(rad) * ((outerR + innerR)/2);
+                    let ry = cy + Math.sin(rad) * ((outerR + innerR)/2);
+                    let runeChar = String.fromCharCode(65 + ((a/45) % 26)); 
+                    drawProceduralRune(renderCtx, runeChar, rx, ry, 6);
+                    renderCtx.strokeStyle = 'rgba(255, 159, 28, 0.6)'; 
                     continue; 
                 }
                 let tickLen = (a % 15 === 0) ? innerR + 20 : innerR + 10;
-                ctx.beginPath();
-                ctx.moveTo(cx + Math.cos(rad) * innerR, cy + Math.sin(rad) * innerR);
-                ctx.lineTo(cx + Math.cos(rad) * tickLen, cy + Math.sin(rad) * tickLen);
-                ctx.stroke();
+                renderCtx.beginPath();
+                renderCtx.moveTo(cx + Math.cos(rad) * innerR, cy + Math.sin(rad) * innerR);
+                renderCtx.lineTo(cx + Math.cos(rad) * tickLen, cy + Math.sin(rad) * tickLen);
+                renderCtx.stroke();
             }
 
             // ==========================================
-            // 2. SUB-ORBITALS & TRACKING DATA (DYNAMIC)
+            // SUB-ORBITALS (VC RATIO INFLUENCED)
             // ==========================================
             let orbitalData = []; 
             let lvlCount = Math.max(1, state.level); 
-
-            let availableRadius = innerR - coreR - 20; 
-            let stepSize = availableRadius / lvlCount;
+            let availableSpace = innerR - coreR - 30; 
+            let stepSize = availableSpace / lvlCount;
 
             if (state.level > 0) {
                 for (let i = 1; i <= state.level; i++) {
-                    ctx.beginPath();
                     
-                    let orbitR = 30 + (i * stepSize * 0.6); 
-                    let maxOff = stepSize * 0.4;
+                    let orbitR = coreR + 15 + (i * stepSize * 0.8); 
                     
-                    let sysAngle = (i * 2.4) + (globalTime * (1.5/i)); 
-                    let offX = Math.cos(sysAngle) * (maxOff * (1 + i*0.1));
-                    let offY = Math.sin(sysAngle) * (maxOff * (1 + i*0.1));
+                    // V/C Ratio heavily influences the starting angle of the entire system
+                    let sysAngle = (i * state.vcRatio * Math.PI) + (state.vcRatio * Math.PI/2); 
                     
-                    let ox = cx + offX;
-                    let oy = cy + offY;
+                    let maxOff = stepSize * 0.3; 
+                    let ox = cx + Math.cos(sysAngle) * maxOff;
+                    let oy = cy + Math.sin(sysAngle) * maxOff;
 
                     let aspect = state.orbitalTypes[i-1] || 'Terrestrial';
-                    ctx.strokeStyle = '#5275a1'; 
-                    ctx.setLineDash([]);
-                    ctx.lineWidth = 1.5;
+                    
+                    let satSpeed = 2 + (1 / i);
+                    let satAngle = (i * 45 * Math.PI/180) + (globalTime * satSpeed);
 
+                    renderCtx.strokeStyle = '#5275a1'; 
+                    renderCtx.setLineDash([]);
+                    renderCtx.lineWidth = 1.5;
+
+                    // ORBITAL PATH DRAWING
                     if (aspect === 'Terrestrial') {
-                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
+                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR, 0, Math.PI * 2); renderCtx.stroke();
                     } 
                     else if (aspect === 'Gaseous') {
-                        ctx.setLineDash([2, 4]); 
-                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
-                        ctx.setLineDash([]);
+                        renderCtx.setLineDash([2, 4]); 
+                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR, 0, Math.PI * 2); renderCtx.stroke();
+                        renderCtx.setLineDash([]);
                     } 
                     else if (aspect === 'Nebular') {
-                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
+                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR, 0, Math.PI * 2); renderCtx.stroke();
                     } 
                     else if (aspect === 'Minor') {
-                        ctx.setLineDash([4, 8]); 
-                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
-                        ctx.setLineDash([]);
+                        renderCtx.setLineDash([4, 8]); 
+                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR, 0, Math.PI * 2); renderCtx.stroke();
+                        renderCtx.setLineDash([]);
                     }
                     else if (aspect === 'Anomaly') {
-                        ctx.beginPath();
+                        // Advanced jagged overlapping sine wave path
+                        renderCtx.beginPath();
                         for(let a=0; a<=Math.PI*2.01; a+=0.05) {
-                            let rWave = orbitR + Math.sin(a * 12 + globalTime * 5) * 4; 
+                            let waveNoise = (Math.sin(a * 5) * 6) + (Math.cos(a * 11) * 3) + (Math.sin(a * 19) * 2);
+                            let rWave = orbitR + waveNoise; 
                             let wx = ox + Math.cos(a) * rWave;
                             let wy = oy + Math.sin(a) * rWave;
-                            if(a===0) ctx.moveTo(wx, wy); else ctx.lineTo(wx, wy);
+                            if(a===0) renderCtx.moveTo(wx, wy); else renderCtx.lineTo(wx, wy);
                         }
-                        ctx.stroke();
+                        renderCtx.stroke();
                     }
                     else if (aspect === 'Proto') {
-                        ctx.setLineDash([2, 6]);
-                        ctx.beginPath(); ctx.arc(ox, oy, orbitR - 3, 0, Math.PI * 2); ctx.stroke();
-                        ctx.setLineDash([3, 5]);
-                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
-                        ctx.setLineDash([1, 7]);
-                        ctx.beginPath(); ctx.arc(ox, oy, orbitR + 3, 0, Math.PI * 2); ctx.stroke();
-                        ctx.setLineDash([]); 
+                        renderCtx.setLineDash([2, 6]);
+                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR - 3, 0, Math.PI * 2); renderCtx.stroke();
+                        renderCtx.setLineDash([3, 5]);
+                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR, 0, Math.PI * 2); renderCtx.stroke();
+                        renderCtx.setLineDash([1, 7]);
+                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR + 3, 0, Math.PI * 2); renderCtx.stroke();
+                        renderCtx.setLineDash([]); 
                     }
                     else if (aspect === 'Wastes') {
-                        ctx.beginPath(); ctx.arc(ox, oy, orbitR, 0, Math.PI * 2); ctx.stroke();
+                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR, 0, Math.PI * 2); renderCtx.stroke();
                     }
 
-                    // SATELLITE NODE & TRAIL LOGIC
-                    let satSpeed = 1.5 + (1 / i);
-                    let satAngle = (i * 45 * Math.PI/180) + (globalTime * satSpeed);
+                    // SATELLITE NODE
                     let satX = ox + Math.cos(satAngle) * orbitR;
                     let satY = oy + Math.sin(satAngle) * orbitR;
-                    
-                    if (aspect === 'Anomaly' || aspect === 'Wastes') {
-                        let trailLength = Math.PI * 1.5; 
-                        let particleCount = aspect === 'Wastes' ? 80 : 40;
-                        
-                        for (let t = 0; t < particleCount; t++) {
-                            let fade = 1 - (t / particleCount);
-                            let tAngle = satAngle - (t / particleCount) * trailLength;
-                            
-                            let scatterBase = Math.sin(t * 12.34) * 15;
-                            let rScatter = aspect === 'Wastes' ? scatterBase : scatterBase * 0.5;
-                            
-                            let px = ox + Math.cos(tAngle) * (orbitR + rScatter);
-                            let py = oy + Math.sin(tAngle) * (orbitR + rScatter);
 
-                            ctx.fillStyle = `rgba(82, 117, 161, ${fade * 0.7})`;
-                            ctx.beginPath();
-                            ctx.arc(px, py, aspect==='Wastes' ? 1.5 : 1, 0, Math.PI*2);
-                            ctx.fill();
-                        }
-                    }
-                    
-                    ctx.fillStyle = '#5275a1';
-                    ctx.strokeStyle = '#5275a1';
+                    renderCtx.fillStyle = '#5275a1';
+                    renderCtx.strokeStyle = '#5275a1';
+                    renderCtx.lineWidth = 1.5;
 
                     if (aspect === 'Nebular') {
-                        ctx.setLineDash([2, 2]);
-                        ctx.beginPath(); ctx.arc(satX, satY, 6, 0, Math.PI*2); ctx.stroke();
-                        ctx.setLineDash([]);
-                        ctx.beginPath(); ctx.arc(satX, satY, 1, 0, Math.PI*2); ctx.fill(); 
+                        renderCtx.setLineDash([2, 2]);
+                        renderCtx.beginPath(); renderCtx.arc(satX, satY, 6, 0, Math.PI*2); renderCtx.stroke();
+                        renderCtx.setLineDash([]);
+                        renderCtx.beginPath(); renderCtx.arc(satX, satY, 1, 0, Math.PI*2); renderCtx.fill(); 
                     } 
                     else if (aspect === 'Anomaly') {
-                        ctx.lineWidth = 1.5;
-                        ctx.beginPath();
-                        ctx.moveTo(satX - 4, satY - 4); ctx.lineTo(satX + 4, satY + 4);
-                        ctx.moveTo(satX + 4, satY - 4); ctx.lineTo(satX - 4, satY + 4);
-                        ctx.moveTo(satX - 5, satY); ctx.lineTo(satX + 5, satY);
-                        ctx.stroke();
+                        // Apply same noise function so satellite stays perfectly on chaotic track
+                        let tNoise = (Math.sin(satAngle * 5) * 6) + (Math.cos(satAngle * 11) * 3) + (Math.sin(satAngle * 19) * 2);
+                        satX = ox + Math.cos(satAngle) * (orbitR + tNoise);
+                        satY = oy + Math.sin(satAngle) * (orbitR + tNoise);
+
+                        renderCtx.beginPath();
+                        renderCtx.moveTo(satX - 4, satY - 4); renderCtx.lineTo(satX + 4, satY + 4);
+                        renderCtx.moveTo(satX + 4, satY - 4); renderCtx.lineTo(satX - 4, satY + 4);
+                        renderCtx.moveTo(satX - 5, satY); renderCtx.lineTo(satX + 5, satY);
+                        renderCtx.stroke();
+                        
+                        // Fading chaotic tail using exact same math
+                        let trailLength = Math.PI * 1.5;
+                        renderCtx.beginPath();
+                        for(let step = 0.05; step < trailLength; step+=0.05) {
+                            let tailAng = satAngle - step;
+                            let fade = Math.max(0, 1 - (step / trailLength));
+                            let pNoise = (Math.sin(tailAng * 5) * 6) + (Math.cos(tailAng * 11) * 3) + (Math.sin(tailAng * 19) * 2);
+                            let rWave = orbitR + pNoise;
+                            
+                            let tx = ox + Math.cos(tailAng) * rWave;
+                            let ty = oy + Math.sin(tailAng) * rWave;
+                            
+                            renderCtx.strokeStyle = `rgba(82, 117, 161, ${fade})`;
+                            renderCtx.lineWidth = 2 * fade;
+                            
+                            if (step === 0.05) renderCtx.moveTo(tx, ty);
+                            else {
+                                renderCtx.lineTo(tx, ty);
+                                renderCtx.stroke();
+                                renderCtx.beginPath();
+                                renderCtx.moveTo(tx, ty);
+                            }
+                        }
                     } 
                     else if (aspect === 'Wastes') {
                         const debris = [[0,0], [-3,-2], [3,-1], [-1,3], [2,3], [-4,1]];
                         debris.forEach(off => {
-                            ctx.beginPath(); ctx.arc(satX + off[0], satY + off[1], 1.5, 0, Math.PI*2); ctx.fill();
+                            renderCtx.beginPath(); renderCtx.arc(satX + off[0], satY + off[1], 1.5, 0, Math.PI*2); renderCtx.fill();
                         });
+                        
+                        let trailLength = Math.PI * 1.5; 
+                        for (let t = 0; t < 60; t++) {
+                            let fade = 1 - (t / 60);
+                            let tAngle = satAngle - (t / 60) * trailLength;
+                            let scatterBase = Math.sin(t * 12.34) * 15;
+                            let px = ox + Math.cos(tAngle) * (orbitR + scatterBase);
+                            let py = oy + Math.sin(tAngle) * (orbitR + scatterBase);
+                            renderCtx.fillStyle = `rgba(82, 117, 161, ${fade * 0.7})`;
+                            renderCtx.beginPath(); renderCtx.arc(px, py, 1.5, 0, Math.PI*2); renderCtx.fill();
+                        }
                     } 
                     else {
-                        ctx.beginPath(); ctx.arc(satX, satY, 3, 0, Math.PI*2); ctx.fill();
+                        renderCtx.beginPath(); renderCtx.arc(satX, satY, 3, 0, Math.PI*2); renderCtx.fill();
                     }
 
-                    orbitalData.push({ ox, oy, r: orbitR, satX, satY });
+                    orbitalData.push({ satX, satY });
                 }
             }
 
             // ==========================================
-            // 3. NAME MATRIX (Static Nodes & Dynamic Webs)
+            // NAME MATRIX (Perfect Zero-Overlap Static Nodes)
             // ==========================================
-            ctx.setLineDash([]);
+            renderCtx.setLineDash([]);
             const cleanName = state.name.replace(/\s+/g, '');
             const points = [];
 
-            for (let i = 0; i < cleanName.length; i++) {
-                let charCode = cleanName.charCodeAt(i) - 64; 
-                if (charCode < 1 || charCode > 26) charCode = 15; 
-                
-                let angle = (charCode * 13.84 + (i * 45)) * (Math.PI / 180); 
+            // Perfectly divided geometric distribution
+            const nodeCount = Math.max(1, cleanName.length);
+            const nodeStep = (Math.PI * 2) / nodeCount;
+
+            for (let i = 0; i < nodeCount; i++) {
+                let angle = i * nodeStep; 
                 let px = cx + Math.cos(angle) * innerR;
                 let py = cy + Math.sin(angle) * innerR;
                 
@@ -888,123 +1076,121 @@
             }
 
             if (points.length > 1) {
-                ctx.strokeStyle = 'rgba(255, 159, 28, 0.15)'; 
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(points[0].x, points[0].y);
+                renderCtx.strokeStyle = 'rgba(255, 159, 28, 0.15)'; 
+                renderCtx.lineWidth = 1;
+                renderCtx.beginPath();
+                renderCtx.moveTo(points[0].x, points[0].y);
                 for (let i = 1; i < points.length; i++) {
-                    ctx.lineTo(points[i].x, points[i].y);
+                    renderCtx.lineTo(points[i].x, points[i].y);
                 }
-                ctx.closePath(); 
-                ctx.stroke();
+                renderCtx.closePath(); 
+                renderCtx.stroke();
             }
 
-            ctx.strokeStyle = '#ff9f1c';
-            ctx.lineWidth = 1.5;
+            renderCtx.strokeStyle = '#ff9f1c';
+            renderCtx.lineWidth = 1.5;
+            setGlow(renderCtx, 6); 
 
+            // Connect static nodes to moving satellites
             for (let i = 0; i < points.length; i++) {
                 let pt = points[i];
-                ctx.beginPath();
-                ctx.moveTo(pt.x, pt.y);
+                renderCtx.beginPath();
+                renderCtx.moveTo(pt.x, pt.y);
 
                 if (orbitalData.length > 0) {
                     let targetOrbit = orbitalData[i % orbitalData.length];
-                    ctx.lineTo(targetOrbit.satX, targetOrbit.satY);
+                    renderCtx.lineTo(targetOrbit.satX, targetOrbit.satY);
                 } else {
-                    let angleToCenter = Math.atan2(cy - pt.y, cx - pt.x);
-                    ctx.lineTo(cx - Math.cos(angleToCenter) * coreR, cy - Math.sin(angleToCenter) * coreR);
+                    renderCtx.lineTo(cx + Math.cos(pt.a) * coreR, cy + Math.sin(pt.a) * coreR);
                 }
-                ctx.stroke();
+                renderCtx.stroke();
             }
 
             points.forEach(pt => {
-                drawProceduralRune(ctx, pt.char, pt.x, pt.y, 8);
+                drawProceduralRune(renderCtx, pt.char, pt.x, pt.y, 8);
                 
+                // MATERIAL Catalyst
                 if (state.compM) {
                     let mx = pt.x + Math.cos(pt.a)*15;
                     let my = pt.y + Math.sin(pt.a)*15;
-                    ctx.fillStyle = '#aa6a13';
-                    ctx.beginPath();
-                    ctx.moveTo(mx, my - 4);
-                    ctx.lineTo(mx + 3, my);
-                    ctx.lineTo(mx, my + 4);
-                    ctx.lineTo(mx - 3, my);
-                    ctx.fill();
+                    renderCtx.fillStyle = '#aa6a13';
+                    renderCtx.beginPath();
+                    renderCtx.moveTo(mx, my - 4); renderCtx.lineTo(mx + 3, my);
+                    renderCtx.lineTo(mx, my + 4); renderCtx.lineTo(mx - 3, my);
+                    renderCtx.fill();
                 }
             });
+            resetGlow(renderCtx);
 
             // ==========================================
-            // VERBAL COMPONENT (Solar Flares behind core)
+            // VERBAL COMPONENT (Solar Flares)
             // ==========================================
             if (state.compV) {
-                ctx.strokeStyle = 'rgba(255, 159, 28, 0.6)';
-                ctx.lineWidth = 2;
-                let flareCount = 36;
-                let flareRot = globalTime * 3;
+                renderCtx.strokeStyle = 'rgba(255, 159, 28, 0.4)';
+                renderCtx.lineWidth = 2;
+                setGlow(renderCtx, 10);
+                let flareCount = 40;
+                let flareRot = globalTime * 2;
 
                 for (let i = 0; i < flareCount; i++) {
                     let a = (i * (Math.PI * 2) / flareCount) + flareRot;
-                    let lengthOsc = Math.sin(globalTime * 8 + i * 2) * 12;
-                    let flareR = coreR + 10 + Math.max(0, lengthOsc); 
+                    let lengthOsc = Math.sin(globalTime * 15 + i * 3) * 15;
+                    let flareR = coreR + 8 + Math.max(0, lengthOsc); 
                     
-                    ctx.beginPath();
-                    ctx.moveTo(cx + Math.cos(a) * coreR, cy + Math.sin(a) * coreR);
-                    ctx.lineTo(cx + Math.cos(a) * flareR, cy + Math.sin(a) * flareR);
-                    ctx.stroke();
+                    renderCtx.beginPath();
+                    renderCtx.moveTo(cx + Math.cos(a) * coreR, cy + Math.sin(a) * coreR);
+                    renderCtx.lineTo(cx + Math.cos(a) * flareR, cy + Math.sin(a) * flareR);
+                    renderCtx.stroke();
                 }
+                resetGlow(renderCtx);
             }
 
             // ==========================================
-            // 4. THE SCHOOL OF MAGIC (Center Core - STATIC)
+            // CENTER CORE & INTERNAL GEOMETRY
             // ==========================================
-            ctx.strokeStyle = '#ff9f1c';
-            ctx.lineWidth = 2;
+            renderCtx.strokeStyle = '#ff9f1c';
+            renderCtx.lineWidth = 2;
             
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
+            renderCtx.fillStyle = '#000000';
+            renderCtx.beginPath();
+            renderCtx.arc(cx, cy, coreR, 0, Math.PI * 2);
+            renderCtx.fill();
+            renderCtx.stroke();
 
-            // D&D MECHANICS: AREA OF EFFECT (Internal Shape Overlay)
-            ctx.strokeStyle = 'rgba(82, 117, 161, 0.7)'; // Telemetry blue for AoE
-            ctx.lineWidth = 1.5;
-            let shapeR = 26; 
+            // AREA OF EFFECT (Internal Shape Wireframe)
+            renderCtx.strokeStyle = 'rgba(82, 117, 161, 0.8)';
+            renderCtx.lineWidth = 1;
+            let shapeR = 28; 
             
             if (state.shape === "Sphere") {
-                ctx.beginPath(); ctx.arc(cx, cy, shapeR, 0, Math.PI * 2); ctx.stroke();
-                ctx.beginPath(); ctx.arc(cx, cy, shapeR - 6, 0, Math.PI * 2); ctx.stroke();
+                renderCtx.beginPath(); renderCtx.arc(cx, cy, shapeR, 0, Math.PI * 2); renderCtx.stroke();
+                renderCtx.beginPath(); renderCtx.arc(cx, cy, shapeR - 8, 0, Math.PI * 2); renderCtx.stroke();
             } else if (state.shape === "Cube") {
-                ctx.strokeRect(cx - shapeR*0.8, cy - shapeR*0.8, shapeR*1.6, shapeR*1.6);
+                renderCtx.strokeRect(cx - shapeR*0.7, cy - shapeR*0.7, shapeR*1.4, shapeR*1.4);
             } else if (state.shape === "Cone") {
-                ctx.beginPath();
+                renderCtx.beginPath();
                 for(let i=0; i<3; i++) {
                     let a = (i * Math.PI*2/3) - Math.PI/2;
-                    if(i===0) ctx.moveTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
-                    else ctx.lineTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
+                    if(i===0) renderCtx.moveTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
+                    else renderCtx.lineTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
                 }
-                ctx.closePath(); ctx.stroke();
+                renderCtx.closePath(); renderCtx.stroke();
             } else if (state.shape === "Line") {
-                ctx.beginPath();
-                ctx.moveTo(cx - shapeR, cy - shapeR/3); ctx.lineTo(cx + shapeR, cy - shapeR/3);
-                ctx.moveTo(cx - shapeR, cy + shapeR/3); ctx.lineTo(cx + shapeR, cy + shapeR/3);
-                ctx.stroke();
+                renderCtx.beginPath();
+                renderCtx.moveTo(cx - shapeR, cy - shapeR/4); renderCtx.lineTo(cx + shapeR, cy - shapeR/4);
+                renderCtx.moveTo(cx - shapeR, cy + shapeR/4); renderCtx.lineTo(cx + shapeR, cy + shapeR/4);
+                renderCtx.stroke();
             } else if (state.shape === "Cylinder") {
-                ctx.beginPath();
+                renderCtx.beginPath();
                 for(let i=0; i<6; i++) {
                     let a = (i * Math.PI*2/6);
-                    if(i===0) ctx.moveTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
-                    else ctx.lineTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
+                    if(i===0) renderCtx.moveTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
+                    else renderCtx.lineTo(cx+Math.cos(a)*shapeR, cy+Math.sin(a)*shapeR);
                 }
-                ctx.closePath(); ctx.stroke();
+                renderCtx.closePath(); renderCtx.stroke();
             }
 
-            // Core Text (School Kanji)
-            ctx.font = "36px 'Courier New'";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillStyle = '#ff9f1c';
-            ctx.fillText(state.school, cx, cy + 2); 
+            drawSchoolSigil(renderCtx, state.school, cx, cy, 14); 
         }
 
         generateOrbitalDropdowns();
