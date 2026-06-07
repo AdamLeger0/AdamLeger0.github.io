@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COSM.OS // S.P.H.E.R.E. Terminal V3.3</title>
+    <title>COSM.OS // S.P.H.E.R.E. Terminal V3.5</title>
     <style>
         :root {
             --bg-color: #08080a;
@@ -219,7 +219,7 @@
 <body>
 
     <header>
-        <h1>COSM.OS // S.P.H.E.R.E. TERMINAL V3.3</h1>
+        <h1>COSM.OS // S.P.H.E.R.E. TERMINAL V3.5</h1>
         <div class="system-status">SYS.LOC // SPELL PROJECTION HEURISTICS & ELEMENTAL ROUTING ENGINE</div>
     </header>
 
@@ -363,16 +363,16 @@
             <div class="modal-body">
                 <h3>THE CELESTIAL SIGIL</h3>
                 <p>A Celestial Sigil is an ultra-sensitive magical schematic. They are notoriously finicky; constructing one that properly channels arcane energy is a delicate balance of strict mathematics, astronomical science, deep intuition, and sheer chance. Because they are modeled directly after the mechanics of solar systems, scholars are astounded to find that disconnected species, separated by thousands of lightyears, have developed the exact same fundamentals of magic without ever interacting.</p>
-                <p>An enduring mystery of the cosmos: Why are there no traces of Celestial Sigils natively developing on Earth? Theories abound regarding "Proto-Sigils," less volatile, ancient formats that may have predated the celestial model, but definitive proof remains elusive.</p>
+                <p>An enduring mystery of the cosmos: Why are there no traces of Celestial Sigils natively developing on Earth? Theories abound regarding "Proto-Sigils"—less volatile, ancient formats that may have predated the celestial model—but definitive proof remains elusive.</p>
 
                 <h3>SIGIL COMPONENTS</h3>
                 <ul>
-                    <li><strong>Primary Ring & Range Anchors:</strong> The absolute boundary of the spell. Stationary locks arrayed at the cardinal directions dictate the spell's physical Range (Touch, Short, Long).</li>
+                    <li><strong>Primary Ring & Range Anchors:</strong> The absolute boundary of the spell. Stationary locks arrayed at the cardinal directions dictate the spell's physical Range.</li>
                     <li><strong>Chronos Track:</strong> The outermost segmented ring, calculating Duration. Instant spells are solid; Minutes/Hours are tracked in segmented celestial geometry.</li>
-                    <li><strong>Focal Core (The School):</strong> The central anchor. An intricate geometric emblem identifying the specific school of magic (Evocation, Abjuration, etc.), layered over the Area of Effect sigils.</li>
-                    <li><strong>Sub-Orbitals:</strong> The mechanical properties of the spell (Damage types, Chaos, Duration). Their alignment and systemic starting angles are mathematically determined by the ratio of the spell's true designation.</li>
-                    <li><strong>Nodes & Tethers:</strong> The letters of the spell. Spaced with absolute mathematical perfection along the inner boundary to ensure nodes never overlap. Glowing tethers physically pull energy from the rotating orbitals into the static spell name.</li>
-                    <li><strong>Arcane Starfield:</strong> The resonant background energy. A field of ambient arcane geometries dictated by the exact spelling of the sigil.</li>
+                    <li><strong>Focal Core (The School):</strong> The central anchor. An intricate, sacred geometric emblem identifying the specific school of magic (Evocation, Abjuration, etc.), layered over the Area of Effect wireframe.</li>
+                    <li><strong>Sub-Orbitals:</strong> The mechanical properties of the spell. Their alignment is mathematically determined by the Vowel-to-Consonant ratio of the spell's true designation.</li>
+                    <li><strong>Nodes & Bending Tethers:</strong> The letters of the spell. Spaced perfectly along the inner boundary. Tethers connect nodes to moving satellites. If a connection path attempts to cross the center, the energy is forced to dynamically bend around the focal core.</li>
+                    <li><strong>Astrometric Pulsar Map:</strong> A structured starfield of radiating binary frequencies. The ray count represents Casting Time, hash densities represent orbital mechanics, lengths represent Range/School equations, and geometric terminals decode the spell's name.</li>
                 </ul>
             </div>
         </div>
@@ -402,12 +402,11 @@
             vcRatio: 1.0
         };
 
-        // --- Lore Modal Toggle ---
         function toggleLore(show) {
             document.getElementById('loreModal').style.display = show ? 'flex' : 'none';
         }
 
-        // --- PRNG for Consistent Background Stars ---
+        // PRNG
         function mulberry32(a) {
             return function() {
                 var t = a += 0x6D2B79F5;
@@ -424,13 +423,23 @@
             return hash;
         }
 
-        // --- Linguistic Analytics ---
+        // Math Helpers
+        function dist2(v, w) { return Math.pow(v.x - w.x, 2) + Math.pow(v.y - w.y, 2); }
+        function distToSegment(p, v, w) {
+            var l2 = dist2(v, w);
+            if (l2 == 0) return Math.sqrt(dist2(p, v));
+            var t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.sqrt(dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) }));
+        }
+
+        // Linguistics
         function calculateVCRatio(str) {
             let clean = str.toUpperCase().replace(/[^A-Z]/g, '');
             if (clean.length === 0) return 1.0;
             let vowels = (clean.match(/[AEIOUY]/g) || []).length;
             let cons = (clean.match(/[^AEIOUY]/g) || []).length;
-            if (cons === 0) return vowels; // Avoid div by zero
+            if (cons === 0) return vowels; 
             return vowels / cons;
         }
 
@@ -562,21 +571,18 @@
             context.shadowBlur = 0;
         }
 
-        // --- PROCEDURAL RUNES & SIGILS ---
-        function drawProceduralRune(ctx, char, cx, cy, size, isBackground = false) {
+        function drawProceduralRune(ctx, char, cx, cy, size) {
             let code = char.charCodeAt(0);
             if (char === " ") return;
 
             ctx.save();
-            ctx.strokeStyle = isBackground ? 'rgba(200, 220, 255, 0.2)' : '#ff9f1c';
-            ctx.lineWidth = isBackground ? 1 : 1.5;
+            ctx.strokeStyle = '#ff9f1c';
+            ctx.lineWidth = 1.5;
             ctx.lineCap = 'square';
             
-            if (!isBackground) {
-                ctx.fillStyle = '#000000';
-                ctx.beginPath(); ctx.arc(cx, cy, size + 2, 0, Math.PI * 2); ctx.fill();
-                setGlow(ctx, 4);
-            }
+            ctx.fillStyle = '#000000';
+            ctx.beginPath(); ctx.arc(cx, cy, size + 2, 0, Math.PI * 2); ctx.fill();
+            setGlow(ctx, 4);
 
             ctx.beginPath();
             for(let i=0; i<=6; i++) {
@@ -600,30 +606,6 @@
             ctx.restore();
         }
 
-        // Arcane Symbols for the Starfield
-        function drawArcaneSymbol(ctx, typeIndex, cx, cy, size) {
-            ctx.beginPath();
-            switch(typeIndex % 4) {
-                case 0: // Diamond
-                    ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size*0.8, cy); 
-                    ctx.lineTo(cx, cy + size); ctx.lineTo(cx - size*0.8, cy); break;
-                case 1: // 4-Point Star
-                    ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size*0.3, cy - size*0.3);
-                    ctx.lineTo(cx + size, cy); ctx.lineTo(cx + size*0.3, cy + size*0.3);
-                    ctx.lineTo(cx, cy + size); ctx.lineTo(cx - size*0.3, cy + size*0.3);
-                    ctx.lineTo(cx - size, cy); ctx.lineTo(cx - size*0.3, cy - size*0.3); break;
-                case 2: // Cross
-                    ctx.moveTo(cx, cy - size); ctx.lineTo(cx, cy + size);
-                    ctx.moveTo(cx - size, cy); ctx.lineTo(cx + size, cy); break;
-                case 3: // Tri-force
-                    ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size*0.8, cy + size*0.6); 
-                    ctx.lineTo(cx - size*0.8, cy + size*0.6); break;
-            }
-            ctx.closePath();
-            ctx.stroke();
-        }
-
-        // Witch Hat Atelier style core emblems
         function drawSchoolSigil(ctx, school, cx, cy, r) {
             ctx.save();
             ctx.strokeStyle = '#ff9f1c';
@@ -715,40 +697,80 @@
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
             const coreR = 40;
-            const outerR = 280;
             const innerR = 250;
-            const durR = 340;
-            const ritR = 360;
+            const outerR = 280;
+            const durR = 330;
+            const ritR = 350;
             
             resetGlow(renderCtx);
 
             // ==========================================
-            // ARCANE STARFIELD (Seeded Geomtery)
+            // ASTROMETRIC PULSAR MAP
             // ==========================================
-            let prng = mulberry32(hashString(state.name + state.school));
-            let starCount = 40 + (state.level * 10);
+            let prngName = mulberry32(hashString(state.name));
+            
+            // 1. Amount of Lines based on Cast Time (min 6)
+            let castBase = { "Action": 6, "Bonus": 8, "Reaction": 10, "Ritual": 12 }[state.cast] || 6;
+            let lineCount = castBase;
+
+            // 2. Dashes influenced by Sub-Orbitals
+            let orbHash = hashString(state.orbitalTypes.join(""));
+            let prngOrb = mulberry32(orbHash);
+
+            // 3. Length modular by School and Range (1-10)
+            let schoolIdx = { "Abjuration": 1, "Conjuration": 2, "Divination": 3, "Enchantment": 4, "Evocation": 5, "Illusion": 6, "Necromancy": 7, "Transmutation": 8 }[state.school] || 1;
+            let rangeIdx = { "Touch": 1, "Short": 4, "Long": 8 }[state.range] || 1;
+            let lenFactor = ((schoolIdx * 3 + rangeIdx * 7) % 10) + 1; 
+
+            // 4. Ends affected by Naming (modular)
+            let nameSum = 0;
+            for(let i=0; i<state.name.length; i++) nameSum += state.name.charCodeAt(i);
+            let endMod = nameSum % 5; 
             
             renderCtx.save();
             renderCtx.beginPath();
             renderCtx.arc(cx, cy, innerR - 2, 0, Math.PI * 2);
             renderCtx.clip(); 
             
-            for (let s = 0; s < starCount; s++) {
-                let r = prng() * (innerR - coreR - 10) + coreR + 10;
-                let a = prng() * Math.PI * 2;
-                let sx = cx + Math.cos(a) * r;
-                let sy = cy + Math.sin(a) * r;
-                
-                let symbolType = Math.floor(prng() * 4);
-                
-                // Smooth slow pulsing instead of flickering
-                let baseAlpha = 0.3 + (prng() * 0.4); 
-                let pulse = Math.sin(globalTime * (2 + prng()*3) + prng()*100) * 0.2;
-                let alpha = Math.max(0.1, Math.min(1, baseAlpha + pulse));
-                
-                renderCtx.strokeStyle = `rgba(200, 220, 255, ${alpha})`;
-                renderCtx.lineWidth = 1;
-                drawArcaneSymbol(renderCtx, symbolType, sx, sy, 3 + prng()*2);
+            renderCtx.translate(cx, cy);
+            renderCtx.rotate(globalTime * 0.05);
+            renderCtx.strokeStyle = 'rgba(200, 220, 255, 0.4)';
+            renderCtx.fillStyle = 'rgba(200, 220, 255, 0.4)';
+            renderCtx.lineWidth = 1;
+
+            let maxLenBase = coreR + 20 + (lenFactor * 16); // Scale line length to bounds
+
+            for (let i = 0; i < lineCount; i++) {
+                let angle = (i * (Math.PI * 2) / lineCount);
+                let len = Math.min(innerR - 5, maxLenBase * (0.8 + prngName() * 0.4)); 
+
+                renderCtx.beginPath();
+                renderCtx.moveTo(Math.cos(angle) * coreR, Math.sin(angle) * coreR);
+                renderCtx.lineTo(Math.cos(angle) * len, Math.sin(angle) * len);
+                renderCtx.stroke();
+
+                let dashCount = 2 + Math.floor(prngOrb() * 6); 
+                for(let d=0; d<dashCount; d++) {
+                    let dist = coreR + 10 + (prngOrb() * (len - coreR - 15));
+                    let tx = Math.cos(angle) * dist;
+                    let ty = Math.sin(angle) * dist;
+                    let tSize = 1.5 + prngOrb() * 3;
+                    let perp = angle + Math.PI/2;
+                    renderCtx.beginPath();
+                    renderCtx.moveTo(tx + Math.cos(perp)*tSize, ty + Math.sin(perp)*tSize);
+                    renderCtx.lineTo(tx - Math.cos(perp)*tSize, ty - Math.sin(perp)*tSize);
+                    renderCtx.stroke();
+                }
+
+                // Geometric Ends
+                let ex = Math.cos(angle) * len;
+                let ey = Math.sin(angle) * len;
+                renderCtx.beginPath();
+                if (endMod === 0) { renderCtx.arc(ex, ey, 3, 0, Math.PI*2); renderCtx.fill(); }
+                else if (endMod === 1) { renderCtx.moveTo(ex-4, ey); renderCtx.lineTo(ex+4, ey); renderCtx.moveTo(ex, ey-4); renderCtx.lineTo(ex, ey+4); renderCtx.stroke(); }
+                else if (endMod === 2) { renderCtx.arc(ex, ey, 3, 0, Math.PI*2); renderCtx.stroke(); }
+                else if (endMod === 3) { renderCtx.moveTo(ex, ey-4); renderCtx.lineTo(ex+4, ey); renderCtx.lineTo(ex, ey+4); renderCtx.lineTo(ex-4, ey); renderCtx.fill(); }
+                else if (endMod === 4) { renderCtx.moveTo(ex, ey); renderCtx.lineTo(ex+Math.cos(angle)*6, ey+Math.sin(angle)*6); renderCtx.stroke(); }
             }
             renderCtx.restore();
 
@@ -763,12 +785,13 @@
             renderCtx.stroke();
 
             // ==========================================
-            // RANGE ARROWS / TOUCH CHEVRONS (CARDINAL STATIC)
+            // RANGE ARROWS / TOUCH CHEVRONS (STATIC LOCK)
+            // Completely avoiding the Node Ring (250)
             // ==========================================
             renderCtx.fillStyle = 'rgba(255, 159, 28, 0.6)';
 
             if (state.range === "Long") {
-                let arrR = outerR + 20;
+                let arrR = outerR + 25; // 305
                 for(let i=0; i<4; i++) {
                     let a = i * Math.PI/2;
                     renderCtx.beginPath();
@@ -778,21 +801,23 @@
                     renderCtx.fill();
                 }
             } else if (state.range === "Short") {
+                let arrR = outerR + 5; // 285
                 for(let i=0; i<4; i++) {
                     let a = i * Math.PI/2;
                     renderCtx.beginPath();
-                    renderCtx.moveTo(cx + Math.cos(a)*outerR, cy + Math.sin(a)*outerR);
-                    renderCtx.lineTo(cx + Math.cos(a-0.05)*(outerR+10), cy + Math.sin(a-0.05)*(outerR+10));
-                    renderCtx.lineTo(cx + Math.cos(a+0.05)*(outerR+10), cy + Math.sin(a+0.05)*(outerR+10));
+                    renderCtx.moveTo(cx + Math.cos(a)*arrR, cy + Math.sin(a)*arrR);
+                    renderCtx.lineTo(cx + Math.cos(a-0.05)*(arrR+10), cy + Math.sin(a-0.05)*(arrR+10));
+                    renderCtx.lineTo(cx + Math.cos(a+0.05)*(arrR+10), cy + Math.sin(a+0.05)*(arrR+10));
                     renderCtx.fill();
                 }
             } else if (state.range === "Touch") {
+                let arrR = innerR - 25; // 225 - safely inside nodes
                 for(let i=0; i<4; i++) {
                     let a = i * Math.PI/2;
                     renderCtx.beginPath();
-                    renderCtx.moveTo(cx + Math.cos(a)*innerR, cy + Math.sin(a)*innerR);
-                    renderCtx.lineTo(cx + Math.cos(a-0.05)*(innerR-10), cy + Math.sin(a-0.05)*(innerR-10));
-                    renderCtx.lineTo(cx + Math.cos(a+0.05)*(innerR-10), cy + Math.sin(a+0.05)*(innerR-10));
+                    renderCtx.moveTo(cx + Math.cos(a)*arrR, cy + Math.sin(a)*arrR);
+                    renderCtx.lineTo(cx + Math.cos(a-0.05)*(arrR-10), cy + Math.sin(a-0.05)*(arrR-10));
+                    renderCtx.lineTo(cx + Math.cos(a+0.05)*(arrR-10), cy + Math.sin(a+0.05)*(arrR-10));
                     renderCtx.fill();
                 }
             }
@@ -825,11 +850,7 @@
                     for (let i = 0; i < segments; i++) {
                         let startAngle = (i * slice) + gap/2;
                         let endAngle = ((i+1) * slice) - gap/2;
-                        
-                        renderCtx.beginPath();
-                        renderCtx.arc(0, 0, durR, startAngle, endAngle);
-                        renderCtx.stroke();
-
+                        renderCtx.beginPath(); renderCtx.arc(0, 0, durR, startAngle, endAngle); renderCtx.stroke();
                         let midAngle = (startAngle + endAngle) / 2;
                         drawArrow(renderCtx, Math.cos(midAngle)*durR, Math.sin(midAngle)*durR, midAngle);
                     }
@@ -848,24 +869,52 @@
             }
 
             // ==========================================
-            // SOMATIC GESTURES (Rotating outer brackets)
+            // CASTING TIME VISUALS (Somatic, Ritual, etc)
             // ==========================================
+            if (state.cast === "Ritual") {
+                renderCtx.strokeStyle = 'rgba(255, 159, 28, 0.7)';
+                renderCtx.lineWidth = 4;
+                for(let i=0; i<4; i++) {
+                    let a = (i * Math.PI/2) + Math.PI/4;
+                    renderCtx.beginPath(); renderCtx.arc(cx, cy, ritR, a - 0.15, a + 0.15); renderCtx.stroke();
+                }
+            } else if (state.cast === "Reaction") {
+                renderCtx.strokeStyle = 'rgba(255, 159, 28, 0.5)';
+                renderCtx.lineWidth = 2;
+                for(let a=0; a<Math.PI*2; a+=Math.PI/12) {
+                    renderCtx.beginPath();
+                    renderCtx.moveTo(cx+Math.cos(a)*outerR, cy+Math.sin(a)*outerR);
+                    renderCtx.lineTo(cx+Math.cos(a)*(outerR+8), cy+Math.sin(a)*(outerR+8));
+                    renderCtx.stroke();
+                }
+            } else if (state.cast === "Bonus") {
+                renderCtx.strokeStyle = 'rgba(255, 159, 28, 0.3)';
+                renderCtx.lineWidth = 1;
+                renderCtx.beginPath();
+                for(let a=0; a<=Math.PI*2; a+=0.1) {
+                    let r = innerR + 5 + (Math.sin(a * 40) * 4); // Inside outer bound
+                    if(a===0) renderCtx.moveTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+                    else renderCtx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+                }
+                renderCtx.stroke();
+            } else if (state.cast === "Action") {
+                renderCtx.strokeStyle = 'rgba(255, 159, 28, 0.3)';
+                renderCtx.lineWidth = 1;
+                renderCtx.beginPath(); renderCtx.arc(cx, cy, innerR + 5, 0, Math.PI*2); renderCtx.stroke();
+            }
+
             if (state.compS) {
-                const sR = 310;
+                const sR = 315;
                 renderCtx.strokeStyle = 'rgba(255, 159, 28, 0.6)';
                 renderCtx.lineWidth = 1.5;
                 for(let i=0; i<4; i++) {
                     let angle = (i * Math.PI/2) + Math.PI/4 + (globalTime * 0.3); 
-                    renderCtx.beginPath();
-                    renderCtx.arc(cx, cy, sR, angle - 0.2, angle + 0.2);
-                    renderCtx.stroke();
-                    
+                    renderCtx.beginPath(); renderCtx.arc(cx, cy, sR, angle - 0.2, angle + 0.2); renderCtx.stroke();
                     renderCtx.beginPath();
                     renderCtx.moveTo(cx + Math.cos(angle)*sR, cy + Math.sin(angle)*sR);
                     renderCtx.lineTo(cx + Math.cos(angle - 0.05)*(sR+15), cy + Math.sin(angle - 0.05)*(sR+15));
                     renderCtx.lineTo(cx + Math.cos(angle + 0.05)*(sR+15), cy + Math.sin(angle + 0.05)*(sR+15));
-                    renderCtx.closePath();
-                    renderCtx.stroke();
+                    renderCtx.closePath(); renderCtx.stroke();
                 }
             }
 
@@ -879,13 +928,12 @@
             renderCtx.beginPath(); renderCtx.arc(cx, cy, innerR, 0, Math.PI * 2); renderCtx.stroke();
             resetGlow(renderCtx);
 
-            // Upcasting (Static Outer Nodes)
+            // Upcasting 
             if (state.upcast > 0) {
                 renderCtx.fillStyle = '#ff9f1c';
                 let slice = Math.PI / (state.upcast + 1);
                 for(let i=1; i<=state.upcast; i++) {
-                    let a1 = Math.PI + (i * slice);
-                    let a2 = (i * slice);
+                    let a1 = Math.PI + (i * slice); let a2 = (i * slice);
                     renderCtx.beginPath(); renderCtx.arc(cx + Math.cos(a1)*(outerR+6), cy + Math.sin(a1)*(outerR+6), 3, 0, Math.PI*2); renderCtx.fill();
                     renderCtx.beginPath(); renderCtx.arc(cx + Math.cos(a2)*(outerR+6), cy + Math.sin(a2)*(outerR+6), 3, 0, Math.PI*2); renderCtx.fill();
                 }
@@ -911,27 +959,28 @@
             }
 
             // ==========================================
-            // SUB-ORBITALS (VC RATIO INFLUENCED)
+            // SUB-ORBITALS (ABSOLUTE 10PX CLEARANCE CAPPED)
             // ==========================================
             let orbitalData = []; 
             let lvlCount = Math.max(1, state.level); 
-            let availableSpace = innerR - coreR - 30; 
+            
+            // Outer max bound is exactly innerR - 25px (guarantees safe clearance from nodes)
+            let maxOrbitRadius = innerR - 25; 
+            let availableSpace = maxOrbitRadius - coreR - 15; 
             let stepSize = availableSpace / lvlCount;
 
             if (state.level > 0) {
                 for (let i = 1; i <= state.level; i++) {
                     
-                    let orbitR = coreR + 15 + (i * stepSize * 0.8); 
+                    let orbitR = Math.min(maxOrbitRadius, coreR + 15 + (i * stepSize)); 
                     
-                    // V/C Ratio heavily influences the starting angle of the entire system
                     let sysAngle = (i * state.vcRatio * Math.PI) + (state.vcRatio * Math.PI/2); 
                     
-                    let maxOff = stepSize * 0.3; 
+                    let maxOff = stepSize * 0.25; 
                     let ox = cx + Math.cos(sysAngle) * maxOff;
                     let oy = cy + Math.sin(sysAngle) * maxOff;
 
                     let aspect = state.orbitalTypes[i-1] || 'Terrestrial';
-                    
                     let satSpeed = 2 + (1 / i);
                     let satAngle = (i * 45 * Math.PI/180) + (globalTime * satSpeed);
 
@@ -957,7 +1006,6 @@
                         renderCtx.setLineDash([]);
                     }
                     else if (aspect === 'Anomaly') {
-                        // Advanced jagged overlapping sine wave path
                         renderCtx.beginPath();
                         for(let a=0; a<=Math.PI*2.01; a+=0.05) {
                             let waveNoise = (Math.sin(a * 5) * 6) + (Math.cos(a * 11) * 3) + (Math.sin(a * 19) * 2);
@@ -969,12 +1017,9 @@
                         renderCtx.stroke();
                     }
                     else if (aspect === 'Proto') {
-                        renderCtx.setLineDash([2, 6]);
-                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR - 3, 0, Math.PI * 2); renderCtx.stroke();
-                        renderCtx.setLineDash([3, 5]);
-                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR, 0, Math.PI * 2); renderCtx.stroke();
-                        renderCtx.setLineDash([1, 7]);
-                        renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR + 3, 0, Math.PI * 2); renderCtx.stroke();
+                        renderCtx.setLineDash([2, 6]); renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR - 3, 0, Math.PI * 2); renderCtx.stroke();
+                        renderCtx.setLineDash([3, 5]); renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR, 0, Math.PI * 2); renderCtx.stroke();
+                        renderCtx.setLineDash([1, 7]); renderCtx.beginPath(); renderCtx.arc(ox, oy, orbitR + 3, 0, Math.PI * 2); renderCtx.stroke();
                         renderCtx.setLineDash([]); 
                     }
                     else if (aspect === 'Wastes') {
@@ -990,13 +1035,10 @@
                     renderCtx.lineWidth = 1.5;
 
                     if (aspect === 'Nebular') {
-                        renderCtx.setLineDash([2, 2]);
-                        renderCtx.beginPath(); renderCtx.arc(satX, satY, 6, 0, Math.PI*2); renderCtx.stroke();
-                        renderCtx.setLineDash([]);
-                        renderCtx.beginPath(); renderCtx.arc(satX, satY, 1, 0, Math.PI*2); renderCtx.fill(); 
+                        renderCtx.setLineDash([2, 2]); renderCtx.beginPath(); renderCtx.arc(satX, satY, 6, 0, Math.PI*2); renderCtx.stroke();
+                        renderCtx.setLineDash([]); renderCtx.beginPath(); renderCtx.arc(satX, satY, 1, 0, Math.PI*2); renderCtx.fill(); 
                     } 
                     else if (aspect === 'Anomaly') {
-                        // Apply same noise function so satellite stays perfectly on chaotic track
                         let tNoise = (Math.sin(satAngle * 5) * 6) + (Math.cos(satAngle * 11) * 3) + (Math.sin(satAngle * 19) * 2);
                         satX = ox + Math.cos(satAngle) * (orbitR + tNoise);
                         satY = oy + Math.sin(satAngle) * (orbitR + tNoise);
@@ -1007,7 +1049,6 @@
                         renderCtx.moveTo(satX - 5, satY); renderCtx.lineTo(satX + 5, satY);
                         renderCtx.stroke();
                         
-                        // Fading chaotic tail using exact same math
                         let trailLength = Math.PI * 1.5;
                         renderCtx.beginPath();
                         for(let step = 0.05; step < trailLength; step+=0.05) {
@@ -1016,26 +1057,18 @@
                             let pNoise = (Math.sin(tailAng * 5) * 6) + (Math.cos(tailAng * 11) * 3) + (Math.sin(tailAng * 19) * 2);
                             let rWave = orbitR + pNoise;
                             
-                            let tx = ox + Math.cos(tailAng) * rWave;
-                            let ty = oy + Math.sin(tailAng) * rWave;
+                            let tx = ox + Math.cos(tailAng) * rWave; let ty = oy + Math.sin(tailAng) * rWave;
                             
                             renderCtx.strokeStyle = `rgba(82, 117, 161, ${fade})`;
                             renderCtx.lineWidth = 2 * fade;
                             
                             if (step === 0.05) renderCtx.moveTo(tx, ty);
-                            else {
-                                renderCtx.lineTo(tx, ty);
-                                renderCtx.stroke();
-                                renderCtx.beginPath();
-                                renderCtx.moveTo(tx, ty);
-                            }
+                            else { renderCtx.lineTo(tx, ty); renderCtx.stroke(); renderCtx.beginPath(); renderCtx.moveTo(tx, ty); }
                         }
                     } 
                     else if (aspect === 'Wastes') {
                         const debris = [[0,0], [-3,-2], [3,-1], [-1,3], [2,3], [-4,1]];
-                        debris.forEach(off => {
-                            renderCtx.beginPath(); renderCtx.arc(satX + off[0], satY + off[1], 1.5, 0, Math.PI*2); renderCtx.fill();
-                        });
+                        debris.forEach(off => { renderCtx.beginPath(); renderCtx.arc(satX + off[0], satY + off[1], 1.5, 0, Math.PI*2); renderCtx.fill(); });
                         
                         let trailLength = Math.PI * 1.5; 
                         for (let t = 0; t < 60; t++) {
@@ -1063,7 +1096,6 @@
             const cleanName = state.name.replace(/\s+/g, '');
             const points = [];
 
-            // Perfectly divided geometric distribution
             const nodeCount = Math.max(1, cleanName.length);
             const nodeStep = (Math.PI * 2) / nodeCount;
 
@@ -1071,7 +1103,6 @@
                 let angle = i * nodeStep; 
                 let px = cx + Math.cos(angle) * innerR;
                 let py = cy + Math.sin(angle) * innerR;
-                
                 points.push({x: px, y: py, char: cleanName[i], a: angle});
             }
 
@@ -1091,7 +1122,7 @@
             renderCtx.lineWidth = 1.5;
             setGlow(renderCtx, 6); 
 
-            // Connect static nodes to moving satellites
+            // Connect static nodes to moving satellites (INTELLIGENT ROUTING AROUND CORE)
             for (let i = 0; i < points.length; i++) {
                 let pt = points[i];
                 renderCtx.beginPath();
@@ -1099,17 +1130,32 @@
 
                 if (orbitalData.length > 0) {
                     let targetOrbit = orbitalData[i % orbitalData.length];
-                    renderCtx.lineTo(targetOrbit.satX, targetOrbit.satY);
+                    let satPos = {x: targetOrbit.satX, y: targetOrbit.satY};
+                    
+                    let distToCore = distToSegment({x:cx,y:cy}, pt, satPos);
+
+                    if (distToCore < coreR + 15) {
+                        // Bend the connection line around the core
+                        let midX = (pt.x + satPos.x)/2;
+                        let midY = (pt.y + satPos.y)/2;
+                        let angleFromCenter = Math.atan2(midY - cy, midX - cx);
+                        let bulgeR = coreR + 25; 
+                        let cpx = cx + Math.cos(angleFromCenter) * bulgeR;
+                        let cpy = cy + Math.sin(angleFromCenter) * bulgeR;
+                        
+                        renderCtx.quadraticCurveTo(cpx, cpy, satPos.x, satPos.y);
+                    } else {
+                        renderCtx.lineTo(satPos.x, satPos.y);
+                    }
                 } else {
-                    renderCtx.lineTo(cx + Math.cos(pt.a) * coreR, cy + Math.sin(pt.a) * coreR);
+                    let angleToCenter = Math.atan2(cy - pt.y, cx - pt.x);
+                    renderCtx.lineTo(cx - Math.cos(angleToCenter) * coreR, cy - Math.sin(angleToCenter) * coreR);
                 }
                 renderCtx.stroke();
             }
 
             points.forEach(pt => {
                 drawProceduralRune(renderCtx, pt.char, pt.x, pt.y, 8);
-                
-                // MATERIAL Catalyst
                 if (state.compM) {
                     let mx = pt.x + Math.cos(pt.a)*15;
                     let my = pt.y + Math.sin(pt.a)*15;
