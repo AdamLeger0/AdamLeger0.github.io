@@ -1,0 +1,280 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  User, Briefcase, Music, FileText, Phone, ArrowLeft,
+  ChevronRight, ChevronLeft, GraduationCap, Globe, Book, 
+  Users, Building, Mail, Calendar, Monitor, Rocket, HeartPulse, Wind, ScrollText, Mic
+} from 'lucide-react';
+
+// Strict Color Palette
+const COLORS = {
+  cream: '#fdfde6',
+  yellow: '#ffc857',
+  orange: '#e9724c',
+  red: '#c5283d',
+  maroon: '#481d24',
+  blue: '#255f85',
+};
+
+// Map string names from JSON to Lucide icons
+const ICON_MAP = {
+  User, Briefcase, Music, FileText, Phone, ArrowLeft,
+  ChevronRight, ChevronLeft, GraduationCap, Globe, Book,
+  Users, Building, Mail, Calendar, Monitor, Rocket, HeartPulse, Wind, ScrollText, Mic
+};
+
+// ==========================================
+// SIMULATED FILE SYSTEM (JSON DATA)
+// Represents: root/resources/[section]/data.json
+// ==========================================
+const MOCK_FILESYSTEM = {
+  'resources/main/data.json': JSON.stringify({
+    isCustomLayout: true,
+    items: [
+      { id: 'about', title: 'Adam Leger', subtitle: 'Political Scientist', icon: 'User', bg: COLORS.blue, text: COLORS.cream, action: 'about', span: 'col-span-2 row-span-2 md:col-span-2 md:row-span-2' },
+      { id: 'employment', title: 'Employment', subtitle: 'Work History', icon: 'Briefcase', bg: COLORS.maroon, text: COLORS.cream, action: 'employment', span: 'col-span-2 row-span-1 md:col-span-2 md:row-span-1' },
+      { id: 'music', title: 'Music', subtitle: 'Current Works', icon: 'Music', bg: COLORS.yellow, text: COLORS.maroon, action: 'music', span: 'col-span-1 row-span-1 md:col-span-1 md:row-span-1' },
+      { id: 'papers', title: 'Papers', subtitle: 'Current Works', icon: 'FileText', bg: COLORS.orange, text: COLORS.maroon, action: 'papers', span: 'col-span-1 row-span-1 md:col-span-1 md:row-span-1' },
+      { id: 'contact', title: 'Contact', subtitle: 'Reach out', icon: 'Phone', bg: COLORS.red, text: COLORS.cream, action: 'contact', span: 'col-span-2 row-span-2 md:col-span-4 md:row-span-1' }
+    ]
+  }),
+  'resources/about/data.json': JSON.stringify({
+    title: 'About Me', subtitle: 'Political Scientist', icon: 'User', bg: COLORS.blue, text: COLORS.cream,
+    items: [
+      { id: 'a1', title: 'Winthrop University', subtitle: 'MA Student in Political Science. Focused on international political theory.', icon: 'GraduationCap', bg: COLORS.maroon, text: COLORS.cream },
+      { id: 'a2', title: 'Future Goals', subtitle: 'Planning to pursue a PhD at OSU to further research into structural political orders.', icon: 'Globe', bg: COLORS.orange, text: COLORS.maroon },
+      { id: 'a3', title: 'Focus Areas', subtitle: 'Anarchy in international systems, marginalized community impacts, and political theory.', icon: 'Book', bg: COLORS.red, text: COLORS.cream }
+    ]
+  }),
+  'resources/employment/data.json': JSON.stringify({
+    title: 'Employment', subtitle: 'History & Leadership', icon: 'Briefcase', bg: COLORS.maroon, text: COLORS.cream,
+    items: [
+      { id: 'e1', title: 'Graduate Assistant', subtitle: 'School of Graduate, Online, and Continuing Education (Winthrop).', icon: 'Building', bg: COLORS.blue, text: COLORS.cream },
+      { id: 'e2', title: 'Leadership Operations', subtitle: 'WUMUN (Winthrop University Model United Nations).', icon: 'Users', bg: COLORS.orange, text: COLORS.maroon },
+    ]
+  }),
+  'resources/papers/data.json': JSON.stringify({
+    title: 'Papers', subtitle: 'Research & Publications', icon: 'FileText', bg: COLORS.orange, text: COLORS.maroon,
+    items: [
+      { id: 'p1', title: 'The Blackest Sea', subtitle: "Stellar Politiks and Humanity's Reach to the Stars (Master's Thesis)", icon: 'Rocket', bg: COLORS.blue, text: COLORS.cream },
+      { id: 'p2', title: 'Rings of Ruin', subtitle: 'The Social Contract and the Application of Anarchy within International Political Theory (Post 1945 order).', icon: 'Globe', bg: COLORS.maroon, text: COLORS.cream },
+      { id: 'p3', title: 'Combating Ebola', subtitle: 'And Its Disproportionate Impact on Marginalized Communities.', icon: 'HeartPulse', bg: COLORS.red, text: COLORS.cream },
+      { id: 'p4', title: 'Natural Disasters', subtitle: 'Preventing Natural Disaster Driven Displacement.', icon: 'Wind', bg: COLORS.yellow, text: COLORS.maroon },
+      { id: 'p5', title: 'Earlier Works', subtitle: 'Various undergraduate essays exploring structured political orders.', icon: 'ScrollText', bg: COLORS.maroon, text: COLORS.cream }
+    ]
+  }),
+  'resources/music/data.json': JSON.stringify({
+    title: 'Music', subtitle: 'Compositions & Performances', icon: 'Music', bg: COLORS.yellow, text: COLORS.maroon,
+    items: [
+      { id: 'm1', title: 'Tuba Performances', subtitle: 'Low brass specialist and ensemble performances.', icon: 'Mic', bg: COLORS.red, text: COLORS.cream },
+      { id: 'm2', title: 'Original Compositions', subtitle: 'Arrangements and original works for bands and orchestras.', icon: 'Book', bg: COLORS.blue, text: COLORS.cream },
+    ]
+  }),
+  'resources/contact/data.json': JSON.stringify({
+    title: 'Contact', subtitle: 'Get in touch', icon: 'Phone', bg: COLORS.red, text: COLORS.cream,
+    items: [
+      { id: 'c1', title: 'Grad Email', subtitle: 'leger@winthrop.edu', icon: 'Mail', bg: COLORS.blue, text: COLORS.cream },
+      { id: 'c2', title: 'SGOC Office', subtitle: 'Contact for continuing education inquiries.', icon: 'Building', bg: COLORS.orange, text: COLORS.maroon },
+      { id: 'c3', title: 'In-Person Appt', subtitle: 'Schedule a 30-minute meeting on campus.', icon: 'Calendar', bg: COLORS.maroon, text: COLORS.cream },
+      { id: 'c4', title: 'Online/Phone Appt', subtitle: 'Schedule a virtual 30-minute meeting.', icon: 'Monitor', bg: COLORS.yellow, text: COLORS.maroon },
+    ]
+  })
+};
+
+// Data fetching layer
+function getSectionData(sectionId) {
+  const rawData = MOCK_FILESYSTEM[`resources/${sectionId}/data.json`];
+  return rawData ? JSON.parse(rawData) : null;
+}
+
+// Deterministic Pagination Engine 
+// Breaks JSON data down into strict layout-compliant pages (4 content modules max per page)
+function buildPages(items) {
+  const pages = [];
+  let remaining = [...items];
+  
+  while (remaining.length > 0) {
+    let isFirstPage = pages.length === 0;
+    let pageSlots = 4; // Max slots available in our 4x3 desktop / 2x6 mobile grid remainder
+    let pageItems = [];
+    
+    // Inject 'Previous' button if not first page
+    if (!isFirstPage) {
+      pageItems.push({ id: `prev-${pages.length}`, title: 'Previous', icon: 'ChevronLeft', bg: COLORS.yellow, text: COLORS.maroon, pageAction: -1 });
+      pageSlots--;
+    }
+    
+    // If we have more items than available slots, we must reserve 1 slot for 'Next'
+    let takeCount = remaining.length > pageSlots ? pageSlots - 1 : remaining.length;
+    
+    pageItems.push(...remaining.splice(0, takeCount));
+    
+    // Inject 'Next' button if there are items left over
+    if (remaining.length > 0) {
+      pageItems.push({ id: `next-${pages.length}`, title: 'More Items', icon: 'ChevronRight', bg: COLORS.yellow, text: COLORS.maroon, pageAction: 1 });
+    }
+    
+    pages.push(pageItems);
+  }
+  return pages;
+}
+
+// Cube Component
+const Cube = ({ item, isExiting, index, onNavigate, onPageChange }) => {
+  const isInteractive = Boolean(item.action) || Boolean(item.pageAction);
+  const Icon = ICON_MAP[item.icon] || ICON_MAP.Book;
+
+  const handleClick = () => {
+    if (item.action) onNavigate(item.action);
+    else if (item.pageAction) onPageChange(item.pageAction);
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      className={`
+        relative flex flex-col justify-between p-4 md:p-5 rounded-none overflow-hidden
+        ${item.span}
+        ${isInteractive ? 'cursor-pointer hover:brightness-110 active:scale-[0.97]' : ''}
+        ${item.isDecorative ? 'opacity-90' : ''}
+        ${isExiting ? 'cube-out' : 'cube-in'}
+        transition-all duration-200 transform-gpu
+      `}
+      style={{ 
+        backgroundColor: item.bg, 
+        color: item.text,
+        animationDelay: isExiting ? '0s' : `${index * 0.04}s`,
+        // Adds subtle hard borders if same colors touch
+        outline: `1px solid ${COLORS.cream}20`,
+        outlineOffset: '-1px'
+      }}
+    >
+      {/* Large Watermark Icon */}
+      {Icon && !item.isDecorative && (
+        <div className="absolute -bottom-6 -right-6 md:-bottom-8 md:-right-8 opacity-15 pointer-events-none">
+          <Icon size={160} strokeWidth={1.5} />
+        </div>
+      )}
+      
+      <div className="relative z-10 flex flex-col justify-between h-full w-full min-h-0">
+         <div className="self-end">
+             {Icon && <Icon size={28} className="opacity-90" strokeWidth={2} />}
+         </div>
+         
+         {!item.isDecorative && (
+           <div className="self-start text-left mt-auto w-full">
+             <h3 className={`font-bold leading-tight tracking-tight uppercase break-words ${item.isHeader ? 'text-2xl md:text-4xl mb-2' : 'text-sm sm:text-base md:text-2xl mb-1'}`}>
+               {item.title}
+             </h3>
+             {item.subtitle && (
+               <p className={`font-semibold opacity-85 leading-snug line-clamp-4 uppercase tracking-wide ${item.isHeader ? 'text-sm md:text-lg' : 'text-[10px] sm:text-xs md:text-sm'}`}>
+                 {item.subtitle}
+               </p>
+             )}
+           </div>
+         )}
+      </div>
+    </div>
+  );
+};
+
+export default function App() {
+  const [currentSection, setCurrentSection] = useState('main');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [isExiting, setIsExiting] = useState(false);
+  const [sectionData, setSectionData] = useState(null);
+
+  // Initial Load
+  useEffect(() => {
+    setSectionData(getSectionData('main'));
+  }, []);
+
+  const handleNavigate = (targetSection) => {
+    if (isExiting || targetSection === currentSection) return;
+    setIsExiting(true);
+    
+    // Simulate navigation fetch delay & allow flip out to complete
+    setTimeout(() => {
+      setCurrentSection(targetSection);
+      setCurrentPage(0);
+      setSectionData(getSectionData(targetSection));
+      setIsExiting(false);
+    }, 300);
+  };
+
+  const handlePageChange = (direction) => {
+    if (isExiting) return;
+    setIsExiting(true);
+    setTimeout(() => {
+      setCurrentPage(prev => prev + direction);
+      setIsExiting(false);
+    }, 300);
+  };
+
+  if (!sectionData) return null;
+
+  let renderItems = [];
+
+  if (sectionData.isCustomLayout) {
+    renderItems = sectionData.items;
+  } else {
+    // Generate Fixed Header Modules
+    const headerItems = [
+      { id: 'back', title: 'BACK', icon: 'ArrowLeft', bg: COLORS.yellow, text: COLORS.maroon, action: 'main', span: 'col-span-1 row-span-1 md:col-span-1 md:row-span-1' },
+      { id: 'dec', icon: sectionData.icon, bg: sectionData.bg, text: sectionData.text, span: 'col-span-1 row-span-1 md:hidden', isDecorative: true },
+      { id: 'title', title: sectionData.title, subtitle: sectionData.subtitle, icon: sectionData.icon, bg: sectionData.bg, text: sectionData.text, span: 'col-span-2 row-span-1 md:col-span-3 md:row-span-1', isHeader: true }
+    ];
+
+    // Read pages from Engine
+    const pages = buildPages(sectionData.items);
+    const currentItems = pages[currentPage] || [];
+    
+    // Standardize spans for content so they predictably fit exactly 4 per page
+    const mappedItems = currentItems.map(item => ({
+       ...item,
+       span: 'col-span-2 row-span-1 md:col-span-2 md:row-span-1'
+    }));
+
+    renderItems = [...headerItems, ...mappedItems];
+  }
+
+  return (
+    <>
+      <style>{`
+        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background-color: ${COLORS.cream}; }
+        @keyframes flipIn {
+          0% { transform: rotateX(-90deg) scale(0.9); opacity: 0; }
+          100% { transform: rotateX(0deg) scale(1); opacity: 1; }
+        }
+        @keyframes flipOut {
+          0% { transform: rotateX(0deg) scale(1); opacity: 1; }
+          100% { transform: rotateX(90deg) scale(0.9); opacity: 0; }
+        }
+        .cube-in {
+          animation: flipIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+          opacity: 0; 
+        }
+        .cube-out {
+          animation: flipOut 0.25s cubic-bezier(0.5, 0, 0.8, 0.5) forwards;
+        }
+      `}</style>
+      
+      <div className="h-screen w-screen p-2 md:p-4 box-border overflow-hidden flex flex-col items-center justify-center">
+        <div 
+          className="w-full max-w-7xl h-full grid grid-cols-2 md:grid-cols-4 grid-rows-6 md:grid-rows-3 gap-0"
+          style={{ perspective: '2000px' }}
+        >
+          {renderItems.map((item, idx) => (
+            <Cube 
+              key={`${currentSection}-p${currentPage}-${item.id}`} 
+              item={item} 
+              index={idx}
+              isExiting={isExiting}
+              onNavigate={handleNavigate}
+              onPageChange={handlePageChange}
+            />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
